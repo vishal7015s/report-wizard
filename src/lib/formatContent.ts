@@ -87,3 +87,49 @@ export const handlePasteFormat = (
     textarea.selectionStart = textarea.selectionEnd = start + formattedText.length;
   }, 0);
 };
+
+/**
+ * Converts * or - at start of line to bullet point while typing
+ */
+export const formatOnChange = (
+  value: string,
+  prevValue: string,
+  cursorPosition: number
+): { newValue: string; newCursorPosition: number } => {
+  // Check if user just typed a space after * or - at the start of a line
+  const lines = value.split('\n');
+  let charCount = 0;
+  let modified = false;
+  let cursorOffset = 0;
+
+  const newLines = lines.map((line, index) => {
+    const lineStart = charCount;
+    const lineEnd = charCount + line.length;
+    charCount = lineEnd + 1; // +1 for newline
+
+    // Check if cursor is at end of this line and user just typed space after * or -
+    if (cursorPosition >= lineStart && cursorPosition <= lineEnd + 1) {
+      // Match "* " or "- " at start of line
+      if (/^[-*]\s$/.test(line)) {
+        modified = true;
+        return '• ';
+      }
+      // Match "  * " or "  - " (indented sub-bullet)
+      if (/^\s{2,}[-*]\s$/.test(line)) {
+        modified = true;
+        const indent = line.match(/^\s+/)?.[0] || '';
+        return indent + '○ ';
+      }
+    }
+    return line;
+  });
+
+  if (modified) {
+    return {
+      newValue: newLines.join('\n'),
+      newCursorPosition: cursorPosition + cursorOffset
+    };
+  }
+
+  return { newValue: value, newCursorPosition: cursorPosition };
+};

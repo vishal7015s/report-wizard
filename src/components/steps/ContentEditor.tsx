@@ -5,7 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { handlePasteFormat } from '@/lib/formatContent';
+import { handlePasteFormat, formatOnChange } from '@/lib/formatContent';
 import { 
   Sparkles, 
   PenLine, 
@@ -136,7 +136,10 @@ const ContentEditor = () => {
               placeholder="Write your project abstract here... (Paste from ChatGPT - auto-formatted!)"
               className="min-h-[150px] font-serif"
               value={reportData.abstract}
-              onChange={(e) => setAbstract(e.target.value)}
+              onChange={(e) => {
+                const { newValue } = formatOnChange(e.target.value, reportData.abstract, e.target.selectionStart);
+                setAbstract(newValue);
+              }}
               onPaste={(e) => handlePasteFormat(e, reportData.abstract, setAbstract)}
             />
           </div>
@@ -151,7 +154,10 @@ const ContentEditor = () => {
               placeholder="Write your acknowledgement here... (Paste from ChatGPT - auto-formatted!)"
               className="min-h-[150px] font-serif"
               value={reportData.acknowledgement}
-              onChange={(e) => setAcknowledgement(e.target.value)}
+              onChange={(e) => {
+                const { newValue } = formatOnChange(e.target.value, reportData.acknowledgement, e.target.selectionStart);
+                setAcknowledgement(newValue);
+              }}
               onPaste={(e) => handlePasteFormat(e, reportData.acknowledgement, setAcknowledgement)}
             />
           </div>
@@ -246,7 +252,10 @@ const ContentEditor = () => {
                         placeholder="Enter content for this section. Paste from ChatGPT - bullet points auto-formatted!"
                         className="min-h-[120px] font-serif"
                         value={section.content}
-                        onChange={(e) => updateSection(currentChapter.id, section.id, { content: e.target.value })}
+                        onChange={(e) => {
+                          const { newValue } = formatOnChange(e.target.value, section.content, e.target.selectionStart);
+                          updateSection(currentChapter.id, section.id, { content: newValue });
+                        }}
                         onPaste={(e) => handlePasteFormat(e, section.content, (value) => updateSection(currentChapter.id, section.id, { content: value }))}
                       />
                     </div>
