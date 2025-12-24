@@ -104,36 +104,59 @@ const PDFChapterContent = ({ sections, data, pageNumber }: PDFChapterContentProp
 
 // Helper function to format content with bullet points
 const formatContent = (content: string): string => {
-  // Check if content has bullet points or list items
   const lines = content.split('\n');
   let formattedHtml = '';
   let inList = false;
+  let inNumberedList = false;
   
   lines.forEach((line) => {
     const trimmedLine = line.trim();
     
-    // Check if line starts with bullet markers
-    if (trimmedLine.startsWith('•') || trimmedLine.startsWith('-') || trimmedLine.startsWith('*')) {
+    // Check for bullet points (•, -, *, ○)
+    const bulletMatch = trimmedLine.match(/^[•\-\*○]\s+(.+)/);
+    // Check for numbered lists (1. 2. etc)
+    const numberedMatch = trimmedLine.match(/^(\d+)\.\s+(.+)/);
+    // Check for sub-bullets (indented with ○)
+    const subBulletMatch = trimmedLine.match(/^\s*○\s+(.+)/);
+    
+    if (bulletMatch || subBulletMatch) {
+      if (inNumberedList) {
+        formattedHtml += '</ol>';
+        inNumberedList = false;
+      }
       if (!inList) {
-        formattedHtml += '<ul style="list-style-type: disc; margin-left: 20px; margin-top: 8px; margin-bottom: 8px;">';
+        formattedHtml += '<ul style="list-style-type: disc; margin-left: 24px; margin-top: 10px; margin-bottom: 10px; padding-left: 0;">';
         inList = true;
       }
-      const listContent = trimmedLine.replace(/^[•\-\*]\s*/, '');
-      formattedHtml += `<li style="margin-bottom: 4px;">${listContent}</li>`;
+      const listContent = bulletMatch ? bulletMatch[1] : subBulletMatch![1];
+      formattedHtml += `<li style="margin-bottom: 6px; padding-left: 8px; text-align: left;">${listContent}</li>`;
+    } else if (numberedMatch) {
+      if (inList) {
+        formattedHtml += '</ul>';
+        inList = false;
+      }
+      if (!inNumberedList) {
+        formattedHtml += '<ol style="list-style-type: decimal; margin-left: 24px; margin-top: 10px; margin-bottom: 10px; padding-left: 0;">';
+        inNumberedList = true;
+      }
+      formattedHtml += `<li style="margin-bottom: 6px; padding-left: 8px; text-align: left;">${numberedMatch[2]}</li>`;
     } else {
       if (inList) {
         formattedHtml += '</ul>';
         inList = false;
       }
+      if (inNumberedList) {
+        formattedHtml += '</ol>';
+        inNumberedList = false;
+      }
       if (trimmedLine) {
-        formattedHtml += `<p style="margin-bottom: 12px;">${trimmedLine}</p>`;
+        formattedHtml += `<p style="margin-bottom: 12px; text-indent: 0; text-align: justify;">${trimmedLine}</p>`;
       }
     }
   });
   
-  if (inList) {
-    formattedHtml += '</ul>';
-  }
+  if (inList) formattedHtml += '</ul>';
+  if (inNumberedList) formattedHtml += '</ol>';
   
   return formattedHtml || content;
 };

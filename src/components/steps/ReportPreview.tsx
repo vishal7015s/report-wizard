@@ -48,107 +48,89 @@ const ReportPreview = () => {
   // Generate Roman numerals for preliminary pages
   const romanNumerals = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
   
-  // Split sections into pages (balanced: not too much, not too little)
+  // Split sections into pages - OPTIMIZED: fill pages properly, avoid empty space
   const splitSectionsIntoPages = (sections: ChapterSection[]): ChapterSection[][] => {
-    const MAX_COST_PER_PAGE = 1400;
-    const MAX_SECTIONS_PER_PAGE = 2;
-    const MAX_CHARS_PER_SECTION_CHUNK = 900;
-
-    const splitLongString = (text: string, maxChars: number): string[] => {
-      const out: string[] = [];
-      let remaining = (text || '').trim();
-      while (remaining.length > maxChars) {
-        let cut = remaining.lastIndexOf(' ', maxChars);
-        if (cut < Math.floor(maxChars * 0.6)) cut = maxChars;
-        out.push(remaining.slice(0, cut).trim());
-        remaining = remaining.slice(cut).trim();
-      }
-      if (remaining) out.push(remaining);
-      return out.length ? out : [''];
-    };
-
-    const splitIntoChunks = (content: string): string[] => {
-      const normalized = (content || '').trim();
-      if (!normalized) return ['Content not provided.'];
-
-      const paragraphs = normalized
-        .split(/\n\s*\n/)
-        .map((p) => p.trim())
-        .filter(Boolean);
-
-      if (paragraphs.length <= 1 && normalized.length <= MAX_CHARS_PER_SECTION_CHUNK) {
-        return [normalized];
-      }
-
-      const chunks: string[] = [];
-      let buf = '';
-
-      for (const p of paragraphs.length ? paragraphs : [normalized]) {
-        if (p.length > MAX_CHARS_PER_SECTION_CHUNK) {
-          // Flush buffer before splitting very long paragraph
-          if (buf) {
-            chunks.push(buf);
-            buf = '';
-          }
-          chunks.push(...splitLongString(p, MAX_CHARS_PER_SECTION_CHUNK));
-          continue;
-        }
-
-        const next = buf ? `${buf}\n\n${p}` : p;
-        if (next.length > MAX_CHARS_PER_SECTION_CHUNK && buf) {
-          chunks.push(buf);
-          buf = p;
-        } else {
-          buf = next;
-        }
-      }
-
-      if (buf) chunks.push(buf);
-      return chunks.length ? chunks : [normalized];
-    };
-
+    // Increased limits for better page utilization
+    const MAX_CHARS_PER_PAGE = 2800; // ~2800 chars fits well on A4 with margins
+    const MAX_SECTIONS_PER_PAGE = 4; // Allow more sections per page
+    const IMAGE_COST = 600; // Cost per image in chars equivalent
+    
     const pages: ChapterSection[][] = [];
-    let current: ChapterSection[] = [];
-    let currentCost = 0;
+    let currentPage: ChapterSection[] = [];
+    let currentPageCost = 0;
 
-    const pushPage = () => {
-      if (current.length) pages.push(current);
-      current = [];
-      currentCost = 0;
+    const flushPage = () => {
+      if (currentPage.length > 0) {
+        pages.push(currentPage);
+        currentPage = [];
+        currentPageCost = 0;
+      }
     };
 
-    const addToPage = (section: ChapterSection) => {
+    const calculateCost = (section: ChapterSection): number => {
       const textCost = (section.content || '').length;
-      const imageCost = (section.images?.length || 0) * 500;
-      const cost = textCost + imageCost;
-
-      const wouldOverflow = current.length > 0 && currentCost + cost > MAX_COST_PER_PAGE;
-      const tooManySections = current.length >= MAX_SECTIONS_PER_PAGE;
-
-      if (wouldOverflow || tooManySections) pushPage();
-
-      current.push(section);
-      currentCost += cost;
+      const imageCost = (section.images?.length || 0) * IMAGE_COST;
+      return textCost + imageCost;
     };
 
+    // First pass: try to fit multiple sections on same page
     sections.forEach((section) => {
-      const chunks = splitIntoChunks(section.content || '');
-
-      chunks.forEach((chunk, idx) => {
-        const isFirst = idx === 0;
-        const isLast = idx === chunks.length - 1;
-
-        addToPage({
-          ...section,
-          id: `${section.id}-part-${idx + 1}`,
-          heading: isFirst ? section.heading : `${section.heading} (Continued)`,
-          content: chunk,
-          images: isLast ? section.images : [],
+      const sectionCost = calculateCost(section);
+      
+      // If this section alone is huge, it needs splitting
+      if (sectionCost > MAX_CHARS_PER_PAGE) {
+        // Flush current page first
+        flushPage();
+        
+        // Split long content into chunks
+        const content = section.content || '';
+        const chunks: string[] = [];
+        let remaining = content;
+        
+        while (remaining.length > MAX_CHARS_PER_PAGE - 200) {
+          // Find a good break point (paragraph or sentence)
+          let breakPoint = remaining.lastIndexOf('\n\n', MAX_CHARS_PER_PAGE - 200);
+          if (breakPoint < MAX_CHARS_PER_PAGE * 0.5) {
+            breakPoint = remaining.lastIndexOf('. ', MAX_CHARS_PER_PAGE - 200);
+            if (breakPoint > 0) breakPoint += 1; // Include the period
+          }
+          if (breakPoint < MAX_CHARS_PER_PAGE * 0.4) {
+            breakPoint = MAX_CHARS_PER_PAGE - 200;
+          }
+          
+          chunks.push(remaining.slice(0, breakPoint).trim());
+          remaining = remaining.slice(breakPoint).trim();
+        }
+        if (remaining) chunks.push(remaining);
+        
+        // Create pages for each chunk
+        chunks.forEach((chunk, idx) => {
+          const isFirst = idx === 0;
+          const isLast = idx === chunks.length - 1;
+          
+          pages.push([{
+            ...section,
+            id: `${section.id}-part-${idx + 1}`,
+            heading: isFirst ? section.heading : `${section.heading} (Continued)`,
+            content: chunk,
+            images: isLast ? section.images : [],
+          }]);
         });
-      });
+      } else {
+        // Section fits - check if it fits on current page
+        const wouldExceed = currentPageCost + sectionCost > MAX_CHARS_PER_PAGE;
+        const tooManySections = currentPage.length >= MAX_SECTIONS_PER_PAGE;
+        
+        if (wouldExceed || tooManySections) {
+          flushPage();
+        }
+        
+        currentPage.push(section);
+        currentPageCost += sectionCost;
+      }
     });
 
-    if (current.length) pages.push(current);
+    flushPage();
     return pages.length ? pages : [[]];
   };
 
