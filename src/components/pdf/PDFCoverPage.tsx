@@ -1,4 +1,5 @@
 import { ReportData } from '@/types/report';
+import rgpvLogo from '@/assets/rgpv-logo.png';
 
 interface PDFPageProps {
   data: ReportData;
@@ -7,10 +8,9 @@ interface PDFPageProps {
 
 const PDFCoverPage = ({ data, pageNumber }: PDFPageProps) => {
   const { projectDetails } = data;
-  const firstStudent = projectDetails.students[0];
 
   return (
-    <div className="pdf-page" style={{ width: '210mm', minHeight: '297mm', position: 'relative' }}>
+    <div className="pdf-page" style={{ width: '210mm', minHeight: '297mm', position: 'relative', backgroundColor: '#ffffff' }}>
       {/* Border */}
       <div 
         style={{
@@ -54,22 +54,13 @@ const PDFCoverPage = ({ data, pageNumber }: PDFPageProps) => {
           BHOPAL (M.P.)
         </p>
         
-        {/* RGPV Logo Placeholder */}
+        {/* RGPV Logo */}
         <div className="my-8 flex justify-center">
-          <div 
-            className="rounded-full flex items-center justify-center"
-            style={{ 
-              width: '120px', 
-              height: '120px', 
-              border: '3px solid #8B0000',
-              background: 'linear-gradient(135deg, #fff5f5 0%, #ffffff 100%)'
-            }}
-          >
-            <div className="text-center">
-              <p style={{ fontSize: '8px', color: '#8B0000', fontWeight: 'bold' }}>RGPV</p>
-              <p style={{ fontSize: '6px', color: '#8B0000' }}>BHOPAL</p>
-            </div>
-          </div>
+          <img 
+            src={rgpvLogo} 
+            alt="RGPV Logo" 
+            style={{ width: '100px', height: '100px', objectFit: 'contain' }}
+          />
         </div>
         
         {/* Guided By / Submitted By */}
@@ -82,7 +73,7 @@ const PDFCoverPage = ({ data, pageNumber }: PDFPageProps) => {
           </div>
           <div className="text-left">
             <p className="font-bold underline">Submitted By:-</p>
-            {projectDetails.students.map((student, index) => (
+            {projectDetails.students.map((student) => (
               <p key={student.id} className="mt-2">
                 {student.name || 'Student Name'} [{student.enrollmentNumber || 'Enrollment No.'}]
               </p>

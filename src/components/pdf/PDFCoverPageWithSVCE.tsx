@@ -1,4 +1,5 @@
 import { ReportData } from '@/types/report';
+import svceLogo from '@/assets/svce-logo.png';
 
 interface PDFPageProps {
   data: ReportData;
@@ -9,7 +10,7 @@ const PDFCoverPageWithSVCE = ({ data, pageNumber }: PDFPageProps) => {
   const { projectDetails } = data;
 
   return (
-    <div className="pdf-page" style={{ width: '210mm', minHeight: '297mm', position: 'relative' }}>
+    <div className="pdf-page" style={{ width: '210mm', minHeight: '297mm', position: 'relative', backgroundColor: '#ffffff' }}>
       {/* Border */}
       <div 
         style={{
@@ -53,23 +54,13 @@ const PDFCoverPageWithSVCE = ({ data, pageNumber }: PDFPageProps) => {
           BHOPAL (M.P.)
         </p>
         
-        {/* SVCE Logo Placeholder */}
+        {/* SVCE Logo */}
         <div className="my-8 flex justify-center">
-          <div 
-            className="rounded-full flex items-center justify-center"
-            style={{ 
-              width: '120px', 
-              height: '120px', 
-              border: '4px solid #d42027',
-              background: 'linear-gradient(135deg, #fffbe6 0%, #ffffff 100%)'
-            }}
-          >
-            <div className="text-center">
-              <p style={{ fontSize: '6px', color: '#d42027', fontWeight: 'bold' }}>SWAMI VIVEKANAND</p>
-              <p style={{ fontSize: '8px', color: '#1e3a5f', fontWeight: 'bold' }}>SVCE</p>
-              <p style={{ fontSize: '6px', color: '#d42027' }}>INDORE</p>
-            </div>
-          </div>
+          <img 
+            src={svceLogo} 
+            alt="SVCE Logo" 
+            style={{ width: '100px', height: '100px', objectFit: 'contain' }}
+          />
         </div>
         
         {/* Guided By / Submitted By */}
