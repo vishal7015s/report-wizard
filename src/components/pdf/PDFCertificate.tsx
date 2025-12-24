@@ -36,7 +36,7 @@ const PDFCertificate = ({ data, pageNumber }: PDFPageProps) => {
           <img 
             src={svceLogo} 
             alt="SVCE Logo" 
-            style={{ width: '100px', height: '100px', objectFit: 'contain' }}
+            style={{ width: '140px', height: '140px', objectFit: 'contain' }}
           />
         </div>
         
