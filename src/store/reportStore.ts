@@ -5,6 +5,8 @@ import {
   ProjectDetails, 
   Chapter, 
   Student,
+  ChapterSection,
+  SectionImage,
   defaultProjectDetails, 
   defaultChapters 
 } from '@/types/report';
@@ -23,6 +25,13 @@ interface ReportStore {
   updateStudent: (id: string, data: Partial<Student>) => void;
   setChapters: (chapters: Chapter[]) => void;
   updateChapter: (chapterId: string, data: Partial<Chapter>) => void;
+  addChapter: () => void;
+  removeChapter: (chapterId: string) => void;
+  addSection: (chapterId: string) => void;
+  removeSection: (chapterId: string, sectionId: string) => void;
+  updateSection: (chapterId: string, sectionId: string, data: Partial<ChapterSection>) => void;
+  addImageToSection: (chapterId: string, sectionId: string, image: SectionImage) => void;
+  removeImageFromSection: (chapterId: string, sectionId: string, imageId: string) => void;
   setAbstract: (abstract: string) => void;
   setAcknowledgement: (acknowledgement: string) => void;
   setReferences: (references: string[]) => void;
@@ -107,6 +116,149 @@ export const useReportStore = create<ReportStore>((set) => ({
       chapters: state.reportData.chapters.map(c => 
         c.id === chapterId ? { ...c, ...data } : c
       )
+    }
+  })),
+
+  addChapter: () => set((state) => {
+    const newChapterNum = state.reportData.chapters.length + 1;
+    const newChapter: Chapter = {
+      id: Date.now().toString(),
+      number: newChapterNum,
+      title: `CHAPTER ${newChapterNum}`,
+      sections: [
+        { 
+          id: `${Date.now()}-1`, 
+          number: `${newChapterNum}.1`, 
+          heading: 'New Section', 
+          content: '',
+          images: []
+        }
+      ]
+    };
+    return {
+      reportData: {
+        ...state.reportData,
+        chapters: [...state.reportData.chapters, newChapter]
+      }
+    };
+  }),
+
+  removeChapter: (chapterId) => set((state) => {
+    if (state.reportData.chapters.length <= 1) return state;
+    const filtered = state.reportData.chapters.filter(c => c.id !== chapterId);
+    const renumbered = filtered.map((c, idx) => ({
+      ...c,
+      number: idx + 1,
+      sections: c.sections.map((s, sIdx) => ({
+        ...s,
+        number: `${idx + 1}.${sIdx + 1}`
+      }))
+    }));
+    return {
+      reportData: {
+        ...state.reportData,
+        chapters: renumbered
+      }
+    };
+  }),
+
+  addSection: (chapterId) => set((state) => ({
+    reportData: {
+      ...state.reportData,
+      chapters: state.reportData.chapters.map(chapter => {
+        if (chapter.id === chapterId) {
+          const newSectionNum = chapter.sections.length + 1;
+          return {
+            ...chapter,
+            sections: [
+              ...chapter.sections,
+              {
+                id: `${chapterId}-${Date.now()}`,
+                number: `${chapter.number}.${newSectionNum}`,
+                heading: 'New Section',
+                content: '',
+                images: []
+              }
+            ]
+          };
+        }
+        return chapter;
+      })
+    }
+  })),
+
+  removeSection: (chapterId, sectionId) => set((state) => ({
+    reportData: {
+      ...state.reportData,
+      chapters: state.reportData.chapters.map(chapter => {
+        if (chapter.id === chapterId && chapter.sections.length > 1) {
+          const filtered = chapter.sections.filter(s => s.id !== sectionId);
+          const renumbered = filtered.map((s, idx) => ({
+            ...s,
+            number: `${chapter.number}.${idx + 1}`
+          }));
+          return {
+            ...chapter,
+            sections: renumbered
+          };
+        }
+        return chapter;
+      })
+    }
+  })),
+
+  updateSection: (chapterId, sectionId, data) => set((state) => ({
+    reportData: {
+      ...state.reportData,
+      chapters: state.reportData.chapters.map(chapter => {
+        if (chapter.id === chapterId) {
+          return {
+            ...chapter,
+            sections: chapter.sections.map(section =>
+              section.id === sectionId ? { ...section, ...data } : section
+            )
+          };
+        }
+        return chapter;
+      })
+    }
+  })),
+
+  addImageToSection: (chapterId, sectionId, image) => set((state) => ({
+    reportData: {
+      ...state.reportData,
+      chapters: state.reportData.chapters.map(chapter => {
+        if (chapter.id === chapterId) {
+          return {
+            ...chapter,
+            sections: chapter.sections.map(section =>
+              section.id === sectionId 
+                ? { ...section, images: [...section.images, image] } 
+                : section
+            )
+          };
+        }
+        return chapter;
+      })
+    }
+  })),
+
+  removeImageFromSection: (chapterId, sectionId, imageId) => set((state) => ({
+    reportData: {
+      ...state.reportData,
+      chapters: state.reportData.chapters.map(chapter => {
+        if (chapter.id === chapterId) {
+          return {
+            ...chapter,
+            sections: chapter.sections.map(section =>
+              section.id === sectionId 
+                ? { ...section, images: section.images.filter(img => img.id !== imageId) } 
+                : section
+            )
+          };
+        }
+        return chapter;
+      })
     }
   })),
   

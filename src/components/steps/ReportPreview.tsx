@@ -1,6 +1,6 @@
 import { useReportStore } from '@/store/reportStore';
 import { Button } from '@/components/ui/button';
-import { Download, CreditCard, Eye } from 'lucide-react';
+import { Download, CreditCard, Eye, CheckCircle } from 'lucide-react';
 import PDFCoverPage from '@/components/pdf/PDFCoverPage';
 import PDFCoverPageWithSVCE from '@/components/pdf/PDFCoverPageWithSVCE';
 import PDFCertificate from '@/components/pdf/PDFCertificate';
@@ -10,12 +10,15 @@ import PDFAcknowledgement from '@/components/pdf/PDFAcknowledgement';
 import PDFAbstract from '@/components/pdf/PDFAbstract';
 
 const ReportPreview = () => {
-  const { reportData } = useReportStore();
+  const { reportData, contentMode } = useReportStore();
+
+  const isAIGenerated = contentMode === 'ai';
+  const price = isAIGenerated ? '₹10' : 'Free';
 
   return (
     <div className="animate-fade-in">
       <div className="text-center mb-8">
-        <h2 className="text-2xl font-bold mb-2">Preview Your Report</h2>
+        <h2 className="text-2xl font-bold text-[#1a365d] mb-2">Preview Your Report</h2>
         <p className="text-muted-foreground">
           Review the formatted pages before downloading
         </p>
@@ -67,7 +70,7 @@ const ReportPreview = () => {
         {/* Sidebar */}
         <div className="space-y-6">
           <div className="bg-card rounded-xl border p-6 shadow-soft sticky top-24">
-            <h3 className="font-bold text-lg mb-4">Report Summary</h3>
+            <h3 className="font-bold text-lg text-[#1a365d] mb-4">Report Summary</h3>
             
             <div className="space-y-3 text-sm">
               <div className="flex justify-between">
@@ -88,11 +91,11 @@ const ReportPreview = () => {
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Chapters</span>
-                <span className="font-medium">7</span>
+                <span className="font-medium">{reportData.chapters.length}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Total Pages</span>
-                <span className="font-medium">~20+</span>
+                <span className="text-muted-foreground">Content Mode</span>
+                <span className="font-medium">{isAIGenerated ? 'AI Generated' : 'Manual'}</span>
               </div>
             </div>
 
@@ -101,22 +104,40 @@ const ReportPreview = () => {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <span className="font-semibold">Total</span>
-                <span className="text-2xl font-bold text-primary">₹10</span>
+                <span className={`text-2xl font-bold ${isAIGenerated ? 'text-[#1a365d]' : 'text-green-600'}`}>
+                  {price}
+                </span>
               </div>
 
-              <Button className="w-full gap-2" size="lg">
-                <CreditCard className="w-4 h-4" />
-                Pay & Download PDF
-              </Button>
+              {isAIGenerated ? (
+                <Button className="w-full gap-2 bg-[#1a365d] hover:bg-[#2d4a7c]" size="lg">
+                  <CreditCard className="w-4 h-4" />
+                  Pay & Download PDF
+                </Button>
+              ) : (
+                <Button className="w-full gap-2 bg-green-600 hover:bg-green-700" size="lg">
+                  <Download className="w-4 h-4" />
+                  Download PDF (Free)
+                </Button>
+              )}
 
-              <p className="text-xs text-center text-muted-foreground">
-                Secure payment via Razorpay
-              </p>
+              {!isAIGenerated && (
+                <div className="flex items-center gap-2 text-sm text-green-600 justify-center">
+                  <CheckCircle className="w-4 h-4" />
+                  <span>Manual content - No payment required</span>
+                </div>
+              )}
+
+              {isAIGenerated && (
+                <p className="text-xs text-center text-muted-foreground">
+                  Secure payment via Razorpay
+                </p>
+              )}
             </div>
           </div>
 
           <div className="bg-muted/50 rounded-xl p-4 text-sm">
-            <h4 className="font-semibold mb-2 flex items-center gap-2">
+            <h4 className="font-semibold mb-2 flex items-center gap-2 text-[#1a365d]">
               <Eye className="w-4 h-4" />
               Preview Note
             </h4>
