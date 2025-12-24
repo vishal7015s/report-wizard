@@ -24,11 +24,11 @@ const PDFChapterContent = ({ sections, data, pageNumber }: PDFChapterContentProp
         }}
       />
       
-      {/* Header */}
+      {/* Header - above border */}
       <div
         className="absolute"
         style={{
-          top: '10mm',
+          top: '5mm',
           left: '15mm',
           right: '15mm',
           fontSize: '12px',
@@ -83,11 +83,11 @@ const PDFChapterContent = ({ sections, data, pageNumber }: PDFChapterContentProp
         ))}
       </div>
       
-      {/* Footer */}
+      {/* Footer - below border */}
       <div
         className="absolute flex justify-between items-center"
         style={{
-          bottom: '16mm',
+          bottom: '5mm',
           left: '15mm',
           right: '15mm',
           fontSize: '11px',
