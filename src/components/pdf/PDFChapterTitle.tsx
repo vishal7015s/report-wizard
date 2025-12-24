@@ -25,11 +25,11 @@ const PDFChapterTitle = ({ chapterNumber, chapterTitle, data, pageNumber }: PDFC
         }}
       />
       
-      {/* Header */}
+      {/* Header - above border */}
       <div
         className="absolute"
         style={{
-          top: '10mm',
+          top: '5mm',
           left: '15mm',
           right: '15mm',
           fontSize: '12px',
@@ -56,11 +56,11 @@ const PDFChapterTitle = ({ chapterNumber, chapterTitle, data, pageNumber }: PDFC
         </h2>
       </div>
       
-      {/* Footer */}
+      {/* Footer - below border */}
       <div
         className="absolute flex justify-between items-center"
         style={{
-          bottom: '16mm',
+          bottom: '5mm',
           left: '15mm',
           right: '15mm',
           fontSize: '11px',
