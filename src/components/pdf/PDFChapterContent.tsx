@@ -105,59 +105,100 @@ const PDFChapterContent = ({ sections, data, pageNumber }: PDFChapterContentProp
 // Helper function to format content with bullet points
 const formatContent = (content: string): string => {
   const lines = content.split('\n');
+
   let formattedHtml = '';
-  let inList = false;
-  let inNumberedList = false;
-  
-  lines.forEach((line) => {
-    const trimmedLine = line.trim();
-    
-    // Check for bullet points (•, -, *, ○)
-    const bulletMatch = trimmedLine.match(/^[•\-\*○]\s+(.+)/);
-    // Check for numbered lists (1. 2. etc)
-    const numberedMatch = trimmedLine.match(/^(\d+)\.\s+(.+)/);
-    // Check for sub-bullets (indented with ○)
-    const subBulletMatch = trimmedLine.match(/^\s*○\s+(.+)/);
-    
-    if (bulletMatch || subBulletMatch) {
-      if (inNumberedList) {
-        formattedHtml += '</ol>';
-        inNumberedList = false;
+  let inBullets = false;
+  let inNumbers = false;
+
+  const closeLists = () => {
+    if (inBullets) {
+      formattedHtml += '</div>';
+      inBullets = false;
+    }
+    if (inNumbers) {
+      formattedHtml += '</div>';
+      inNumbers = false;
+    }
+  };
+
+  const openBullets = () => {
+    if (!inBullets) {
+      formattedHtml += '<div style="margin: 10px 0;">';
+      inBullets = true;
+    }
+  };
+
+  const openNumbers = () => {
+    if (!inNumbers) {
+      formattedHtml += '<div style="margin: 10px 0;">';
+      inNumbers = true;
+    }
+  };
+
+  lines.forEach((rawLine) => {
+    const line = rawLine.replace(/\r/g, '');
+    const trimmed = line.trim();
+
+    // Bullets: supports "•", "○", "-", "*" with or without space after marker
+    const bulletMatch = trimmed.match(/^[•\-\*]\s*(.+)$/);
+    const subBulletMatch = line.match(/^\s{2,}(?:[○\-\*•])\s*(.+)$/);
+
+    // Numbered: supports "1.", "1)" "1:" "(1)" "[1]"
+    const numberedMatch = trimmed.match(/^\(?\[?(\d+)\]?\)?[.):]\s*(.+)$/) || trimmed.match(/^(\d+)\.\s*(.+)$/);
+
+    if (subBulletMatch || bulletMatch) {
+      if (inNumbers) {
+        formattedHtml += '</div>';
+        inNumbers = false;
       }
-      if (!inList) {
-        formattedHtml += '<ul style="list-style-type: disc; margin-left: 24px; margin-top: 10px; margin-bottom: 10px; padding-left: 0;">';
-        inList = true;
+
+      openBullets();
+
+      const isSub = Boolean(subBulletMatch);
+      const text = (subBulletMatch ? subBulletMatch[1] : bulletMatch![1]) || '';
+      const bulletChar = isSub ? '○' : '•';
+      const indent = isSub ? '8mm' : '0mm';
+
+      // Flex layout ensures bullet column and text column align like Word
+      formattedHtml += `
+        <div style="display:flex; align-items:flex-start; margin-left:${indent}; margin-bottom: 10px;">
+          <span style="width: 8mm; text-align:center; line-height: 1; font-size: 16px;">${bulletChar}</span>
+          <span style="flex:1; text-align:left;">${text}</span>
+        </div>
+      `;
+      return;
+    }
+
+    if (numberedMatch) {
+      if (inBullets) {
+        formattedHtml += '</div>';
+        inBullets = false;
       }
-      const listContent = bulletMatch ? bulletMatch[1] : subBulletMatch![1];
-      formattedHtml += `<li style="margin-bottom: 6px; padding-left: 8px; text-align: left;">${listContent}</li>`;
-    } else if (numberedMatch) {
-      if (inList) {
-        formattedHtml += '</ul>';
-        inList = false;
-      }
-      if (!inNumberedList) {
-        formattedHtml += '<ol style="list-style-type: decimal; margin-left: 24px; margin-top: 10px; margin-bottom: 10px; padding-left: 0;">';
-        inNumberedList = true;
-      }
-      formattedHtml += `<li style="margin-bottom: 6px; padding-left: 8px; text-align: left;">${numberedMatch[2]}</li>`;
-    } else {
-      if (inList) {
-        formattedHtml += '</ul>';
-        inList = false;
-      }
-      if (inNumberedList) {
-        formattedHtml += '</ol>';
-        inNumberedList = false;
-      }
-      if (trimmedLine) {
-        formattedHtml += `<p style="margin-bottom: 12px; text-indent: 0; text-align: justify;">${trimmedLine}</p>`;
-      }
+
+      openNumbers();
+
+      const num = numberedMatch[1];
+      const text = numberedMatch[2] || '';
+
+      formattedHtml += `
+        <div style="display:flex; align-items:flex-start; margin-bottom: 10px;">
+          <span style="width: 8mm; text-align:right; padding-right: 2mm;">${num}.</span>
+          <span style="flex:1; text-align:left;">${text}</span>
+        </div>
+      `;
+      return;
+    }
+
+    // Normal paragraph
+    closeLists();
+    if (trimmed) {
+      formattedHtml += `<p style="margin-bottom: 12px; text-indent: 0; text-align: justify;">${trimmed}</p>`;
     }
   });
-  
-  if (inList) formattedHtml += '</ul>';
-  if (inNumberedList) formattedHtml += '</ol>';
-  
+
+  // Close any open list containers
+  closeLists();
+
   return formattedHtml || content;
 };
 
