@@ -5,6 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { handlePasteFormat } from '@/lib/formatContent';
 import { 
   Sparkles, 
   PenLine, 
@@ -132,10 +133,11 @@ const ContentEditor = () => {
               A brief summary of your project (150-300 words)
             </p>
             <Textarea
-              placeholder="Write your project abstract here..."
+              placeholder="Write your project abstract here... (Paste from ChatGPT - auto-formatted!)"
               className="min-h-[150px] font-serif"
               value={reportData.abstract}
               onChange={(e) => setAbstract(e.target.value)}
+              onPaste={(e) => handlePasteFormat(e, reportData.abstract, setAbstract)}
             />
           </div>
 
@@ -146,10 +148,11 @@ const ContentEditor = () => {
               Thank your guides, HOD, principal, and others
             </p>
             <Textarea
-              placeholder="Write your acknowledgement here..."
+              placeholder="Write your acknowledgement here... (Paste from ChatGPT - auto-formatted!)"
               className="min-h-[150px] font-serif"
               value={reportData.acknowledgement}
               onChange={(e) => setAcknowledgement(e.target.value)}
+              onPaste={(e) => handlePasteFormat(e, reportData.acknowledgement, setAcknowledgement)}
             />
           </div>
 
@@ -240,10 +243,11 @@ const ContentEditor = () => {
                     <div>
                       <Label className="text-sm text-muted-foreground mb-2 block">Content</Label>
                       <Textarea
-                        placeholder="Enter content for this section. Lines starting with '-' or '*' will be treated as bullet points."
+                        placeholder="Enter content for this section. Paste from ChatGPT - bullet points auto-formatted!"
                         className="min-h-[120px] font-serif"
                         value={section.content}
                         onChange={(e) => updateSection(currentChapter.id, section.id, { content: e.target.value })}
+                        onPaste={(e) => handlePasteFormat(e, section.content, (value) => updateSection(currentChapter.id, section.id, { content: value }))}
                       />
                     </div>
 
