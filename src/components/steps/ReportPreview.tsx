@@ -153,22 +153,41 @@ const ReportPreview = () => {
 
   // Generate TOC entries with calculated page numbers
   const tocEntries = useMemo(() => {
-    const entries: { title: string; pageNumber: string; isChapter?: boolean }[] = [
-      { title: 'Certificate', pageNumber: 'i' },
-      { title: 'Declaration', pageNumber: 'ii' },
-      { title: 'Approval', pageNumber: 'iii' },
-      { title: 'Acknowledgement', pageNumber: 'iv' },
-      { title: 'Abstract', pageNumber: 'v' },
+    const entries: { title: string; pageNumber: string; isChapter?: boolean; isSection?: boolean }[] = [
+      { title: 'Certificate', pageNumber: 'III' },
+      { title: 'Candidate Declaration', pageNumber: 'IV' },
+      { title: 'Project Approval Certificate', pageNumber: 'V' },
+      { title: 'Acknowledgement', pageNumber: 'VI' },
+      { title: 'Abstract', pageNumber: 'VII' },
+      { title: 'List of Figures', pageNumber: 'VIII' },
+      { title: 'List of Tables', pageNumber: 'IX' },
+      { title: 'Table of Content', pageNumber: 'X' },
     ];
 
     let currentPage = 1;
     reportData.chapters.forEach((chapter) => {
       const sectionPages = splitSectionsIntoPages(chapter.sections);
+      
+      // Add chapter title
       entries.push({
-        title: `Chapter ${chapter.number}: ${chapter.title}`,
+        title: `Chapter ${chapter.number} ${chapter.title}`,
         pageNumber: currentPage.toString(),
         isChapter: true,
       });
+      
+      // Add section entries
+      let sectionPage = currentPage + 1;
+      chapter.sections.forEach((section, sectionIdx) => {
+        entries.push({
+          title: `${chapter.number}.${sectionIdx + 1} ${section.heading}`,
+          pageNumber: sectionPage.toString(),
+          isSection: true,
+        });
+        // Estimate if section spans multiple pages
+        const sectionCost = (section.content?.length || 0) + (section.images?.length || 0) * 500;
+        if (sectionCost > 700) sectionPage++;
+      });
+      
       currentPage += 1 + sectionPages.length; // Title page + content pages
     });
 

@@ -4,6 +4,7 @@ interface TOCEntry {
   title: string;
   pageNumber: string;
   isChapter?: boolean;
+  isSection?: boolean;
 }
 
 interface PDFTableOfContentsProps {
@@ -58,65 +59,57 @@ const PDFTableOfContents: React.FC<PDFTableOfContentsProps> = ({ entries, projec
       <div
         className="absolute"
         style={{
-          top: '20mm',
-          left: '20mm',
-          right: '20mm',
-          bottom: '25mm',
+          top: '18mm',
+          left: '18mm',
+          right: '18mm',
+          bottom: '20mm',
         }}
       >
         {/* Title */}
         <h1
           style={{
-            fontSize: '24px',
+            fontSize: '18px',
             fontWeight: 'bold',
             textAlign: 'center',
-            marginBottom: '30px',
-            textDecoration: 'underline',
+            marginBottom: '15px',
           }}
         >
-          TABLE OF CONTENTS
+          Table of Content
         </h1>
 
-        {/* TOC Entries */}
-        <div style={{ marginTop: '20px' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid #000' }}>
-                <th style={{ textAlign: 'left', padding: '8px 0', fontSize: '14px', fontWeight: 'bold' }}>
-                  Contents
-                </th>
-                <th style={{ textAlign: 'right', padding: '8px 0', fontSize: '14px', fontWeight: 'bold', width: '80px' }}>
-                  Page No.
-                </th>
+        {/* TOC Table */}
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+          <tbody>
+            {entries.map((entry, index) => (
+              <tr 
+                key={index}
+                style={{ 
+                  borderBottom: '1px solid #000',
+                }}
+              >
+                <td
+                  style={{
+                    padding: '4px 5px',
+                    fontWeight: entry.isChapter ? 'bold' : 'normal',
+                    textTransform: entry.isChapter ? 'uppercase' : 'none',
+                  }}
+                >
+                  {entry.title}
+                </td>
+                <td
+                  style={{
+                    textAlign: 'right',
+                    padding: '4px 5px',
+                    width: '40px',
+                    fontWeight: entry.isChapter ? 'bold' : 'normal',
+                  }}
+                >
+                  {entry.pageNumber}
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {entries.map((entry, index) => (
-                <tr key={index}>
-                  <td
-                    style={{
-                      padding: '6px 0',
-                      fontSize: '13px',
-                      fontWeight: entry.isChapter ? 'bold' : 'normal',
-                      paddingLeft: entry.isChapter ? '0' : '15px',
-                    }}
-                  >
-                    {entry.title}
-                  </td>
-                  <td
-                    style={{
-                      textAlign: 'right',
-                      padding: '6px 0',
-                      fontSize: '13px',
-                    }}
-                  >
-                    {entry.pageNumber}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            ))}
+          </tbody>
+        </table>
       </div>
 
       {/* Footer */}
@@ -132,7 +125,7 @@ const PDFTableOfContents: React.FC<PDFTableOfContentsProps> = ({ entries, projec
         <span style={{ color: '#000000' }}>
           Department of {projectDetails.department} & Engineering, SVCE, Indore
         </span>
-        <span style={{ color: '#000000' }}>iii</span>
+        <span style={{ color: '#000000' }}>vi</span>
       </div>
     </div>
   );
