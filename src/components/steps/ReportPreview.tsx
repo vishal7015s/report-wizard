@@ -12,6 +12,7 @@ import PDFApproval from '@/components/pdf/PDFApproval';
 import PDFAcknowledgement from '@/components/pdf/PDFAcknowledgement';
 import PDFAbstract from '@/components/pdf/PDFAbstract';
 import PDFTableOfContents from '@/components/pdf/PDFTableOfContents';
+import PDFListOfFigures from '@/components/pdf/PDFListOfFigures';
 import PDFChapterTitle from '@/components/pdf/PDFChapterTitle';
 import PDFChapterContent from '@/components/pdf/PDFChapterContent';
 import { ChapterSection } from '@/types/report';
@@ -194,6 +195,38 @@ const ReportPreview = () => {
     return entries;
   }, [reportData.chapters]);
 
+  // Generate figure entries for List of Figures
+  const figureEntries = useMemo(() => {
+    const figures: { figureNumber: string; title: string; pageNumber: string }[] = [];
+    let figureCounter = 1;
+    let currentPage = 1;
+
+    reportData.chapters.forEach((chapter) => {
+      const sectionPages = splitSectionsIntoPages(chapter.sections);
+      let sectionPage = currentPage + 1;
+
+      chapter.sections.forEach((section) => {
+        if (section.images && section.images.length > 0) {
+          section.images.forEach((image) => {
+            figures.push({
+              figureNumber: `Fig ${chapter.number}.${figureCounter}`,
+              title: image.caption || `Figure in ${section.heading}`,
+              pageNumber: sectionPage.toString(),
+            });
+            figureCounter++;
+          });
+        }
+        const sectionCost = (section.content?.length || 0) + (section.images?.length || 0) * 500;
+        if (sectionCost > 700) sectionPage++;
+      });
+
+      currentPage += 1 + sectionPages.length;
+      figureCounter = 1; // Reset for next chapter
+    });
+
+    return figures;
+  }, [reportData.chapters]);
+
   // Calculate total content pages
   let pageCounter = 1;
 
@@ -238,6 +271,17 @@ const ReportPreview = () => {
               
               <div className="transform scale-[0.5] origin-top -mt-[400px]">
                 <PDFAbstract data={reportData} pageNumber="v" />
+              </div>
+
+              {/* List of Figures */}
+              <div className="transform scale-[0.5] origin-top -mt-[400px]">
+                <PDFListOfFigures 
+                  figures={figureEntries}
+                  projectDetails={{
+                    projectTitle: reportData.projectDetails.projectTitle,
+                    department: reportData.projectDetails.department,
+                  }}
+                />
               </div>
 
               {/* Table of Contents */}
@@ -300,6 +344,13 @@ const ReportPreview = () => {
             <PDFApproval data={reportData} pageNumber="iii" />
             <PDFAcknowledgement data={reportData} pageNumber="iv" />
             <PDFAbstract data={reportData} pageNumber="v" />
+            <PDFListOfFigures 
+              figures={figureEntries}
+              projectDetails={{
+                projectTitle: reportData.projectDetails.projectTitle,
+                department: reportData.projectDetails.department,
+              }}
+            />
             <PDFTableOfContents 
               entries={tocEntries}
               projectDetails={{
