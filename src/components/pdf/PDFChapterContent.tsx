@@ -25,9 +25,17 @@ const PDFChapterContent = ({ sections, data, pageNumber }: PDFChapterContentProp
       />
       
       {/* Header */}
-      <div 
-        className="absolute top-6 left-0 right-0 text-center px-8"
-        style={{ fontSize: '12px', color: '#c41e3a', fontWeight: 'bold' }}
+      <div
+        className="absolute"
+        style={{
+          top: '10mm',
+          left: '15mm',
+          right: '15mm',
+          fontSize: '12px',
+          color: '#c41e3a',
+          fontWeight: 'bold',
+          textAlign: 'left',
+        }}
       >
         {projectDetails.projectTitle || 'Project Title'}
       </div>
@@ -76,9 +84,14 @@ const PDFChapterContent = ({ sections, data, pageNumber }: PDFChapterContentProp
       </div>
       
       {/* Footer */}
-      <div 
-        className="absolute bottom-8 left-8 right-8 flex justify-between items-center"
-        style={{ fontSize: '11px' }}
+      <div
+        className="absolute flex justify-between items-center"
+        style={{
+          bottom: '16mm',
+          left: '15mm',
+          right: '15mm',
+          fontSize: '11px',
+        }}
       >
         <span style={{ color: '#1e90ff' }}>
           Department of {projectDetails.department} & Engineering, SVCE, Indore
