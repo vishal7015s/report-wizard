@@ -20,7 +20,7 @@ I would like to express gratitude to my ${projectDetails.guideName || 'Guide Nam
 I would like to acknowledge all my friends & family members for the moral support the extended to main the completion of this dissertation.`;
 
   return (
-    <div className="pdf-page" style={{ width: '210mm', minHeight: '297mm', position: 'relative' }}>
+    <div className="pdf-page" style={{ width: '210mm', minHeight: '297mm', position: 'relative', backgroundColor: '#ffffff' }}>
       {/* Border */}
       <div 
         style={{

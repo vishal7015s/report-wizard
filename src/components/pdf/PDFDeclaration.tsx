@@ -10,7 +10,7 @@ const PDFDeclaration = ({ data, pageNumber }: PDFPageProps) => {
   const firstStudent = projectDetails.students[0];
 
   return (
-    <div className="pdf-page" style={{ width: '210mm', minHeight: '297mm', position: 'relative' }}>
+    <div className="pdf-page" style={{ width: '210mm', minHeight: '297mm', position: 'relative', backgroundColor: '#ffffff' }}>
       {/* Border */}
       <div 
         style={{

@@ -11,6 +11,7 @@ import PDFDeclaration from '@/components/pdf/PDFDeclaration';
 import PDFApproval from '@/components/pdf/PDFApproval';
 import PDFAcknowledgement from '@/components/pdf/PDFAcknowledgement';
 import PDFAbstract from '@/components/pdf/PDFAbstract';
+import PDFChapter from '@/components/pdf/PDFChapter';
 
 const ReportPreview = () => {
   const { reportData, contentMode } = useReportStore();
@@ -40,6 +41,12 @@ const ReportPreview = () => {
     }
   };
 
+  // Generate Roman numerals for preliminary pages
+  const romanNumerals = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
+  
+  // Calculate chapter page numbers (starting from 1 after preliminary pages)
+  const getChapterPageNumber = (index: number) => (index + 1).toString();
+
   return (
     <div className="animate-fade-in">
       <div className="text-center mb-8">
@@ -54,7 +61,7 @@ const ReportPreview = () => {
         <div className="lg:col-span-2 space-y-8">
           <div className="bg-muted/50 p-8 rounded-xl overflow-auto max-h-[800px]">
             <div className="space-y-8 flex flex-col items-center">
-              {/* Scaled Preview */}
+              {/* Preliminary Pages */}
               <div className="transform scale-[0.5] origin-top">
                 <PDFCoverPage data={reportData} pageNumber="I" />
               </div>
@@ -82,6 +89,17 @@ const ReportPreview = () => {
               <div className="transform scale-[0.5] origin-top -mt-[400px]">
                 <PDFAbstract data={reportData} pageNumber="VII" />
               </div>
+
+              {/* Chapter Pages */}
+              {reportData.chapters.map((chapter, index) => (
+                <div key={chapter.id} className="transform scale-[0.5] origin-top -mt-[400px]">
+                  <PDFChapter 
+                    chapter={chapter} 
+                    data={reportData} 
+                    pageNumber={getChapterPageNumber(index)} 
+                  />
+                </div>
+              ))}
             </div>
           </div>
 
@@ -98,6 +116,14 @@ const ReportPreview = () => {
             <PDFApproval data={reportData} pageNumber="V" />
             <PDFAcknowledgement data={reportData} pageNumber="VI" />
             <PDFAbstract data={reportData} pageNumber="VII" />
+            {reportData.chapters.map((chapter, index) => (
+              <PDFChapter 
+                key={chapter.id}
+                chapter={chapter} 
+                data={reportData} 
+                pageNumber={getChapterPageNumber(index)} 
+              />
+            ))}
           </div>
         </div>
 
@@ -126,6 +152,10 @@ const ReportPreview = () => {
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Chapters</span>
                 <span className="font-medium">{reportData.chapters.length}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Total Pages</span>
+                <span className="font-medium">{7 + reportData.chapters.length}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Content Mode</span>
