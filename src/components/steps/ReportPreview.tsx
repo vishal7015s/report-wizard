@@ -11,7 +11,9 @@ import PDFDeclaration from '@/components/pdf/PDFDeclaration';
 import PDFApproval from '@/components/pdf/PDFApproval';
 import PDFAcknowledgement from '@/components/pdf/PDFAcknowledgement';
 import PDFAbstract from '@/components/pdf/PDFAbstract';
-import PDFChapter from '@/components/pdf/PDFChapter';
+import PDFChapterTitle from '@/components/pdf/PDFChapterTitle';
+import PDFChapterContent from '@/components/pdf/PDFChapterContent';
+import { ChapterSection } from '@/types/report';
 
 const ReportPreview = () => {
   const { reportData, contentMode } = useReportStore();
@@ -44,8 +46,17 @@ const ReportPreview = () => {
   // Generate Roman numerals for preliminary pages
   const romanNumerals = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
   
-  // Calculate chapter page numbers (starting from 1 after preliminary pages)
-  const getChapterPageNumber = (index: number) => (index + 1).toString();
+  // Split sections into pages (max 2 sections per page for better formatting)
+  const splitSectionsIntoPages = (sections: ChapterSection[]): ChapterSection[][] => {
+    const pages: ChapterSection[][] = [];
+    for (let i = 0; i < sections.length; i += 2) {
+      pages.push(sections.slice(i, i + 2));
+    }
+    return pages.length > 0 ? pages : [[]] ;
+  };
+
+  // Calculate total content pages
+  let pageCounter = 1;
 
   return (
     <div className="animate-fade-in">
@@ -91,15 +102,38 @@ const ReportPreview = () => {
               </div>
 
               {/* Chapter Pages */}
-              {reportData.chapters.map((chapter, index) => (
-                <div key={chapter.id} className="transform scale-[0.5] origin-top -mt-[400px]">
-                  <PDFChapter 
-                    chapter={chapter} 
-                    data={reportData} 
-                    pageNumber={getChapterPageNumber(index)} 
-                  />
-                </div>
-              ))}
+              {reportData.chapters.map((chapter) => {
+                const sectionPages = splitSectionsIntoPages(chapter.sections);
+                const titlePageNum = pageCounter++;
+                
+                return (
+                  <div key={chapter.id}>
+                    {/* Chapter Title Page */}
+                    <div className="transform scale-[0.5] origin-top -mt-[400px]">
+                      <PDFChapterTitle 
+                        chapterNumber={chapter.number}
+                        chapterTitle={chapter.title}
+                        data={reportData} 
+                        pageNumber={titlePageNum.toString()} 
+                      />
+                    </div>
+                    
+                    {/* Chapter Content Pages */}
+                    {sectionPages.map((sections, pageIdx) => {
+                      const contentPageNum = pageCounter++;
+                      return (
+                        <div key={`${chapter.id}-page-${pageIdx}`} className="transform scale-[0.5] origin-top -mt-[400px]">
+                          <PDFChapterContent 
+                            sections={sections}
+                            data={reportData} 
+                            pageNumber={contentPageNum.toString()} 
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })}
             </div>
           </div>
 
@@ -116,14 +150,35 @@ const ReportPreview = () => {
             <PDFApproval data={reportData} pageNumber="V" />
             <PDFAcknowledgement data={reportData} pageNumber="VI" />
             <PDFAbstract data={reportData} pageNumber="VII" />
-            {reportData.chapters.map((chapter, index) => (
-              <PDFChapter 
-                key={chapter.id}
-                chapter={chapter} 
-                data={reportData} 
-                pageNumber={getChapterPageNumber(index)} 
-              />
-            ))}
+            {(() => {
+              let pdfPageCounter = 1;
+              return reportData.chapters.map((chapter) => {
+                const sectionPages = splitSectionsIntoPages(chapter.sections);
+                const titlePageNum = pdfPageCounter++;
+                
+                return (
+                  <div key={chapter.id}>
+                    <PDFChapterTitle 
+                      chapterNumber={chapter.number}
+                      chapterTitle={chapter.title}
+                      data={reportData} 
+                      pageNumber={titlePageNum.toString()} 
+                    />
+                    {sectionPages.map((sections, pageIdx) => {
+                      const contentPageNum = pdfPageCounter++;
+                      return (
+                        <PDFChapterContent 
+                          key={`${chapter.id}-page-${pageIdx}`}
+                          sections={sections}
+                          data={reportData} 
+                          pageNumber={contentPageNum.toString()} 
+                        />
+                      );
+                    })}
+                  </div>
+                );
+              });
+            })()}
           </div>
         </div>
 
