@@ -28,12 +28,12 @@ const PDFChapterContent = ({ sections, data, pageNumber }: PDFChapterContentProp
       <div
         className="absolute"
         style={{
-          top: '5mm',
+          top: '6mm',
           left: '15mm',
           right: '15mm',
           fontSize: '12px',
-          color: '#c41e3a',
-          fontWeight: 'bold',
+          color: '#000000',
+          fontWeight: 'normal',
           textAlign: 'left',
         }}
       >
@@ -87,13 +87,13 @@ const PDFChapterContent = ({ sections, data, pageNumber }: PDFChapterContentProp
       <div
         className="absolute flex justify-between items-center"
         style={{
-          bottom: '5mm',
+          bottom: '6mm',
           left: '15mm',
           right: '15mm',
           fontSize: '11px',
         }}
       >
-        <span style={{ color: '#1e90ff' }}>
+        <span style={{ color: '#000000' }}>
           Department of {projectDetails.department} & Engineering, SVCE, Indore
         </span>
         <span style={{ color: '#000000' }}>{pageNumber}</span>
