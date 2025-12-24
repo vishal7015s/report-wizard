@@ -1,6 +1,9 @@
+import { useRef, useState } from 'react';
 import { useReportStore } from '@/store/reportStore';
 import { Button } from '@/components/ui/button';
-import { Download, CreditCard, Eye, CheckCircle } from 'lucide-react';
+import { Download, CreditCard, Eye, CheckCircle, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { generatePDF } from '@/lib/pdfGenerator';
 import PDFCoverPage from '@/components/pdf/PDFCoverPage';
 import PDFCoverPageWithSVCE from '@/components/pdf/PDFCoverPageWithSVCE';
 import PDFCertificate from '@/components/pdf/PDFCertificate';
@@ -11,9 +14,31 @@ import PDFAbstract from '@/components/pdf/PDFAbstract';
 
 const ReportPreview = () => {
   const { reportData, contentMode } = useReportStore();
+  const pdfContainerRef = useRef<HTMLDivElement>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const isAIGenerated = contentMode === 'ai';
   const price = isAIGenerated ? '₹10' : 'Free';
+
+  const handleDownload = async () => {
+    if (!pdfContainerRef.current) return;
+
+    setIsGenerating(true);
+    toast.info('Generating PDF... Please wait');
+
+    try {
+      const projectTitle = reportData.projectDetails.projectTitle || 'project-report';
+      const filename = `${projectTitle.replace(/\s+/g, '-').toLowerCase()}.pdf`;
+      
+      await generatePDF(pdfContainerRef.current, filename);
+      toast.success('PDF downloaded successfully!');
+    } catch (error) {
+      console.error('PDF generation error:', error);
+      toast.error('Failed to generate PDF. Please try again.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   return (
     <div className="animate-fade-in">
@@ -29,41 +54,50 @@ const ReportPreview = () => {
         <div className="lg:col-span-2 space-y-8">
           <div className="bg-muted/50 p-8 rounded-xl overflow-auto max-h-[800px]">
             <div className="space-y-8 flex flex-col items-center">
-              {/* Page 1: Cover with RGPV Logo */}
+              {/* Scaled Preview */}
               <div className="transform scale-[0.5] origin-top">
                 <PDFCoverPage data={reportData} pageNumber="I" />
               </div>
               
-              {/* Page 2: Cover with SVCE Logo */}
               <div className="transform scale-[0.5] origin-top -mt-[400px]">
                 <PDFCoverPageWithSVCE data={reportData} pageNumber="II" />
               </div>
               
-              {/* Page 3: Certificate */}
               <div className="transform scale-[0.5] origin-top -mt-[400px]">
                 <PDFCertificate data={reportData} pageNumber="III" />
               </div>
               
-              {/* Page 4: Candidate Declaration */}
               <div className="transform scale-[0.5] origin-top -mt-[400px]">
                 <PDFDeclaration data={reportData} pageNumber="IV" />
               </div>
               
-              {/* Page 5: Project Approval */}
               <div className="transform scale-[0.5] origin-top -mt-[400px]">
                 <PDFApproval data={reportData} pageNumber="V" />
               </div>
               
-              {/* Page 6: Acknowledgement */}
               <div className="transform scale-[0.5] origin-top -mt-[400px]">
                 <PDFAcknowledgement data={reportData} pageNumber="VI" />
               </div>
               
-              {/* Page 7: Abstract */}
               <div className="transform scale-[0.5] origin-top -mt-[400px]">
                 <PDFAbstract data={reportData} pageNumber="VII" />
               </div>
             </div>
+          </div>
+
+          {/* Hidden Full-Size PDF Container for Generation */}
+          <div 
+            ref={pdfContainerRef}
+            className="absolute left-[-9999px] top-0"
+            style={{ width: '210mm' }}
+          >
+            <PDFCoverPage data={reportData} pageNumber="I" />
+            <PDFCoverPageWithSVCE data={reportData} pageNumber="II" />
+            <PDFCertificate data={reportData} pageNumber="III" />
+            <PDFDeclaration data={reportData} pageNumber="IV" />
+            <PDFApproval data={reportData} pageNumber="V" />
+            <PDFAcknowledgement data={reportData} pageNumber="VI" />
+            <PDFAbstract data={reportData} pageNumber="VII" />
           </div>
         </div>
 
@@ -110,14 +144,32 @@ const ReportPreview = () => {
               </div>
 
               {isAIGenerated ? (
-                <Button className="w-full gap-2 bg-[#1a365d] hover:bg-[#2d4a7c]" size="lg">
+                <Button 
+                  className="w-full gap-2 bg-[#1a365d] hover:bg-[#2d4a7c]" 
+                  size="lg"
+                  disabled={isGenerating}
+                >
                   <CreditCard className="w-4 h-4" />
                   Pay & Download PDF
                 </Button>
               ) : (
-                <Button className="w-full gap-2 bg-green-600 hover:bg-green-700" size="lg">
-                  <Download className="w-4 h-4" />
-                  Download PDF (Free)
+                <Button 
+                  className="w-full gap-2 bg-green-600 hover:bg-green-700" 
+                  size="lg"
+                  onClick={handleDownload}
+                  disabled={isGenerating}
+                >
+                  {isGenerating ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Generating PDF...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-4 h-4" />
+                      Download PDF (Free)
+                    </>
+                  )}
                 </Button>
               )}
 
