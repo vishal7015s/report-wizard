@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useMemo } from 'react';
 import { useReportStore } from '@/store/reportStore';
 import { Button } from '@/components/ui/button';
 import { Download, CreditCard, Eye, CheckCircle, Loader2 } from 'lucide-react';
@@ -11,6 +11,7 @@ import PDFDeclaration from '@/components/pdf/PDFDeclaration';
 import PDFApproval from '@/components/pdf/PDFApproval';
 import PDFAcknowledgement from '@/components/pdf/PDFAcknowledgement';
 import PDFAbstract from '@/components/pdf/PDFAbstract';
+import PDFTableOfContents from '@/components/pdf/PDFTableOfContents';
 import PDFChapterTitle from '@/components/pdf/PDFChapterTitle';
 import PDFChapterContent from '@/components/pdf/PDFChapterContent';
 import { ChapterSection } from '@/types/report';
@@ -150,6 +151,30 @@ const ReportPreview = () => {
     return pages.length ? pages : [[]];
   };
 
+  // Generate TOC entries with calculated page numbers
+  const tocEntries = useMemo(() => {
+    const entries: { title: string; pageNumber: string; isChapter?: boolean }[] = [
+      { title: 'Certificate', pageNumber: 'i' },
+      { title: 'Declaration', pageNumber: 'ii' },
+      { title: 'Approval', pageNumber: 'iii' },
+      { title: 'Acknowledgement', pageNumber: 'iv' },
+      { title: 'Abstract', pageNumber: 'v' },
+    ];
+
+    let currentPage = 1;
+    reportData.chapters.forEach((chapter) => {
+      const sectionPages = splitSectionsIntoPages(chapter.sections);
+      entries.push({
+        title: `Chapter ${chapter.number}: ${chapter.title}`,
+        pageNumber: currentPage.toString(),
+        isChapter: true,
+      });
+      currentPage += 1 + sectionPages.length; // Title page + content pages
+    });
+
+    return entries;
+  }, [reportData.chapters]);
+
   // Calculate total content pages
   let pageCounter = 1;
 
@@ -177,23 +202,34 @@ const ReportPreview = () => {
               </div>
               
               <div className="transform scale-[0.5] origin-top -mt-[400px]">
-                <PDFCertificate data={reportData} pageNumber="III" />
+                <PDFCertificate data={reportData} pageNumber="i" />
               </div>
               
               <div className="transform scale-[0.5] origin-top -mt-[400px]">
-                <PDFDeclaration data={reportData} pageNumber="IV" />
+                <PDFDeclaration data={reportData} pageNumber="ii" />
               </div>
               
               <div className="transform scale-[0.5] origin-top -mt-[400px]">
-                <PDFApproval data={reportData} pageNumber="V" />
+                <PDFApproval data={reportData} pageNumber="iii" />
               </div>
               
               <div className="transform scale-[0.5] origin-top -mt-[400px]">
-                <PDFAcknowledgement data={reportData} pageNumber="VI" />
+                <PDFAcknowledgement data={reportData} pageNumber="iv" />
               </div>
               
               <div className="transform scale-[0.5] origin-top -mt-[400px]">
-                <PDFAbstract data={reportData} pageNumber="VII" />
+                <PDFAbstract data={reportData} pageNumber="v" />
+              </div>
+
+              {/* Table of Contents */}
+              <div className="transform scale-[0.5] origin-top -mt-[400px]">
+                <PDFTableOfContents 
+                  entries={tocEntries}
+                  projectDetails={{
+                    projectTitle: reportData.projectDetails.projectTitle,
+                    department: reportData.projectDetails.department,
+                  }}
+                />
               </div>
 
               {/* Chapter Pages */}
@@ -240,11 +276,18 @@ const ReportPreview = () => {
           >
             <PDFCoverPage data={reportData} pageNumber="I" />
             <PDFCoverPageWithSVCE data={reportData} pageNumber="II" />
-            <PDFCertificate data={reportData} pageNumber="III" />
-            <PDFDeclaration data={reportData} pageNumber="IV" />
-            <PDFApproval data={reportData} pageNumber="V" />
-            <PDFAcknowledgement data={reportData} pageNumber="VI" />
-            <PDFAbstract data={reportData} pageNumber="VII" />
+            <PDFCertificate data={reportData} pageNumber="i" />
+            <PDFDeclaration data={reportData} pageNumber="ii" />
+            <PDFApproval data={reportData} pageNumber="iii" />
+            <PDFAcknowledgement data={reportData} pageNumber="iv" />
+            <PDFAbstract data={reportData} pageNumber="v" />
+            <PDFTableOfContents 
+              entries={tocEntries}
+              projectDetails={{
+                projectTitle: reportData.projectDetails.projectTitle,
+                department: reportData.projectDetails.department,
+              }}
+            />
             {(() => {
               let pdfPageCounter = 1;
               return reportData.chapters.map((chapter) => {
