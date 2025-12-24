@@ -26,13 +26,20 @@ const PDFChapterTitle = ({ chapterNumber, chapterTitle, data, pageNumber }: PDFC
       />
       
       {/* Header */}
-      <div 
-        className="absolute top-6 left-0 right-0 text-center px-8"
-        style={{ fontSize: '12px', color: '#c41e3a', fontWeight: 'bold' }}
+      <div
+        className="absolute"
+        style={{
+          top: '10mm',
+          left: '15mm',
+          right: '15mm',
+          fontSize: '12px',
+          color: '#c41e3a',
+          fontWeight: 'bold',
+          textAlign: 'left',
+        }}
       >
         {projectDetails.projectTitle || 'Project Title'}
       </div>
-      
       {/* Centered Chapter Info */}
       <div className="flex flex-col items-center justify-center" style={{ minHeight: '297mm' }}>
         <h1 
@@ -50,9 +57,14 @@ const PDFChapterTitle = ({ chapterNumber, chapterTitle, data, pageNumber }: PDFC
       </div>
       
       {/* Footer */}
-      <div 
-        className="absolute bottom-8 left-8 right-8 flex justify-between items-center"
-        style={{ fontSize: '11px' }}
+      <div
+        className="absolute flex justify-between items-center"
+        style={{
+          bottom: '16mm',
+          left: '15mm',
+          right: '15mm',
+          fontSize: '11px',
+        }}
       >
         <span style={{ color: '#1e90ff' }}>
           Department of {projectDetails.department} & Engineering, SVCE, Indore
