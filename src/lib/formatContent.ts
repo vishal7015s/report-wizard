@@ -89,47 +89,67 @@ export const handlePasteFormat = (
 };
 
 /**
- * Converts * or - at start of line to bullet point while typing
+ * Converts * or - at start of the current line to bullet point while typing
+ * Also supports "-text" / "*text" (without space) and keeps the cursor position.
  */
 export const formatOnChange = (
   value: string,
-  prevValue: string,
+  _prevValue: string,
   cursorPosition: number
 ): { newValue: string; newCursorPosition: number } => {
-  // Check if user just typed a space after * or - at the start of a line
+  // Find the line that contains the cursor
   const lines = value.split('\n');
-  let charCount = 0;
-  let modified = false;
-  let cursorOffset = 0;
+  let acc = 0;
+  let cursorLineIndex = 0;
+  let cursorCol = 0;
 
-  const newLines = lines.map((line, index) => {
-    const lineStart = charCount;
-    const lineEnd = charCount + line.length;
-    charCount = lineEnd + 1; // +1 for newline
+  for (let i = 0; i < lines.length; i++) {
+    const lineLen = lines[i].length;
+    if (cursorPosition <= acc + lineLen) {
+      cursorLineIndex = i;
+      cursorCol = cursorPosition - acc;
+      break;
+    }
+    acc += lineLen + 1; // +1 for \n
+  }
 
-    // Check if cursor is at end of this line and user just typed space after * or -
-    if (cursorPosition >= lineStart && cursorPosition <= lineEnd + 1) {
-      // Match "* " or "- " at start of line
-      if (/^[-*]\s$/.test(line)) {
-        modified = true;
-        return '• ';
-      }
-      // Match "  * " or "  - " (indented sub-bullet)
-      if (/^\s{2,}[-*]\s$/.test(line)) {
-        modified = true;
-        const indent = line.match(/^\s+/)?.[0] || '';
-        return indent + '○ ';
+  const line = lines[cursorLineIndex] ?? '';
+
+  // Convert only if bullet marker is at the start of the line (optionally indented)
+  // - "- text" / "* text"
+  // - "-text" / "*text"  (auto inserts one space)
+  const match = line.match(/^(\s*)([-*])(\s*)(.*)$/);
+  if (match) {
+    const indent = match[1] ?? '';
+    const marker = match[2];
+    const spaces = match[3] ?? '';
+    const restRaw = match[4] ?? '';
+
+    // Only treat it as a list item if there is some content after the marker OR the user is just starting a bullet
+    // (We still convert a single "-" or "*" once they start typing next char.)
+    const shouldConvert = marker === '-' || marker === '*';
+
+    if (shouldConvert) {
+      const isSubBullet = indent.length >= 2;
+      const bullet = isSubBullet ? '○' : '•';
+
+      // Ensure exactly one space after the bullet
+      const rest = (spaces + restRaw).replace(/^\s*/, '');
+      const needsSpaceInsertion = spaces.length === 0 && restRaw.length > 0;
+
+      const newLine = `${indent}${bullet} ${rest}`;
+
+      if (newLine !== line) {
+        lines[cursorLineIndex] = newLine;
+        const delta = newLine.length - line.length;
+        return {
+          newValue: lines.join('\n'),
+          newCursorPosition: Math.max(0, cursorPosition + delta + (needsSpaceInsertion ? 0 : 0)),
+        };
       }
     }
-    return line;
-  });
-
-  if (modified) {
-    return {
-      newValue: newLines.join('\n'),
-      newCursorPosition: cursorPosition + cursorOffset
-    };
   }
 
   return { newValue: value, newCursorPosition: cursorPosition };
 };
+
