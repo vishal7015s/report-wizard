@@ -17,7 +17,7 @@ The developed model generates accurate predictions for both diseases based on a 
 The results demonstrate that machine learning models can significantly enhance medical prediction accuracy and help identify high-risk cases at an early stage. With further advancements, integration of more diseases, real-time monitoring, and deployment as a web or mobile platform, this system holds strong potential for practical applications in the healthcare domain.`;
 
   return (
-    <div className="pdf-page" style={{ width: '210mm', minHeight: '297mm', position: 'relative', backgroundColor: '#ffffff' }}>
+    <div className="pdf-page" style={{ width: '210mm', minHeight: '297mm', position: 'relative', backgroundColor: '#ffffff', fontFamily: 'Times New Roman, serif' }}>
       {/* Border */}
       <div 
         style={{
@@ -31,14 +31,14 @@ The results demonstrate that machine learning models can significantly enhance m
         }}
       />
       
-      <div className="pt-8 px-8" style={{ fontFamily: 'Times New Roman, serif' }}>
+      <div className="pt-12 px-12">
         {/* Title */}
-        <h1 className="text-center font-bold text-xl mb-8">
+        <h1 className="text-center font-bold text-2xl underline mb-10" style={{ color: '#c41e3a' }}>
           ABSTRACT
         </h1>
         
         {/* Content */}
-        <div className="text-justify leading-relaxed" style={{ fontSize: '13px' }}>
+        <div className="text-justify leading-relaxed" style={{ fontSize: '14px', color: '#000000' }}>
           {(abstract || defaultAbstract).split('\n\n').map((para, index) => (
             <p key={index} className="mb-4">{para}</p>
           ))}
@@ -46,7 +46,7 @@ The results demonstrate that machine learning models can significantly enhance m
         
         {/* Page Number */}
         <div className="absolute bottom-8 left-0 right-0 text-center">
-          <p style={{ fontSize: '12px' }}>{pageNumber}</p>
+          <p style={{ fontSize: '12px', color: '#000000' }}>{pageNumber}</p>
         </div>
       </div>
     </div>

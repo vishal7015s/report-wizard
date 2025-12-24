@@ -20,7 +20,7 @@ I would like to express gratitude to my ${projectDetails.guideName || 'Guide Nam
 I would like to acknowledge all my friends & family members for the moral support the extended to main the completion of this dissertation.`;
 
   return (
-    <div className="pdf-page" style={{ width: '210mm', minHeight: '297mm', position: 'relative', backgroundColor: '#ffffff' }}>
+    <div className="pdf-page" style={{ width: '210mm', minHeight: '297mm', position: 'relative', backgroundColor: '#ffffff', fontFamily: 'Times New Roman, serif' }}>
       {/* Border */}
       <div 
         style={{
@@ -34,21 +34,21 @@ I would like to acknowledge all my friends & family members for the moral suppor
         }}
       />
       
-      <div className="pt-8 px-8" style={{ fontFamily: 'Times New Roman, serif' }}>
+      <div className="pt-12 px-12">
         {/* Title */}
-        <h1 className="text-center font-bold text-xl underline mb-8">
+        <h1 className="text-center font-bold text-2xl underline mb-10" style={{ color: '#c41e3a' }}>
           ACKNOWLEDGEMENT
         </h1>
         
         {/* Content */}
-        <div className="text-justify leading-loose" style={{ fontSize: '14px' }}>
+        <div className="text-justify leading-loose" style={{ fontSize: '15px', color: '#000000' }}>
           {(acknowledgement || defaultAcknowledgement).split('\n\n').map((para, index) => (
             <p key={index} className="mb-4">{para}</p>
           ))}
         </div>
         
         {/* Student Signature */}
-        <div className="text-right mt-16" style={{ fontSize: '14px' }}>
+        <div className="text-right mt-20" style={{ fontSize: '15px', color: '#000000' }}>
           <p className="font-bold">
             {firstStudent?.name || 'Student Name'} [{firstStudent?.enrollmentNumber || 'Enrollment No.'}]
           </p>
@@ -56,7 +56,7 @@ I would like to acknowledge all my friends & family members for the moral suppor
         
         {/* Page Number */}
         <div className="absolute bottom-8 left-0 right-0 text-center">
-          <p style={{ fontSize: '12px' }}>{pageNumber}</p>
+          <p style={{ fontSize: '12px', color: '#000000' }}>{pageNumber}</p>
         </div>
       </div>
     </div>
