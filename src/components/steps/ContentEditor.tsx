@@ -446,42 +446,19 @@ const ContentEditor = () => {
                         <div className="flex flex-col items-center gap-3">
                           <ImageIcon className="w-10 h-10 text-muted-foreground" />
                           <span className="text-sm text-[#1a365d]">Add a diagram</span>
+                          <p className="text-xs text-muted-foreground text-center">
+                            Upload your own diagrams or use AI Generate tab for auto-generated diagrams
+                          </p>
                           
-                          {/* AI Diagram limit indicator */}
-                          <span className={`text-xs ${totalAIDiagrams >= MAX_AI_DIAGRAMS ? 'text-destructive' : 'text-muted-foreground'}`}>
-                            AI Diagrams: {totalAIDiagrams}/{MAX_AI_DIAGRAMS}
-                          </span>
-                          
-                          {/* Upload and AI Generate options */}
-                          <div className="flex flex-wrap gap-2 justify-center">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="gap-2"
-                              onClick={() => triggerImageUpload(currentChapter.id, section.id)}
-                            >
-                              <Upload className="w-4 h-4" />
-                              Upload
-                            </Button>
-                            
-                            {diagramOptions.map(opt => (
-                              <Button
-                                key={opt.type}
-                                variant="outline"
-                                size="sm"
-                                className="gap-1 text-xs"
-                                onClick={() => handleGenerateDiagram(currentChapter.id, section.id, opt.type)}
-                                disabled={isGeneratingDiagram === `${currentChapter.id}-${section.id}-${opt.type}` || totalAIDiagrams >= MAX_AI_DIAGRAMS}
-                              >
-                                {isGeneratingDiagram === `${currentChapter.id}-${section.id}-${opt.type}` ? (
-                                  <Loader2 className="w-3 h-3 animate-spin" />
-                                ) : (
-                                  <Wand2 className="w-3 h-3" />
-                                )}
-                                {opt.label}
-                              </Button>
-                            ))}
-                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="gap-2"
+                            onClick={() => triggerImageUpload(currentChapter.id, section.id)}
+                          >
+                            <Upload className="w-4 h-4" />
+                            Upload Image
+                          </Button>
                         </div>
                       </div>
                     </div>
