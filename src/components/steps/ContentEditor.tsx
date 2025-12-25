@@ -279,6 +279,82 @@ const ContentEditor = () => {
               <li>• Mention target users or audience</li>
             </ul>
           </div>
+
+          {/* AI Diagram Generation - Only shown after content is generated */}
+          {reportData.chapters.some(c => c.sections.some(s => s.content.length > 0)) && (
+            <div className="bg-card rounded-xl border p-6 shadow-soft">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label className="text-base font-semibold text-[#1a365d]">Generate AI Diagrams</Label>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Add diagrams to your report sections (max {MAX_AI_DIAGRAMS} diagrams)
+                    </p>
+                  </div>
+                  <span className={`text-sm font-medium ${totalAIDiagrams >= MAX_AI_DIAGRAMS ? 'text-destructive' : 'text-green-600'}`}>
+                    {totalAIDiagrams}/{MAX_AI_DIAGRAMS} used
+                  </span>
+                </div>
+
+                {/* Chapter Selection for Diagrams */}
+                <div className="space-y-4">
+                  <div className="flex flex-wrap gap-2">
+                    {reportData.chapters.map((chapter) => (
+                      <Button
+                        key={chapter.id}
+                        variant={activeChapter === chapter.id ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setActiveChapter(chapter.id)}
+                        className={activeChapter === chapter.id 
+                          ? 'bg-[#1a365d] hover:bg-[#2d4a7c]' 
+                          : 'border-[#1a365d] text-[#1a365d]'
+                        }
+                      >
+                        Ch. {chapter.number}
+                      </Button>
+                    ))}
+                  </div>
+
+                  {currentChapter && (
+                    <div className="space-y-3">
+                      {currentChapter.sections.map((section) => (
+                        <div key={section.id} className="p-4 border rounded-lg bg-muted/20">
+                          <div className="flex items-center justify-between mb-3">
+                            <span className="font-medium text-sm text-[#1a365d]">
+                              {section.number} {section.heading}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {section.images?.length || 0} image(s)
+                            </span>
+                          </div>
+                          
+                          <div className="flex flex-wrap gap-2">
+                            {diagramOptions.map(opt => (
+                              <Button
+                                key={opt.type}
+                                variant="outline"
+                                size="sm"
+                                className="gap-1 text-xs"
+                                onClick={() => handleGenerateDiagram(currentChapter.id, section.id, opt.type)}
+                                disabled={isGeneratingDiagram === `${currentChapter.id}-${section.id}-${opt.type}` || totalAIDiagrams >= MAX_AI_DIAGRAMS}
+                              >
+                                {isGeneratingDiagram === `${currentChapter.id}-${section.id}-${opt.type}` ? (
+                                  <Loader2 className="w-3 h-3 animate-spin" />
+                                ) : (
+                                  <Wand2 className="w-3 h-3" />
+                                )}
+                                {opt.label}
+                              </Button>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="manual" className="space-y-6">
