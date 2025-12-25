@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { handlePasteFormat, formatOnChange } from '@/lib/formatContent';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   Sparkles, 
   PenLine, 
@@ -14,7 +16,9 @@ import {
   ArrowRight,
   Upload,
   Image as ImageIcon,
-  X
+  X,
+  Loader2,
+  Wand2
 } from 'lucide-react';
 
 const ContentEditor = () => {
@@ -31,13 +35,16 @@ const ContentEditor = () => {
     updateSection,
     addImageToSection,
     removeImageFromSection,
-    setCurrentStep 
+    setCurrentStep,
+    setChapters
   } = useReportStore();
   
   const [aiPrompt, setAiPrompt] = useState('');
   const [activeChapter, setActiveChapter] = useState(reportData.chapters[0]?.id || '');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [currentSectionForImage, setCurrentSectionForImage] = useState<{chapterId: string, sectionId: string} | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isGeneratingDiagram, setIsGeneratingDiagram] = useState<string | null>(null);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -64,11 +71,113 @@ const ContentEditor = () => {
     fileInputRef.current?.click();
   };
 
+  const handleGenerateContent = async () => {
+    if (!aiPrompt.trim()) {
+      toast.error('Please enter a project description');
+      return;
+    }
+
+    if (aiPrompt.trim().length < 50) {
+      toast.error('Please provide a more detailed description (at least 50 characters)');
+      return;
+    }
+
+    setIsGenerating(true);
+    toast.info('Generating report content... This may take a minute.');
+
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-report-content', {
+        body: {
+          prompt: aiPrompt,
+          projectTitle: reportData.projectDetails.projectTitle,
+          guideName: reportData.projectDetails.guideName,
+          students: reportData.projectDetails.students,
+          branch: reportData.projectDetails.branch,
+          projectType: reportData.projectDetails.projectType
+        }
+      });
+
+      if (error) {
+        console.error('Function error:', error);
+        throw new Error(error.message || 'Failed to generate content');
+      }
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      // Update the store with generated content
+      setAbstract(data.abstract);
+      setAcknowledgement(data.acknowledgement);
+      setChapters(data.chapters);
+      setActiveChapter(data.chapters[0]?.id || '');
+
+      toast.success('Report content generated successfully!');
+      
+      // Switch to manual mode to show the generated content
+      setContentMode('manual');
+      
+    } catch (error) {
+      console.error('Generation error:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to generate content');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleGenerateDiagram = async (chapterId: string, sectionId: string, diagramType: string) => {
+    const section = reportData.chapters.find(c => c.id === chapterId)?.sections.find(s => s.id === sectionId);
+    if (!section) return;
+
+    setIsGeneratingDiagram(`${chapterId}-${sectionId}-${diagramType}`);
+    toast.info(`Generating ${diagramType.replace(/-/g, ' ')} diagram...`);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-diagram', {
+        body: {
+          diagramType,
+          projectContext: `${reportData.projectDetails.projectTitle}. ${section.heading}: ${section.content.substring(0, 500)}`
+        }
+      });
+
+      if (error) {
+        console.error('Diagram error:', error);
+        throw new Error(error.message || 'Failed to generate diagram');
+      }
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      addImageToSection(chapterId, sectionId, {
+        id: `ai-diagram-${Date.now()}`,
+        url: data.imageUrl,
+        caption: data.caption
+      });
+
+      toast.success('Diagram generated successfully!');
+      
+    } catch (error) {
+      console.error('Diagram generation error:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to generate diagram');
+    } finally {
+      setIsGeneratingDiagram(null);
+    }
+  };
+
   const handleNext = () => {
     setCurrentStep(3);
   };
 
   const currentChapter = reportData.chapters.find(c => c.id === activeChapter);
+
+  const diagramOptions = [
+    { type: 'er-diagram', label: 'ER Diagram' },
+    { type: 'flowchart', label: 'Flowchart' },
+    { type: 'architecture', label: 'Architecture' },
+    { type: 'dfd', label: 'DFD' },
+    { type: 'use-case', label: 'Use Case' },
+  ];
 
   return (
     <div className="max-w-4xl mx-auto animate-fade-in">
@@ -91,11 +200,11 @@ const ContentEditor = () => {
         <TabsList className="grid w-full grid-cols-2 mb-6">
           <TabsTrigger value="ai" className="gap-2">
             <Sparkles className="w-4 h-4" />
-            AI Generate (₹10)
+            AI Generate (Free)
           </TabsTrigger>
           <TabsTrigger value="manual" className="gap-2">
             <PenLine className="w-4 h-4" />
-            Manual Editor (Free)
+            Manual Editor
           </TabsTrigger>
         </TabsList>
 
@@ -105,23 +214,55 @@ const ContentEditor = () => {
               <div>
                 <Label className="text-base font-semibold text-[#1a365d]">Describe Your Project</Label>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Enter a detailed description of your project. AI will generate content for all chapters.
+                  Enter a detailed description of your project. AI will generate content for all chapters including abstract, acknowledgement, and technical details.
                 </p>
               </div>
               <Textarea
-                placeholder="Example: My project is about predicting multiple diseases using machine learning. The system uses patient health parameters like blood pressure, glucose levels, cholesterol, BMI, and age to predict the likelihood of heart disease and diabetes. We implemented Logistic Regression, SVM, Random Forest, and KNN algorithms..."
+                placeholder="Example: My project is about predicting multiple diseases using machine learning. The system uses patient health parameters like blood pressure, glucose levels, cholesterol, BMI, and age to predict the likelihood of heart disease and diabetes. We implemented Logistic Regression, SVM, Random Forest, and KNN algorithms. The frontend is built with React and backend uses Python Flask with MySQL database..."
                 className="min-h-[200px] font-serif"
                 value={aiPrompt}
                 onChange={(e) => setAiPrompt(e.target.value)}
+                disabled={isGenerating}
               />
-              <Button className="w-full gap-2 bg-[#1a365d] hover:bg-[#2d4a7c]" disabled>
-                <Sparkles className="w-4 h-4" />
-                Generate Content (Coming Soon)
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span className={aiPrompt.length < 50 ? 'text-destructive' : 'text-green-600'}>
+                  {aiPrompt.length} characters
+                </span>
+                <span>(minimum 50 required)</span>
+              </div>
+              <Button 
+                className="w-full gap-2 bg-[#1a365d] hover:bg-[#2d4a7c]" 
+                onClick={handleGenerateContent}
+                disabled={isGenerating || aiPrompt.length < 50}
+              >
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Generating Content...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4" />
+                    Generate Complete Report
+                  </>
+                )}
               </Button>
               <p className="text-xs text-center text-muted-foreground">
-                AI generation costs ₹10. For free reports, use the Manual Editor.
+                AI will generate Abstract, Acknowledgement, and 7 Chapters with proper sections. You can edit the content after generation.
               </p>
             </div>
+          </div>
+
+          {/* Tips for better generation */}
+          <div className="bg-muted/50 rounded-xl border p-4">
+            <h4 className="font-semibold text-[#1a365d] mb-2">Tips for Better Results</h4>
+            <ul className="text-sm text-muted-foreground space-y-1">
+              <li>• Include the technologies you're using (React, Python, MySQL, etc.)</li>
+              <li>• Mention the problem your project solves</li>
+              <li>• Describe key features and modules</li>
+              <li>• Include any algorithms or methodologies used</li>
+              <li>• Mention target users or audience</li>
+            </ul>
           </div>
         </TabsContent>
 
@@ -287,18 +428,40 @@ const ContentEditor = () => {
                           </div>
                         )}
                         
-                        <div className="flex flex-col items-center gap-2">
+                        <div className="flex flex-col items-center gap-3">
                           <ImageIcon className="w-10 h-10 text-muted-foreground" />
                           <span className="text-sm text-[#1a365d]">Add a diagram</span>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="gap-2"
-                            onClick={() => triggerImageUpload(currentChapter.id, section.id)}
-                          >
-                            <Upload className="w-4 h-4" />
-                            Upload image
-                          </Button>
+                          
+                          {/* Upload and AI Generate options */}
+                          <div className="flex flex-wrap gap-2 justify-center">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="gap-2"
+                              onClick={() => triggerImageUpload(currentChapter.id, section.id)}
+                            >
+                              <Upload className="w-4 h-4" />
+                              Upload
+                            </Button>
+                            
+                            {diagramOptions.map(opt => (
+                              <Button
+                                key={opt.type}
+                                variant="outline"
+                                size="sm"
+                                className="gap-1 text-xs"
+                                onClick={() => handleGenerateDiagram(currentChapter.id, section.id, opt.type)}
+                                disabled={isGeneratingDiagram === `${currentChapter.id}-${section.id}-${opt.type}`}
+                              >
+                                {isGeneratingDiagram === `${currentChapter.id}-${section.id}-${opt.type}` ? (
+                                  <Loader2 className="w-3 h-3 animate-spin" />
+                                ) : (
+                                  <Wand2 className="w-3 h-3" />
+                                )}
+                                {opt.label}
+                              </Button>
+                            ))}
+                          </div>
                         </div>
                       </div>
                     </div>
