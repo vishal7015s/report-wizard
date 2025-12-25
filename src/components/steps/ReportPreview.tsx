@@ -48,12 +48,12 @@ const ReportPreview = () => {
   // Generate Roman numerals for preliminary pages
   const romanNumerals = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
   
-  // Split sections into pages - OPTIMIZED: fill pages properly, avoid empty space
+  // Split sections into pages - handle long content properly
   const splitSectionsIntoPages = (sections: ChapterSection[]): ChapterSection[][] => {
-    // Increased limits for better page utilization
-    const MAX_CHARS_PER_PAGE = 2800; // ~2800 chars fits well on A4 with margins
-    const MAX_SECTIONS_PER_PAGE = 4; // Allow more sections per page
-    const IMAGE_COST = 600; // Cost per image in chars equivalent
+    // Reduced limits for better readability - avoid cramped pages
+    const MAX_CHARS_PER_PAGE = 1800; // ~1800 chars for comfortable reading
+    const MAX_SECTIONS_PER_PAGE = 2; // Fewer sections per page = cleaner layout
+    const IMAGE_COST = 800; // Images take more space
     
     const pages: ChapterSection[][] = [];
     let currentPage: ChapterSection[] = [];
@@ -73,37 +73,59 @@ const ReportPreview = () => {
       return textCost + imageCost;
     };
 
-    // First pass: try to fit multiple sections on same page
+    // Helper to split long content at natural break points
+    const splitLongContent = (content: string, maxLength: number): string[] => {
+      const chunks: string[] = [];
+      let remaining = content;
+      
+      while (remaining.length > maxLength) {
+        // Try to find natural break points
+        let breakPoint = -1;
+        
+        // Try double newline (paragraph break)
+        breakPoint = remaining.lastIndexOf('\n\n', maxLength);
+        
+        // Try single newline if no paragraph break
+        if (breakPoint < maxLength * 0.4) {
+          breakPoint = remaining.lastIndexOf('\n', maxLength);
+        }
+        
+        // Try period + space (sentence break)
+        if (breakPoint < maxLength * 0.4) {
+          breakPoint = remaining.lastIndexOf('. ', maxLength);
+          if (breakPoint > 0) breakPoint += 1; // Include the period
+        }
+        
+        // Try any period
+        if (breakPoint < maxLength * 0.4) {
+          breakPoint = remaining.lastIndexOf('.', maxLength);
+          if (breakPoint > 0) breakPoint += 1;
+        }
+        
+        // Hard cut if no good break point
+        if (breakPoint < maxLength * 0.3) {
+          breakPoint = maxLength;
+        }
+        
+        chunks.push(remaining.slice(0, breakPoint).trim());
+        remaining = remaining.slice(breakPoint).trim();
+      }
+      
+      if (remaining) chunks.push(remaining);
+      return chunks;
+    };
+
+    // Process each section
     sections.forEach((section) => {
       const sectionCost = calculateCost(section);
       
-      // If this section alone is huge, it needs splitting
+      // If section is too large, split it
       if (sectionCost > MAX_CHARS_PER_PAGE) {
-        // Flush current page first
         flushPage();
         
-        // Split long content into chunks
         const content = section.content || '';
-        const chunks: string[] = [];
-        let remaining = content;
+        const chunks = splitLongContent(content, MAX_CHARS_PER_PAGE - 200);
         
-        while (remaining.length > MAX_CHARS_PER_PAGE - 200) {
-          // Find a good break point (paragraph or sentence)
-          let breakPoint = remaining.lastIndexOf('\n\n', MAX_CHARS_PER_PAGE - 200);
-          if (breakPoint < MAX_CHARS_PER_PAGE * 0.5) {
-            breakPoint = remaining.lastIndexOf('. ', MAX_CHARS_PER_PAGE - 200);
-            if (breakPoint > 0) breakPoint += 1; // Include the period
-          }
-          if (breakPoint < MAX_CHARS_PER_PAGE * 0.4) {
-            breakPoint = MAX_CHARS_PER_PAGE - 200;
-          }
-          
-          chunks.push(remaining.slice(0, breakPoint).trim());
-          remaining = remaining.slice(breakPoint).trim();
-        }
-        if (remaining) chunks.push(remaining);
-        
-        // Create pages for each chunk
         chunks.forEach((chunk, idx) => {
           const isFirst = idx === 0;
           const isLast = idx === chunks.length - 1;
@@ -117,7 +139,7 @@ const ReportPreview = () => {
           }]);
         });
       } else {
-        // Section fits - check if it fits on current page
+        // Check if it fits on current page
         const wouldExceed = currentPageCost + sectionCost > MAX_CHARS_PER_PAGE;
         const tooManySections = currentPage.length >= MAX_SECTIONS_PER_PAGE;
         
