@@ -264,6 +264,57 @@ Respond ONLY with valid JSON in this exact format (no markdown, no code blocks):
       .replace(/```\n?/g, '')
       .trim();
 
+    // Function to escape control characters in JSON strings
+    const escapeControlChars = (str: string): string => {
+      let result = '';
+      let inString = false;
+      let escaped = false;
+      
+      for (let i = 0; i < str.length; i++) {
+        const char = str[i];
+        const charCode = str.charCodeAt(i);
+        
+        if (escaped) {
+          escaped = false;
+          result += char;
+          continue;
+        }
+        
+        if (char === '\\' && inString) {
+          escaped = true;
+          result += char;
+          continue;
+        }
+        
+        if (char === '"') {
+          inString = !inString;
+          result += char;
+          continue;
+        }
+        
+        // If inside a string, escape control characters
+        if (inString && charCode < 32) {
+          if (char === '\n') {
+            result += '\\n';
+          } else if (char === '\r') {
+            result += '\\r';
+          } else if (char === '\t') {
+            result += '\\t';
+          } else {
+            // Other control characters - use unicode escape
+            result += '\\u' + charCode.toString(16).padStart(4, '0');
+          }
+        } else {
+          result += char;
+        }
+      }
+      
+      return result;
+    };
+
+    // Pre-process to escape control characters
+    generatedText = escapeControlChars(generatedText);
+
     // Function to repair common JSON issues
     const repairJSON = (jsonStr: string): string => {
       let repaired = jsonStr;
