@@ -46,6 +46,15 @@ const ContentEditor = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isGeneratingDiagram, setIsGeneratingDiagram] = useState<string | null>(null);
 
+  // Count total AI-generated diagrams across all chapters
+  const totalAIDiagrams = reportData.chapters.reduce((total, chapter) => {
+    return total + chapter.sections.reduce((sectionTotal, section) => {
+      return sectionTotal + (section.images?.filter(img => img.id.startsWith('ai-diagram-')).length || 0);
+    }, 0);
+  }, 0);
+
+  const MAX_AI_DIAGRAMS = 5;
+
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && currentSectionForImage) {
@@ -126,11 +135,17 @@ const ContentEditor = () => {
   };
 
   const handleGenerateDiagram = async (chapterId: string, sectionId: string, diagramType: string) => {
+    // Check if limit reached
+    if (totalAIDiagrams >= MAX_AI_DIAGRAMS) {
+      toast.error(`Maximum ${MAX_AI_DIAGRAMS} AI-generated diagrams allowed per report`);
+      return;
+    }
+
     const section = reportData.chapters.find(c => c.id === chapterId)?.sections.find(s => s.id === sectionId);
     if (!section) return;
 
     setIsGeneratingDiagram(`${chapterId}-${sectionId}-${diagramType}`);
-    toast.info(`Generating ${diagramType.replace(/-/g, ' ')} diagram...`);
+    toast.info(`Generating ${diagramType.replace(/-/g, ' ')} diagram... (${totalAIDiagrams + 1}/${MAX_AI_DIAGRAMS})`);
 
     try {
       const { data, error } = await supabase.functions.invoke('generate-diagram', {
@@ -155,7 +170,7 @@ const ContentEditor = () => {
         caption: data.caption
       });
 
-      toast.success('Diagram generated successfully!');
+      toast.success(`Diagram generated! (${totalAIDiagrams + 1}/${MAX_AI_DIAGRAMS} used)`);
       
     } catch (error) {
       console.error('Diagram generation error:', error);
@@ -432,6 +447,11 @@ const ContentEditor = () => {
                           <ImageIcon className="w-10 h-10 text-muted-foreground" />
                           <span className="text-sm text-[#1a365d]">Add a diagram</span>
                           
+                          {/* AI Diagram limit indicator */}
+                          <span className={`text-xs ${totalAIDiagrams >= MAX_AI_DIAGRAMS ? 'text-destructive' : 'text-muted-foreground'}`}>
+                            AI Diagrams: {totalAIDiagrams}/{MAX_AI_DIAGRAMS}
+                          </span>
+                          
                           {/* Upload and AI Generate options */}
                           <div className="flex flex-wrap gap-2 justify-center">
                             <Button
@@ -451,7 +471,7 @@ const ContentEditor = () => {
                                 size="sm"
                                 className="gap-1 text-xs"
                                 onClick={() => handleGenerateDiagram(currentChapter.id, section.id, opt.type)}
-                                disabled={isGeneratingDiagram === `${currentChapter.id}-${section.id}-${opt.type}`}
+                                disabled={isGeneratingDiagram === `${currentChapter.id}-${section.id}-${opt.type}` || totalAIDiagrams >= MAX_AI_DIAGRAMS}
                               >
                                 {isGeneratingDiagram === `${currentChapter.id}-${section.id}-${opt.type}` ? (
                                   <Loader2 className="w-3 h-3 animate-spin" />
