@@ -264,17 +264,108 @@ Respond ONLY with valid JSON in this exact format (no markdown, no code blocks):
       .replace(/```\n?/g, '')
       .trim();
 
+    // Function to repair common JSON issues
+    const repairJSON = (jsonStr: string): string => {
+      let repaired = jsonStr;
+      
+      // Remove any trailing content after the last closing brace
+      const lastBrace = repaired.lastIndexOf('}');
+      if (lastBrace !== -1 && lastBrace < repaired.length - 1) {
+        repaired = repaired.substring(0, lastBrace + 1);
+      }
+      
+      // Fix unclosed strings - find unmatched quotes
+      let inString = false;
+      let escaped = false;
+      let result = '';
+      
+      for (let i = 0; i < repaired.length; i++) {
+        const char = repaired[i];
+        
+        if (escaped) {
+          escaped = false;
+          result += char;
+          continue;
+        }
+        
+        if (char === '\\' && inString) {
+          escaped = true;
+          result += char;
+          continue;
+        }
+        
+        if (char === '"') {
+          inString = !inString;
+        }
+        
+        result += char;
+      }
+      
+      // If we ended inside a string, close it
+      if (inString) {
+        result += '"';
+      }
+      
+      repaired = result;
+      
+      // Fix trailing commas before closing brackets
+      repaired = repaired.replace(/,(\s*[\]}])/g, '$1');
+      
+      // Fix missing commas between array elements
+      repaired = repaired.replace(/}(\s*){/g, '},$1{');
+      
+      // Fix unclosed arrays and objects by counting brackets
+      let openBraces = 0;
+      let openBrackets = 0;
+      
+      for (const char of repaired) {
+        if (char === '{') openBraces++;
+        if (char === '}') openBraces--;
+        if (char === '[') openBrackets++;
+        if (char === ']') openBrackets--;
+      }
+      
+      // Add missing closing brackets
+      while (openBrackets > 0) {
+        repaired += ']';
+        openBrackets--;
+      }
+      while (openBraces > 0) {
+        repaired += '}';
+        openBraces--;
+      }
+      
+      return repaired;
+    };
+
     let content: GeneratedContent;
     try {
       content = JSON.parse(generatedText);
     } catch (parseError) {
       console.error("JSON parse error:", parseError);
-      console.log("Attempting to extract JSON from response...");
+      console.log("Attempting to repair and extract JSON from response...");
       
       // Try to find JSON in the response
       const jsonMatch = generatedText.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        content = JSON.parse(jsonMatch[0]);
+        let jsonStr = jsonMatch[0];
+        
+        // Try direct parse first
+        try {
+          content = JSON.parse(jsonStr);
+        } catch {
+          // Attempt repair
+          console.log("Attempting JSON repair...");
+          const repairedJSON = repairJSON(jsonStr);
+          
+          try {
+            content = JSON.parse(repairedJSON);
+            console.log("JSON repair successful");
+          } catch (repairError) {
+            console.error("JSON repair failed:", repairError);
+            throw new Error("Failed to parse AI response as JSON. The AI response was truncated or malformed.");
+          }
+        }
       } else {
         throw new Error("Failed to parse AI response as JSON");
       }
