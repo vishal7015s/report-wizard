@@ -26,6 +26,8 @@ const ContentEditor = () => {
     contentMode, 
     setContentMode, 
     reportData, 
+    isAIGenerated,
+    setIsAIGenerated,
     setAbstract,
     setAcknowledgement,
     addChapter,
@@ -120,6 +122,7 @@ const ContentEditor = () => {
       setAcknowledgement(data.acknowledgement);
       setChapters(data.chapters);
       setActiveChapter(data.chapters[0]?.id || '');
+      setIsAIGenerated(true);
 
       toast.success('Report content generated successfully!');
       
@@ -522,9 +525,50 @@ const ContentEditor = () => {
                         <div className="flex flex-col items-center gap-3">
                           <ImageIcon className="w-10 h-10 text-muted-foreground" />
                           <span className="text-sm text-[#1a365d]">Add a diagram</span>
-                          <p className="text-xs text-muted-foreground text-center">
-                            Upload your own diagrams or use AI Generate tab for auto-generated diagrams
-                          </p>
+                          
+                          {/* Show AI diagram buttons only for AI-generated content */}
+                          {isAIGenerated && section.content.length > 0 && (
+                            <div className="w-full">
+                              <div className="flex items-center justify-between mb-2">
+                                <p className="text-xs text-muted-foreground">
+                                  Generate AI diagrams ({totalAIDiagrams}/{MAX_AI_DIAGRAMS})
+                                </p>
+                                <span className={`text-xs font-medium ${totalAIDiagrams >= MAX_AI_DIAGRAMS ? 'text-destructive' : 'text-green-600'}`}>
+                                  {MAX_AI_DIAGRAMS - totalAIDiagrams} left
+                                </span>
+                              </div>
+                              <div className="flex flex-wrap gap-2 justify-center">
+                                {diagramOptions.map(opt => (
+                                  <Button
+                                    key={opt.type}
+                                    variant="outline"
+                                    size="sm"
+                                    className="gap-1 text-xs"
+                                    onClick={() => handleGenerateDiagram(currentChapter.id, section.id, opt.type)}
+                                    disabled={isGeneratingDiagram === `${currentChapter.id}-${section.id}-${opt.type}` || totalAIDiagrams >= MAX_AI_DIAGRAMS}
+                                  >
+                                    {isGeneratingDiagram === `${currentChapter.id}-${section.id}-${opt.type}` ? (
+                                      <Loader2 className="w-3 h-3 animate-spin" />
+                                    ) : (
+                                      <Wand2 className="w-3 h-3" />
+                                    )}
+                                    {opt.label}
+                                  </Button>
+                                ))}
+                              </div>
+                              <div className="my-3 flex items-center gap-2">
+                                <div className="flex-1 h-px bg-border"></div>
+                                <span className="text-xs text-muted-foreground">or</span>
+                                <div className="flex-1 h-px bg-border"></div>
+                              </div>
+                            </div>
+                          )}
+
+                          {!isAIGenerated && (
+                            <p className="text-xs text-muted-foreground text-center">
+                              Upload your own diagrams or use AI Generate tab for auto-generated diagrams
+                            </p>
+                          )}
                           
                           <Button
                             variant="outline"
