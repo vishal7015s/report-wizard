@@ -48,13 +48,14 @@ const ReportPreview = () => {
   // Generate Roman numerals for preliminary pages
   const romanNumerals = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
   
-  // Split sections into pages - smart content management for optimal page filling
+  // Split sections into pages - smart content management with proper page breaks
   const splitSectionsIntoPages = (sections: ChapterSection[]): ChapterSection[][] => {
-    // Optimized limits for proper page utilization
-    const MAX_CHARS_PER_PAGE = 3200; // ~3200 chars fills page well
-    const MIN_CHARS_FOR_NEW_PAGE = 800; // Minimum content before starting new page
-    const MAX_SECTIONS_PER_PAGE = 3; // Allow more sections for better flow
-    const IMAGE_COST = 600; // Images take moderate space
+    // Page capacity settings
+    const MAX_CHARS_PER_PAGE = 3000; // Safe capacity to avoid overflow
+    const MIN_CHARS_FOR_NEW_PAGE = 600; // Minimum content needed to justify a page
+    const MAX_SECTIONS_PER_PAGE = 4; // Max sections per page
+    const IMAGE_COST = 800; // Images take significant space
+    const HEADING_COST = 150; // Each heading takes space
     
     const pages: ChapterSection[][] = [];
     let currentPage: ChapterSection[] = [];
@@ -71,43 +72,56 @@ const ReportPreview = () => {
     const calculateCost = (section: ChapterSection): number => {
       const textCost = (section.content || '').length;
       const imageCost = (section.images?.length || 0) * IMAGE_COST;
-      return textCost + imageCost;
+      return textCost + imageCost + HEADING_COST;
     };
 
-    // Helper to split long content at natural break points
+    // Find natural break points in content - prioritize keeping lists and paragraphs together
+    const findNaturalBreakPoint = (content: string, maxLength: number): number => {
+      if (content.length <= maxLength) return content.length;
+      
+      // Look for break points in order of preference:
+      // 1. Double newline (paragraph break) - best break point
+      const paragraphBreak = content.lastIndexOf('\n\n', maxLength);
+      if (paragraphBreak > maxLength * 0.5) return paragraphBreak;
+      
+      // 2. End of a bullet point list (newline not followed by bullet)
+      const lines = content.slice(0, maxLength).split('\n');
+      let charCount = 0;
+      for (let i = 0; i < lines.length - 1; i++) {
+        charCount += lines[i].length + 1; // +1 for newline
+        const currentLine = lines[i].trim();
+        const nextLine = lines[i + 1]?.trim() || '';
+        
+        // Break after a list item if next line starts a new paragraph (not a bullet)
+        if ((currentLine.match(/^[•\-\*○]/) || currentLine.match(/^\d+[.)]/)) && 
+            !nextLine.match(/^[•\-\*○]/) && !nextLine.match(/^\d+[.)]/)) {
+          if (charCount > maxLength * 0.5) return charCount;
+        }
+      }
+      
+      // 3. Single newline (line break)
+      const lineBreak = content.lastIndexOf('\n', maxLength);
+      if (lineBreak > maxLength * 0.4) return lineBreak;
+      
+      // 4. End of sentence (period followed by space or newline)
+      const sentenceEnd = content.lastIndexOf('. ', maxLength);
+      if (sentenceEnd > maxLength * 0.4) return sentenceEnd + 1;
+      
+      // 5. Any period
+      const period = content.lastIndexOf('.', maxLength);
+      if (period > maxLength * 0.3) return period + 1;
+      
+      // 6. Hard cut as last resort
+      return maxLength;
+    };
+
+    // Split long content at natural break points
     const splitLongContent = (content: string, maxLength: number): string[] => {
       const chunks: string[] = [];
       let remaining = content;
       
       while (remaining.length > maxLength) {
-        // Try to find natural break points
-        let breakPoint = -1;
-        
-        // Try double newline (paragraph break)
-        breakPoint = remaining.lastIndexOf('\n\n', maxLength);
-        
-        // Try single newline if no paragraph break
-        if (breakPoint < maxLength * 0.4) {
-          breakPoint = remaining.lastIndexOf('\n', maxLength);
-        }
-        
-        // Try period + space (sentence break)
-        if (breakPoint < maxLength * 0.4) {
-          breakPoint = remaining.lastIndexOf('. ', maxLength);
-          if (breakPoint > 0) breakPoint += 1; // Include the period
-        }
-        
-        // Try any period
-        if (breakPoint < maxLength * 0.4) {
-          breakPoint = remaining.lastIndexOf('.', maxLength);
-          if (breakPoint > 0) breakPoint += 1;
-        }
-        
-        // Hard cut if no good break point
-        if (breakPoint < maxLength * 0.3) {
-          breakPoint = maxLength;
-        }
-        
+        const breakPoint = findNaturalBreakPoint(remaining, maxLength);
         chunks.push(remaining.slice(0, breakPoint).trim());
         remaining = remaining.slice(breakPoint).trim();
       }
@@ -116,22 +130,40 @@ const ReportPreview = () => {
       return chunks;
     };
 
-    // Process each section - smarter page filling
+    // Check if section should stay together (small enough and has content that shouldn't be split)
+    const shouldKeepTogether = (section: ChapterSection): boolean => {
+      const cost = calculateCost(section);
+      const content = section.content || '';
+      
+      // Keep together if:
+      // - Section is small enough to fit on one page
+      // - Section has only bullet points (don't split lists)
+      // - Section has images (keep with their content)
+      if (cost <= MAX_CHARS_PER_PAGE) return true;
+      if (section.images && section.images.length > 0 && cost <= MAX_CHARS_PER_PAGE * 1.2) return true;
+      
+      // Check if mostly bullet points - try to keep together
+      const bulletLines = (content.match(/^[•\-\*○]\s/gm) || []).length;
+      const totalLines = content.split('\n').filter(l => l.trim()).length;
+      if (bulletLines > totalLines * 0.5 && cost <= MAX_CHARS_PER_PAGE * 1.3) return true;
+      
+      return false;
+    };
+
+    // Process each section
     sections.forEach((section) => {
       const sectionCost = calculateCost(section);
       
-      // If section is too large, split it
-      if (sectionCost > MAX_CHARS_PER_PAGE) {
-        // Before splitting large section, check if we can add it to current page partially
-        if (currentPage.length > 0 && currentPageCost < MIN_CHARS_FOR_NEW_PAGE) {
-          // Current page has too little content, flush it first
-          flushPage();
-        } else if (currentPage.length > 0) {
+      // If section is too large and shouldn't be kept together, split it
+      if (sectionCost > MAX_CHARS_PER_PAGE && !shouldKeepTogether(section)) {
+        // Flush current page first
+        if (currentPage.length > 0) {
           flushPage();
         }
         
         const content = section.content || '';
-        const chunks = splitLongContent(content, MAX_CHARS_PER_PAGE - 300);
+        const availableForContent = MAX_CHARS_PER_PAGE - HEADING_COST - 200; // Reserve space for heading + margin
+        const chunks = splitLongContent(content, availableForContent);
         
         chunks.forEach((chunk, idx) => {
           const isFirst = idx === 0;
@@ -142,25 +174,25 @@ const ReportPreview = () => {
             id: `${section.id}-part-${idx + 1}`,
             heading: isFirst ? section.heading : `${section.heading} (Continued)`,
             content: chunk,
-            images: isLast ? section.images : [],
+            images: isLast ? section.images : [], // Only show images on last chunk
           }]);
         });
       } else {
-        // Check if it fits on current page
+        // Try to fit on current page
         const remainingSpace = MAX_CHARS_PER_PAGE - currentPageCost;
         const wouldExceed = sectionCost > remainingSpace;
         const tooManySections = currentPage.length >= MAX_SECTIONS_PER_PAGE;
         
-        // Only start new page if current page has enough content
-        if ((wouldExceed || tooManySections) && currentPageCost >= MIN_CHARS_FOR_NEW_PAGE) {
-          flushPage();
-        } else if (wouldExceed && currentPageCost < MIN_CHARS_FOR_NEW_PAGE) {
-          // Current page doesn't have enough content, try to fit more
-          // Allow exceeding MAX slightly to fill page better
-          if (sectionCost < MAX_CHARS_PER_PAGE * 0.4) {
-            // Small section - add it anyway
-          } else {
+        if (wouldExceed || tooManySections) {
+          // Start new page only if current page has enough content
+          if (currentPageCost >= MIN_CHARS_FOR_NEW_PAGE) {
             flushPage();
+          } else if (wouldExceed && currentPage.length > 0) {
+            // Current page has little content but new section is too big
+            // Check if combined they exceed reasonable limit
+            if (currentPageCost + sectionCost > MAX_CHARS_PER_PAGE * 1.1) {
+              flushPage();
+            }
           }
         }
         
