@@ -1,9 +1,10 @@
 import { useRef, useState, useMemo } from 'react';
 import { useReportStore } from '@/store/reportStore';
 import { Button } from '@/components/ui/button';
-import { Download, CreditCard, Eye, CheckCircle, Loader2 } from 'lucide-react';
+import { Download, CreditCard, Eye, CheckCircle, Loader2, FileText, FileDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { generatePDF } from '@/lib/pdfGenerator';
+import { generateDOCX } from '@/lib/docxGenerator';
 import PDFCoverPage from '@/components/pdf/PDFCoverPage';
 import PDFCoverPageWithSVCE from '@/components/pdf/PDFCoverPageWithSVCE';
 import PDFCertificate from '@/components/pdf/PDFCertificate';
@@ -21,14 +22,16 @@ const ReportPreview = () => {
   const { reportData, contentMode } = useReportStore();
   const pdfContainerRef = useRef<HTMLDivElement>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [downloadType, setDownloadType] = useState<'pdf' | 'docx' | null>(null);
 
   const isAIGenerated = contentMode === 'ai';
   const price = isAIGenerated ? '₹10' : 'Free';
 
-  const handleDownload = async () => {
+  const handleDownloadPDF = async () => {
     if (!pdfContainerRef.current) return;
 
     setIsGenerating(true);
+    setDownloadType('pdf');
     toast.info('Generating PDF... Please wait');
 
     try {
@@ -42,6 +45,27 @@ const ReportPreview = () => {
       toast.error('Failed to generate PDF. Please try again.');
     } finally {
       setIsGenerating(false);
+      setDownloadType(null);
+    }
+  };
+
+  const handleDownloadDOCX = async () => {
+    setIsGenerating(true);
+    setDownloadType('docx');
+    toast.info('Generating Word document... Please wait');
+
+    try {
+      const projectTitle = reportData.projectDetails.projectTitle || 'project-report';
+      const filename = `${projectTitle.replace(/\s+/g, '-').toLowerCase()}.docx`;
+      
+      await generateDOCX(reportData, filename);
+      toast.success('Word document downloaded successfully! You can open it in Google Docs.');
+    } catch (error) {
+      console.error('DOCX generation error:', error);
+      toast.error('Failed to generate Word document. Please try again.');
+    } finally {
+      setIsGenerating(false);
+      setDownloadType(null);
     }
   };
 
@@ -496,33 +520,54 @@ const ReportPreview = () => {
                   disabled={isGenerating}
                 >
                   <CreditCard className="w-4 h-4" />
-                  Pay & Download PDF
+                  Pay & Download
                 </Button>
               ) : (
-                <Button 
-                  className="w-full gap-2 bg-green-600 hover:bg-green-700" 
-                  size="lg"
-                  onClick={handleDownload}
-                  disabled={isGenerating}
-                >
-                  {isGenerating ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Generating PDF...
-                    </>
-                  ) : (
-                    <>
-                      <Download className="w-4 h-4" />
-                      Download PDF (Free)
-                    </>
-                  )}
-                </Button>
+                <div className="space-y-2">
+                  <Button 
+                    className="w-full gap-2 bg-green-600 hover:bg-green-700" 
+                    size="lg"
+                    onClick={handleDownloadPDF}
+                    disabled={isGenerating}
+                  >
+                    {isGenerating && downloadType === 'pdf' ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Generating PDF...
+                      </>
+                    ) : (
+                      <>
+                        <FileDown className="w-4 h-4" />
+                        Download PDF
+                      </>
+                    )}
+                  </Button>
+                  
+                  <Button 
+                    className="w-full gap-2 bg-blue-600 hover:bg-blue-700" 
+                    size="lg"
+                    onClick={handleDownloadDOCX}
+                    disabled={isGenerating}
+                  >
+                    {isGenerating && downloadType === 'docx' ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Generating Word...
+                      </>
+                    ) : (
+                      <>
+                        <FileText className="w-4 h-4" />
+                        Download Word (Google Docs)
+                      </>
+                    )}
+                  </Button>
+                </div>
               )}
 
               {!isAIGenerated && (
                 <div className="flex items-center gap-2 text-sm text-green-600 justify-center">
                   <CheckCircle className="w-4 h-4" />
-                  <span>Manual content - No payment required</span>
+                  <span>Manual content - Free download</span>
                 </div>
               )}
 
