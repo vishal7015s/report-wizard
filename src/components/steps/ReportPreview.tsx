@@ -48,12 +48,13 @@ const ReportPreview = () => {
   // Generate Roman numerals for preliminary pages
   const romanNumerals = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
   
-  // Split sections into pages - handle long content properly
+  // Split sections into pages - smart content management for optimal page filling
   const splitSectionsIntoPages = (sections: ChapterSection[]): ChapterSection[][] => {
-    // Reduced limits for better readability - avoid cramped pages
-    const MAX_CHARS_PER_PAGE = 1800; // ~1800 chars for comfortable reading
-    const MAX_SECTIONS_PER_PAGE = 2; // Fewer sections per page = cleaner layout
-    const IMAGE_COST = 800; // Images take more space
+    // Optimized limits for proper page utilization
+    const MAX_CHARS_PER_PAGE = 3200; // ~3200 chars fills page well
+    const MIN_CHARS_FOR_NEW_PAGE = 800; // Minimum content before starting new page
+    const MAX_SECTIONS_PER_PAGE = 3; // Allow more sections for better flow
+    const IMAGE_COST = 600; // Images take moderate space
     
     const pages: ChapterSection[][] = [];
     let currentPage: ChapterSection[] = [];
@@ -115,16 +116,22 @@ const ReportPreview = () => {
       return chunks;
     };
 
-    // Process each section
+    // Process each section - smarter page filling
     sections.forEach((section) => {
       const sectionCost = calculateCost(section);
       
       // If section is too large, split it
       if (sectionCost > MAX_CHARS_PER_PAGE) {
-        flushPage();
+        // Before splitting large section, check if we can add it to current page partially
+        if (currentPage.length > 0 && currentPageCost < MIN_CHARS_FOR_NEW_PAGE) {
+          // Current page has too little content, flush it first
+          flushPage();
+        } else if (currentPage.length > 0) {
+          flushPage();
+        }
         
         const content = section.content || '';
-        const chunks = splitLongContent(content, MAX_CHARS_PER_PAGE - 200);
+        const chunks = splitLongContent(content, MAX_CHARS_PER_PAGE - 300);
         
         chunks.forEach((chunk, idx) => {
           const isFirst = idx === 0;
@@ -140,11 +147,21 @@ const ReportPreview = () => {
         });
       } else {
         // Check if it fits on current page
-        const wouldExceed = currentPageCost + sectionCost > MAX_CHARS_PER_PAGE;
+        const remainingSpace = MAX_CHARS_PER_PAGE - currentPageCost;
+        const wouldExceed = sectionCost > remainingSpace;
         const tooManySections = currentPage.length >= MAX_SECTIONS_PER_PAGE;
         
-        if (wouldExceed || tooManySections) {
+        // Only start new page if current page has enough content
+        if ((wouldExceed || tooManySections) && currentPageCost >= MIN_CHARS_FOR_NEW_PAGE) {
           flushPage();
+        } else if (wouldExceed && currentPageCost < MIN_CHARS_FOR_NEW_PAGE) {
+          // Current page doesn't have enough content, try to fit more
+          // Allow exceeding MAX slightly to fill page better
+          if (sectionCost < MAX_CHARS_PER_PAGE * 0.4) {
+            // Small section - add it anyway
+          } else {
+            flushPage();
+          }
         }
         
         currentPage.push(section);

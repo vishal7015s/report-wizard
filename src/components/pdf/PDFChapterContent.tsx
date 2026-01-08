@@ -46,8 +46,8 @@ const PDFChapterContent = ({ sections, data, pageNumber }: PDFChapterContentProp
           <div key={section.id} className="mb-8">
             {/* Section Heading */}
             <h2 
-              className="font-bold text-base mb-4"
-              style={{ color: '#1e90ff' }}
+              className="font-bold mb-4"
+              style={{ color: '#1e90ff', fontSize: '16px' }}
             >
               {section.number} {section.heading}
             </h2>
@@ -102,7 +102,30 @@ const PDFChapterContent = ({ sections, data, pageNumber }: PDFChapterContentProp
   );
 };
 
-// Helper function to format content with bullet points
+// Helper function to highlight important terms
+const highlightKeyTerms = (text: string): string => {
+  // Bold text wrapped in **text** or __text__
+  let processed = text.replace(/\*\*(.+?)\*\*/g, '<strong style="font-weight: 600; color: #1e3a5f;">$1</strong>');
+  processed = processed.replace(/__(.+?)__/g, '<strong style="font-weight: 600; color: #1e3a5f;">$1</strong>');
+  
+  // Highlight common technical terms and keywords
+  const keyTerms = [
+    'objective', 'objectives', 'scope', 'methodology', 'conclusion', 'result', 'results',
+    'analysis', 'design', 'implementation', 'testing', 'requirement', 'requirements',
+    'system', 'module', 'database', 'interface', 'algorithm', 'architecture',
+    'frontend', 'backend', 'API', 'user', 'admin', 'security', 'performance',
+    'feature', 'features', 'function', 'functions', 'process', 'workflow'
+  ];
+  
+  keyTerms.forEach(term => {
+    const regex = new RegExp(`\\b(${term}s?)\\b`, 'gi');
+    processed = processed.replace(regex, '<strong style="font-weight: 600;">$1</strong>');
+  });
+  
+  return processed;
+};
+
+// Helper function to format content with bullet points and highlights
 const formatContent = (content: string): string => {
   const lines = content.split('\n');
 
@@ -155,15 +178,15 @@ const formatContent = (content: string): string => {
       openBullets();
 
       const isSub = Boolean(subBulletMatch);
-      const text = (subBulletMatch ? subBulletMatch[1] : bulletMatch![1]) || '';
+      const rawText = (subBulletMatch ? subBulletMatch[1] : bulletMatch![1]) || '';
+      const text = highlightKeyTerms(rawText);
       const bulletChar = isSub ? '○' : '•';
       const indent = isSub ? '8mm' : '0mm';
 
-      // Flex layout ensures bullet column and text column align like Word
       formattedHtml += `
-        <div style="display:flex; align-items:flex-start; margin-left:${indent}; margin-bottom: 10px;">
-          <span style="width: 8mm; text-align:center; line-height: 1; font-size: 16px;">${bulletChar}</span>
-          <span style="flex:1; text-align:left;">${text}</span>
+        <div style="display:flex; align-items:flex-start; margin-left:${indent}; margin-bottom: 8px;">
+          <span style="width: 8mm; text-align:center; line-height: 1.6; font-size: 14px;">${bulletChar}</span>
+          <span style="flex:1; text-align:left; line-height: 1.6;">${text}</span>
         </div>
       `;
       return;
@@ -178,21 +201,23 @@ const formatContent = (content: string): string => {
       openNumbers();
 
       const num = numberedMatch[1];
-      const text = numberedMatch[2] || '';
+      const rawText = numberedMatch[2] || '';
+      const text = highlightKeyTerms(rawText);
 
       formattedHtml += `
-        <div style="display:flex; align-items:flex-start; margin-bottom: 10px;">
-          <span style="width: 8mm; text-align:right; padding-right: 2mm;">${num}.</span>
-          <span style="flex:1; text-align:left;">${text}</span>
+        <div style="display:flex; align-items:flex-start; margin-bottom: 8px;">
+          <span style="width: 8mm; text-align:right; padding-right: 2mm; line-height: 1.6;">${num}.</span>
+          <span style="flex:1; text-align:left; line-height: 1.6;">${text}</span>
         </div>
       `;
       return;
     }
 
-    // Normal paragraph
+    // Normal paragraph with highlights
     closeLists();
     if (trimmed) {
-      formattedHtml += `<p style="margin-bottom: 12px; text-indent: 0; text-align: justify;">${trimmed}</p>`;
+      const highlightedText = highlightKeyTerms(trimmed);
+      formattedHtml += `<p style="margin-bottom: 10px; text-indent: 10mm; text-align: justify; line-height: 1.8;">${highlightedText}</p>`;
     }
   });
 
