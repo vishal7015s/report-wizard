@@ -220,11 +220,11 @@ const formatContent = (content: string): string => {
       return;
     }
 
-    // Normal paragraph with proper first-line indentation
+    // Normal paragraph - no indentation, flush left
     closeLists();
     if (trimmed) {
       const highlightedText = highlightKeyTerms(trimmed);
-      formattedHtml += `<p style="margin-bottom: 3mm; text-indent: 12.5mm; text-align: justify; line-height: 1.8; font-size: 14px;">${highlightedText}</p>`;
+      formattedHtml += `<p style="margin-bottom: 4mm; text-align: justify; line-height: 1.8; font-size: 14px;">${highlightedText}</p>`;
     }
   });
 
