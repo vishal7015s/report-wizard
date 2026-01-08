@@ -43,14 +43,14 @@ const PDFChapterTitle = ({ chapterNumber, chapterTitle, data, pageNumber }: PDFC
       {/* Centered Chapter Info */}
       <div className="flex flex-col items-center justify-center" style={{ minHeight: '297mm' }}>
         <h1 
-          className="text-3xl font-bold text-center"
-          style={{ color: '#000000' }}
+          className="font-bold text-center"
+          style={{ color: '#1e3a5f', fontSize: '36px', letterSpacing: '2px' }}
         >
           CHAPTER {chapterNumber}
         </h1>
         <h2 
-          className="text-2xl font-bold text-center mt-4 underline"
-          style={{ color: '#000000' }}
+          className="font-bold text-center mt-6"
+          style={{ color: '#1e3a5f', fontSize: '28px', textDecoration: 'underline', textUnderlineOffset: '6px' }}
         >
           {chapterTitle.toUpperCase()}
         </h2>
