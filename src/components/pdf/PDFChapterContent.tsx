@@ -40,22 +40,30 @@ const PDFChapterContent = ({ sections, data, pageNumber }: PDFChapterContentProp
         {projectDetails.projectTitle || 'Project Title'}
       </div>
       
-      {/* Content Area */}
-      <div className="pt-16 px-12 pb-20">
+      {/* Content Area - Fixed font size 14px throughout */}
+      <div style={{ paddingTop: '20mm', paddingLeft: '20mm', paddingRight: '20mm', paddingBottom: '22mm', fontSize: '14px', fontFamily: 'Times New Roman, serif' }}>
         {sections.map((section) => (
-          <div key={section.id} className="mb-8">
+          <div key={section.id} style={{ marginBottom: '6mm' }}>
             {/* Section Heading */}
             <h2 
-              className="font-bold mb-4"
-              style={{ color: '#1e90ff', fontSize: '16px' }}
+              style={{ 
+                color: '#1e90ff', 
+                fontSize: '14px', 
+                fontWeight: 'bold',
+                marginBottom: '4mm'
+              }}
             >
               {section.number} {section.heading}
             </h2>
             
-            {/* Section Content */}
+            {/* Section Content - consistent 14px font */}
             <div 
-              className="text-justify leading-relaxed"
-              style={{ fontSize: '14px', lineHeight: '1.8', color: '#000000' }}
+              style={{ 
+                fontSize: '14px', 
+                lineHeight: '1.8', 
+                color: '#000000',
+                textAlign: 'justify'
+              }}
               dangerouslySetInnerHTML={{ 
                 __html: formatContent(section.content || 'Content not provided.') 
               }}
@@ -63,16 +71,15 @@ const PDFChapterContent = ({ sections, data, pageNumber }: PDFChapterContentProp
             
             {/* Section Images */}
             {section.images && section.images.length > 0 && (
-              <div className="mt-6 space-y-4">
+              <div style={{ marginTop: '6mm' }}>
                 {section.images.map((image, imgIndex) => (
-                  <div key={image.id} className="text-center">
+                  <div key={image.id} style={{ textAlign: 'center', marginBottom: '4mm' }}>
                     <img 
                       src={image.url} 
                       alt={image.caption || `Figure ${section.number}.${imgIndex + 1}`}
-                      className="max-w-full mx-auto"
-                      style={{ maxHeight: '200px', objectFit: 'contain' }}
+                      style={{ maxWidth: '100%', maxHeight: '200px', objectFit: 'contain', margin: '0 auto' }}
                     />
-                    <p className="text-sm mt-2" style={{ color: '#000000' }}>
+                    <p style={{ fontSize: '12px', marginTop: '2mm', color: '#000000' }}>
                       Figure {section.number}.{imgIndex + 1}: {image.caption || 'Diagram'}
                     </p>
                   </div>
@@ -181,12 +188,12 @@ const formatContent = (content: string): string => {
       const rawText = (subBulletMatch ? subBulletMatch[1] : bulletMatch![1]) || '';
       const text = highlightKeyTerms(rawText);
       const bulletChar = isSub ? '○' : '•';
-      const indent = isSub ? '8mm' : '0mm';
+      const indent = isSub ? '12.5mm' : '6mm';
 
       formattedHtml += `
-        <div style="display:flex; align-items:flex-start; margin-left:${indent}; margin-bottom: 8px;">
-          <span style="width: 8mm; text-align:center; line-height: 1.6; font-size: 14px;">${bulletChar}</span>
-          <span style="flex:1; text-align:left; line-height: 1.6;">${text}</span>
+        <div style="display:flex; align-items:flex-start; margin-left:${indent}; margin-bottom: 2mm;">
+          <span style="width: 6mm; text-align:left; line-height: 1.6; font-size: 14px;">${bulletChar}</span>
+          <span style="flex:1; text-align:justify; line-height: 1.6; font-size: 14px;">${text}</span>
         </div>
       `;
       return;
@@ -205,19 +212,19 @@ const formatContent = (content: string): string => {
       const text = highlightKeyTerms(rawText);
 
       formattedHtml += `
-        <div style="display:flex; align-items:flex-start; margin-bottom: 8px;">
-          <span style="width: 8mm; text-align:right; padding-right: 2mm; line-height: 1.6;">${num}.</span>
-          <span style="flex:1; text-align:left; line-height: 1.6;">${text}</span>
+        <div style="display:flex; align-items:flex-start; margin-left: 6mm; margin-bottom: 2mm;">
+          <span style="width: 8mm; text-align:right; padding-right: 2mm; line-height: 1.6; font-size: 14px;">${num}.</span>
+          <span style="flex:1; text-align:justify; line-height: 1.6; font-size: 14px;">${text}</span>
         </div>
       `;
       return;
     }
 
-    // Normal paragraph with highlights
+    // Normal paragraph with proper first-line indentation
     closeLists();
     if (trimmed) {
       const highlightedText = highlightKeyTerms(trimmed);
-      formattedHtml += `<p style="margin-bottom: 10px; text-indent: 10mm; text-align: justify; line-height: 1.8;">${highlightedText}</p>`;
+      formattedHtml += `<p style="margin-bottom: 3mm; text-indent: 12.5mm; text-align: justify; line-height: 1.8; font-size: 14px;">${highlightedText}</p>`;
     }
   });
 
