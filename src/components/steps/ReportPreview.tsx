@@ -50,12 +50,12 @@ const ReportPreview = () => {
   
   // Split sections into pages - smart content management with proper page breaks
   const splitSectionsIntoPages = (sections: ChapterSection[]): ChapterSection[][] => {
-    // Page capacity settings
-    const MAX_CHARS_PER_PAGE = 3000; // Safe capacity to avoid overflow
-    const MIN_CHARS_FOR_NEW_PAGE = 600; // Minimum content needed to justify a page
-    const MAX_SECTIONS_PER_PAGE = 4; // Max sections per page
-    const IMAGE_COST = 800; // Images take significant space
-    const HEADING_COST = 150; // Each heading takes space
+    // Page capacity settings - reduced to prevent content overflow and maintain consistent font size
+    const MAX_CHARS_PER_PAGE = 2200; // Reduced to ensure consistent font size across pages
+    const MIN_CHARS_FOR_NEW_PAGE = 500; // Minimum content needed to justify a page
+    const MAX_SECTIONS_PER_PAGE = 3; // Max sections per page to prevent overcrowding
+    const IMAGE_COST = 1000; // Images take significant space
+    const HEADING_COST = 200; // Each heading takes space
     
     const pages: ChapterSection[][] = [];
     let currentPage: ChapterSection[] = [];
