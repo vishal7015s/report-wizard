@@ -1,4 +1,4 @@
-import { useRef, useState, useMemo } from 'react';
+import { useRef, useState, useMemo, useEffect } from 'react';
 import { useReportStore } from '@/store/reportStore';
 import { Button } from '@/components/ui/button';
 import { Download, CreditCard, Eye, CheckCircle, Loader2, FileText, FileDown } from 'lucide-react';
@@ -17,15 +17,56 @@ import PDFListOfFigures from '@/components/pdf/PDFListOfFigures';
 import PDFChapterTitle from '@/components/pdf/PDFChapterTitle';
 import PDFChapterContent from '@/components/pdf/PDFChapterContent';
 import { ChapterSection } from '@/types/report';
+import { useInstamojoPayment } from '@/hooks/useInstamojoPayment';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 const ReportPreview = () => {
   const { reportData, contentMode } = useReportStore();
   const pdfContainerRef = useRef<HTMLDivElement>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [downloadType, setDownloadType] = useState<'pdf' | 'docx' | null>(null);
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const [paymentDetails, setPaymentDetails] = useState({
+    buyer_name: reportData.projectDetails.students[0]?.name || '',
+    email: '',
+    phone: '',
+  });
+
+  const { 
+    isProcessing, 
+    paymentComplete, 
+    initiatePayment, 
+    verifyPayment, 
+    checkPaymentStatus 
+  } = useInstamojoPayment();
 
   const isAIGenerated = contentMode === 'ai';
-  const price = isAIGenerated ? '₹10' : 'Free';
+  const isPaid = checkPaymentStatus() || paymentComplete;
+  const price = isAIGenerated ? '₹50' : 'Free';
+
+  // Check for payment callback on mount
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const paymentStatus = urlParams.get('payment');
+    const paymentId = urlParams.get('payment_id');
+    const paymentRequestId = sessionStorage.getItem('payment_request_id');
+
+    if (paymentStatus === 'success' && paymentId && paymentRequestId) {
+      // Verify the payment
+      verifyPayment(paymentId, paymentRequestId).then((verified) => {
+        // Clean up URL
+        window.history.replaceState({}, '', '/create');
+      });
+    }
+  }, []);
 
   const handleDownloadPDF = async () => {
     if (!pdfContainerRef.current) return;
@@ -67,6 +108,31 @@ const ReportPreview = () => {
       setIsGenerating(false);
       setDownloadType(null);
     }
+  };
+
+  const handlePayment = () => {
+    if (!paymentDetails.email || !paymentDetails.phone || !paymentDetails.buyer_name) {
+      toast.error('Please fill all payment details');
+      return;
+    }
+
+    if (!/^\d{10}$/.test(paymentDetails.phone)) {
+      toast.error('Please enter a valid 10-digit phone number');
+      return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(paymentDetails.email)) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+
+    initiatePayment({
+      purpose: `AI Report: ${reportData.projectDetails.projectTitle || 'Project Report'}`,
+      amount: '50',
+      buyer_name: paymentDetails.buyer_name,
+      email: paymentDetails.email,
+      phone: paymentDetails.phone,
+    });
   };
 
   // Generate Roman numerals for preliminary pages
@@ -436,13 +502,13 @@ const ReportPreview = () => {
               }}
             />
             {(() => {
-              let pdfPageCounter = 1;
+              let hiddenPageCounter = 1;
               return reportData.chapters.map((chapter) => {
                 const sectionPages = splitSectionsIntoPages(chapter.sections);
-                const titlePageNum = pdfPageCounter++;
+                const titlePageNum = hiddenPageCounter++;
                 
                 return (
-                  <div key={chapter.id}>
+                  <div key={`hidden-${chapter.id}`}>
                     <PDFChapterTitle 
                       chapterNumber={chapter.number}
                       chapterTitle={chapter.title}
@@ -450,10 +516,10 @@ const ReportPreview = () => {
                       pageNumber={titlePageNum.toString()} 
                     />
                     {sectionPages.map((sections, pageIdx) => {
-                      const contentPageNum = pdfPageCounter++;
+                      const contentPageNum = hiddenPageCounter++;
                       return (
                         <PDFChapterContent 
-                          key={`${chapter.id}-page-${pageIdx}`}
+                          key={`hidden-${chapter.id}-page-${pageIdx}`}
                           sections={sections}
                           data={reportData} 
                           pageNumber={contentPageNum.toString()} 
@@ -469,21 +535,18 @@ const ReportPreview = () => {
 
         {/* Sidebar */}
         <div className="space-y-6">
-          <div className="bg-card rounded-xl border p-6 shadow-soft sticky top-24">
-            <h3 className="font-bold text-lg text-[#1a365d] mb-4">Report Summary</h3>
+          <div className="bg-card rounded-xl p-6 shadow-lg border">
+            <h3 className="text-lg font-semibold text-[#1a365d] mb-4 flex items-center gap-2">
+              <Download className="w-5 h-5" />
+              Download Report
+            </h3>
             
             <div className="space-y-3 text-sm">
               <div className="flex justify-between">
-                <span className="text-muted-foreground">College</span>
-                <span className="font-medium">{reportData.college?.shortName || 'SVCE'}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Project Type</span>
-                <span className="font-medium">{reportData.projectDetails.projectType}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Branch</span>
-                <span className="font-medium">{reportData.projectDetails.branch}</span>
+                <span className="text-muted-foreground">Project</span>
+                <span className="font-medium truncate max-w-[150px]" title={reportData.projectDetails.projectTitle}>
+                  {reportData.projectDetails.projectTitle || 'Untitled'}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Students</span>
@@ -514,14 +577,70 @@ const ReportPreview = () => {
               </div>
 
               {isAIGenerated ? (
-                <Button 
-                  className="w-full gap-2 bg-[#1a365d] hover:bg-[#2d4a7c]" 
-                  size="lg"
-                  disabled={isGenerating}
-                >
-                  <CreditCard className="w-4 h-4" />
-                  Pay & Download
-                </Button>
+                isPaid ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-sm text-green-600 justify-center mb-2">
+                      <CheckCircle className="w-4 h-4" />
+                      <span>Payment verified - Download unlocked!</span>
+                    </div>
+                    <Button 
+                      className="w-full gap-2 bg-green-600 hover:bg-green-700" 
+                      size="lg"
+                      onClick={handleDownloadPDF}
+                      disabled={isGenerating}
+                    >
+                      {isGenerating && downloadType === 'pdf' ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Generating PDF...
+                        </>
+                      ) : (
+                        <>
+                          <FileDown className="w-4 h-4" />
+                          Download PDF
+                        </>
+                      )}
+                    </Button>
+                    
+                    <Button 
+                      className="w-full gap-2 bg-blue-600 hover:bg-blue-700" 
+                      size="lg"
+                      onClick={handleDownloadDOCX}
+                      disabled={isGenerating}
+                    >
+                      {isGenerating && downloadType === 'docx' ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Generating Word...
+                        </>
+                      ) : (
+                        <>
+                          <FileText className="w-4 h-4" />
+                          Download Word (Google Docs)
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                ) : (
+                  <Button 
+                    className="w-full gap-2 bg-[#1a365d] hover:bg-[#2d4a7c]" 
+                    size="lg"
+                    onClick={() => setShowPaymentDialog(true)}
+                    disabled={isProcessing}
+                  >
+                    {isProcessing ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <CreditCard className="w-4 h-4" />
+                        Pay ₹50 to Download
+                      </>
+                    )}
+                  </Button>
+                )
               ) : (
                 <div className="space-y-2">
                   <Button 
@@ -571,9 +690,9 @@ const ReportPreview = () => {
                 </div>
               )}
 
-              {isAIGenerated && (
+              {isAIGenerated && !isPaid && (
                 <p className="text-xs text-center text-muted-foreground">
-                  Secure payment via Razorpay
+                  Secure payment via Instamojo
                 </p>
               )}
             </div>
@@ -591,6 +710,85 @@ const ReportPreview = () => {
           </div>
         </div>
       </div>
+
+      {/* Payment Dialog */}
+      <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CreditCard className="w-5 h-5" />
+              Complete Payment
+            </DialogTitle>
+            <DialogDescription>
+              Pay ₹50 to download your AI-generated report
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="buyer_name">Full Name</Label>
+              <Input
+                id="buyer_name"
+                value={paymentDetails.buyer_name}
+                onChange={(e) => setPaymentDetails({ ...paymentDetails, buyer_name: e.target.value })}
+                placeholder="Enter your full name"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="email">Email Address</Label>
+              <Input
+                id="email"
+                type="email"
+                value={paymentDetails.email}
+                onChange={(e) => setPaymentDetails({ ...paymentDetails, email: e.target.value })}
+                placeholder="Enter your email"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone Number</Label>
+              <Input
+                id="phone"
+                type="tel"
+                value={paymentDetails.phone}
+                onChange={(e) => setPaymentDetails({ ...paymentDetails, phone: e.target.value })}
+                placeholder="Enter 10-digit phone number"
+                maxLength={10}
+              />
+            </div>
+
+            <div className="bg-muted/50 rounded-lg p-3 text-sm">
+              <div className="flex justify-between items-center">
+                <span>AI Report Download</span>
+                <span className="font-bold">₹50</span>
+              </div>
+            </div>
+
+            <Button 
+              className="w-full bg-[#1a365d] hover:bg-[#2d4a7c]" 
+              onClick={handlePayment}
+              disabled={isProcessing}
+            >
+              {isProcessing ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  Redirecting to Instamojo...
+                </>
+              ) : (
+                <>
+                  <CreditCard className="w-4 h-4 mr-2" />
+                  Pay ₹50 with Instamojo
+                </>
+              )}
+            </Button>
+            
+            <p className="text-xs text-center text-muted-foreground">
+              You will be redirected to Instamojo's secure payment page
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
