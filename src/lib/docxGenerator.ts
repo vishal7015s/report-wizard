@@ -14,9 +14,9 @@ import {
   convertInchesToTwip,
   VerticalAlign,
   TableLayoutType,
-  PageBorderDisplay,
-  PageBorderOffsetFrom,
-  PageBorderZOrder,
+  TabStopType,
+  TabStopPosition,
+  LeaderType,
 } from 'docx';
 import { saveAs } from 'file-saver';
 import { ReportData } from '@/types/report';
@@ -27,48 +27,10 @@ const RED_COLOR = 'c41e3a';
 const BLUE_COLOR = '1e90ff';
 const BLACK_COLOR = '000000';
 
-// Page border configuration for all pages
-const PAGE_BORDERS = {
-  pageBorders: {
-    display: PageBorderDisplay.ALL_PAGES,
-    offsetFrom: PageBorderOffsetFrom.PAGE,
-    zOrder: PageBorderZOrder.FRONT,
-    pageBorderTop: {
-      style: BorderStyle.SINGLE,
-      size: 24,
-      color: DARK_BLUE,
-      space: 24,
-    },
-    pageBorderBottom: {
-      style: BorderStyle.SINGLE,
-      size: 24,
-      color: DARK_BLUE,
-      space: 24,
-    },
-    pageBorderLeft: {
-      style: BorderStyle.SINGLE,
-      size: 24,
-      color: DARK_BLUE,
-      space: 24,
-    },
-    pageBorderRight: {
-      style: BorderStyle.SINGLE,
-      size: 24,
-      color: DARK_BLUE,
-      space: 24,
-    },
-  },
-};
-
-// Page margins
-const PAGE_MARGINS = {
-  margin: {
-    top: convertInchesToTwip(0.75),
-    right: convertInchesToTwip(0.75),
-    bottom: convertInchesToTwip(0.75),
-    left: convertInchesToTwip(1),
-  },
-};
+// Convert twips for consistent measurements
+const PAGE_WIDTH_TWIPS = convertInchesToTwip(8.5);
+const CONTENT_WIDTH_TWIPS = convertInchesToTwip(6.5); // Content area inside borders
+const BORDER_SIZE = 12; // Border thickness in eighths of a point
 
 // Convert image URL to base64
 const imageToBase64 = async (imageUrl: string): Promise<Uint8Array> => {
@@ -83,9 +45,8 @@ const imageToBase64 = async (imageUrl: string): Promise<Uint8Array> => {
   }
 };
 
-// Get logo paths
+// Get logo paths - use import.meta.url for proper resolution
 const getRGPVLogoPath = () => {
-  // Use absolute path for Vite
   return new URL('../assets/rgpv-logo.png', import.meta.url).href;
 };
 
@@ -93,10 +54,41 @@ const getSVCELogoPath = () => {
   return new URL('../assets/svce-logo.png', import.meta.url).href;
 };
 
-// Create invisible table for signature alignment
-const createSignatureTable = (leftContent: Paragraph[], rightContent: Paragraph[]): Table => {
+// ============ GOOGLE DOCS FRIENDLY BORDER WRAPPER ============
+// Wraps content in a single-cell table with dark blue border (works in Google Docs)
+const wrapInBorderedTable = (content: (Paragraph | Table)[]): Table => {
   return new Table({
     width: { size: 100, type: WidthType.PERCENTAGE },
+    layout: TableLayoutType.FIXED,
+    rows: [
+      new TableRow({
+        children: [
+          new TableCell({
+            width: { size: 100, type: WidthType.PERCENTAGE },
+            borders: {
+              top: { style: BorderStyle.SINGLE, size: BORDER_SIZE, color: DARK_BLUE },
+              bottom: { style: BorderStyle.SINGLE, size: BORDER_SIZE, color: DARK_BLUE },
+              left: { style: BorderStyle.SINGLE, size: BORDER_SIZE, color: DARK_BLUE },
+              right: { style: BorderStyle.SINGLE, size: BORDER_SIZE, color: DARK_BLUE },
+            },
+            margins: {
+              top: convertInchesToTwip(0.3),
+              bottom: convertInchesToTwip(0.3),
+              left: convertInchesToTwip(0.4),
+              right: convertInchesToTwip(0.4),
+            },
+            children: content,
+          }),
+        ],
+      }),
+    ],
+  });
+};
+
+// ============ SIGNATURE TABLE WITH FIXED DXA WIDTHS ============
+const createSignatureTable = (leftContent: Paragraph[], rightContent: Paragraph[]): Table => {
+  return new Table({
+    width: { size: CONTENT_WIDTH_TWIPS, type: WidthType.DXA },
     layout: TableLayoutType.FIXED,
     borders: {
       top: { style: BorderStyle.NONE },
@@ -110,7 +102,7 @@ const createSignatureTable = (leftContent: Paragraph[], rightContent: Paragraph[
       new TableRow({
         children: [
           new TableCell({
-            width: { size: 50, type: WidthType.PERCENTAGE },
+            width: { size: Math.floor(CONTENT_WIDTH_TWIPS / 2), type: WidthType.DXA },
             borders: {
               top: { style: BorderStyle.NONE },
               bottom: { style: BorderStyle.NONE },
@@ -120,7 +112,7 @@ const createSignatureTable = (leftContent: Paragraph[], rightContent: Paragraph[
             children: leftContent,
           }),
           new TableCell({
-            width: { size: 50, type: WidthType.PERCENTAGE },
+            width: { size: Math.floor(CONTENT_WIDTH_TWIPS / 2), type: WidthType.DXA },
             borders: {
               top: { style: BorderStyle.NONE },
               bottom: { style: BorderStyle.NONE },
@@ -136,12 +128,12 @@ const createSignatureTable = (leftContent: Paragraph[], rightContent: Paragraph[
 };
 
 // ============ COVER PAGE WITH RGPV LOGO ============
-const createCoverPage = async (data: ReportData): Promise<Paragraph[]> => {
+const createCoverPage = async (data: ReportData): Promise<Table> => {
   const rgpvImageData = await imageToBase64(getRGPVLogoPath());
-  const paragraphs: Paragraph[] = [];
+  const content: (Paragraph | Table)[] = [];
   
   // Project Type
-  paragraphs.push(
+  content.push(
     new Paragraph({
       alignment: AlignmentType.CENTER,
       spacing: { after: 100 },
@@ -158,13 +150,30 @@ const createCoverPage = async (data: ReportData): Promise<Paragraph[]> => {
   );
   
   // Submitted in Fulfillment
-  paragraphs.push(
+  content.push(
     new Paragraph({
       alignment: AlignmentType.CENTER,
       spacing: { after: 50 },
       children: [
         new TextRun({
           text: 'Submitted in Fulfillment for the Award of Under Graduate Degree of',
+          bold: true,
+          size: 22,
+          font: FONT_NAME,
+          color: RED_COLOR,
+        }),
+      ],
+    })
+  );
+  
+  // Degree Name
+  content.push(
+    new Paragraph({
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 200 },
+      children: [
+        new TextRun({
+          text: `BACHELOR OF TECHNOLOGY IN ${data.projectDetails.department.toUpperCase()}`,
           bold: true,
           size: 24,
           font: FONT_NAME,
@@ -174,32 +183,15 @@ const createCoverPage = async (data: ReportData): Promise<Paragraph[]> => {
     })
   );
   
-  // Degree Name
-  paragraphs.push(
-    new Paragraph({
-      alignment: AlignmentType.CENTER,
-      spacing: { after: 300 },
-      children: [
-        new TextRun({
-          text: `BACHELOR OF TECHNOLOGY IN ${data.projectDetails.department.toUpperCase()}`,
-          bold: true,
-          size: 28,
-          font: FONT_NAME,
-          color: RED_COLOR,
-        }),
-      ],
-    })
-  );
-  
   // Project Title
-  paragraphs.push(
+  content.push(
     new Paragraph({
       alignment: AlignmentType.CENTER,
-      spacing: { after: 300 },
+      spacing: { after: 200 },
       children: [
         new TextRun({
           text: `"${data.projectDetails.projectTitle}"`,
-          size: 28,
+          size: 26,
           font: FONT_NAME,
           color: BLACK_COLOR,
         }),
@@ -208,7 +200,7 @@ const createCoverPage = async (data: ReportData): Promise<Paragraph[]> => {
   );
   
   // Submitted to
-  paragraphs.push(
+  content.push(
     new Paragraph({
       alignment: AlignmentType.CENTER,
       spacing: { after: 50 },
@@ -224,7 +216,7 @@ const createCoverPage = async (data: ReportData): Promise<Paragraph[]> => {
     })
   );
   
-  paragraphs.push(
+  content.push(
     new Paragraph({
       alignment: AlignmentType.CENTER,
       spacing: { after: 50 },
@@ -232,7 +224,7 @@ const createCoverPage = async (data: ReportData): Promise<Paragraph[]> => {
         new TextRun({
           text: 'Rajiv Gandhi Proudyogiki Vishwavidyalaya',
           bold: true,
-          size: 28,
+          size: 26,
           font: FONT_NAME,
           color: BLUE_COLOR,
         }),
@@ -240,15 +232,15 @@ const createCoverPage = async (data: ReportData): Promise<Paragraph[]> => {
     })
   );
   
-  paragraphs.push(
+  content.push(
     new Paragraph({
       alignment: AlignmentType.CENTER,
-      spacing: { after: 200 },
+      spacing: { after: 150 },
       children: [
         new TextRun({
           text: 'BHOPAL (M.P.)',
           bold: true,
-          size: 28,
+          size: 26,
           font: FONT_NAME,
           color: BLUE_COLOR,
         }),
@@ -258,14 +250,14 @@ const createCoverPage = async (data: ReportData): Promise<Paragraph[]> => {
   
   // RGPV Logo
   if (rgpvImageData.length > 0) {
-    paragraphs.push(
+    content.push(
       new Paragraph({
         alignment: AlignmentType.CENTER,
-        spacing: { before: 200, after: 200 },
+        spacing: { before: 100, after: 150 },
         children: [
           new ImageRun({
             data: rgpvImageData,
-            transformation: { width: 100, height: 100 },
+            transformation: { width: 90, height: 90 },
             type: 'png',
           }),
         ],
@@ -274,31 +266,31 @@ const createCoverPage = async (data: ReportData): Promise<Paragraph[]> => {
   }
   
   // Guided By section
-  paragraphs.push(
+  content.push(
     new Paragraph({
-      spacing: { before: 200, after: 50 },
+      spacing: { before: 150, after: 50 },
       children: [
         new TextRun({ text: 'Guided By:-', bold: true, underline: {}, size: 24, font: FONT_NAME, color: RED_COLOR }),
       ],
     })
   );
-  paragraphs.push(
+  content.push(
     new Paragraph({
       children: [
         new TextRun({ text: data.projectDetails.guideName, size: 24, font: FONT_NAME, color: BLACK_COLOR }),
       ],
     })
   );
-  paragraphs.push(
+  content.push(
     new Paragraph({
       children: [
         new TextRun({ text: data.projectDetails.guideDesignation, size: 24, font: FONT_NAME, color: BLACK_COLOR }),
       ],
     })
   );
-  paragraphs.push(
+  content.push(
     new Paragraph({
-      spacing: { after: 200 },
+      spacing: { after: 150 },
       children: [
         new TextRun({ text: `${data.projectDetails.department} Department`, size: 24, font: FONT_NAME, color: BLACK_COLOR }),
       ],
@@ -306,7 +298,7 @@ const createCoverPage = async (data: ReportData): Promise<Paragraph[]> => {
   );
   
   // Submitted By section
-  paragraphs.push(
+  content.push(
     new Paragraph({
       spacing: { before: 100, after: 50 },
       children: [
@@ -316,7 +308,7 @@ const createCoverPage = async (data: ReportData): Promise<Paragraph[]> => {
   );
   
   data.projectDetails.students.forEach(student => {
-    paragraphs.push(
+    content.push(
       new Paragraph({
         children: [
           new TextRun({ text: `${student.name} [${student.enrollmentNumber}]`, size: 24, font: FONT_NAME, color: BLACK_COLOR }),
@@ -326,13 +318,29 @@ const createCoverPage = async (data: ReportData): Promise<Paragraph[]> => {
   });
   
   // Footer content
-  paragraphs.push(
+  content.push(
     new Paragraph({
       alignment: AlignmentType.CENTER,
-      spacing: { before: 300 },
+      spacing: { before: 200 },
       children: [
         new TextRun({
           text: `Department of ${data.projectDetails.department}`,
+          bold: true,
+          size: 22,
+          font: FONT_NAME,
+          color: RED_COLOR,
+        }),
+      ],
+    })
+  );
+  
+  content.push(
+    new Paragraph({
+      alignment: AlignmentType.CENTER,
+      spacing: { before: 50 },
+      children: [
+        new TextRun({
+          text: 'SWAMI VIVEKANAND COLLEGE OF ENGINEERING, INDORE (M.P)',
           bold: true,
           size: 24,
           font: FONT_NAME,
@@ -342,23 +350,7 @@ const createCoverPage = async (data: ReportData): Promise<Paragraph[]> => {
     })
   );
   
-  paragraphs.push(
-    new Paragraph({
-      alignment: AlignmentType.CENTER,
-      spacing: { before: 100 },
-      children: [
-        new TextRun({
-          text: 'SWAMI VIVEKANAND COLLEGE OF ENGINEERING, INDORE (M.P)',
-          bold: true,
-          size: 28,
-          font: FONT_NAME,
-          color: RED_COLOR,
-        }),
-      ],
-    })
-  );
-  
-  paragraphs.push(
+  content.push(
     new Paragraph({
       alignment: AlignmentType.CENTER,
       spacing: { before: 50 },
@@ -374,16 +366,16 @@ const createCoverPage = async (data: ReportData): Promise<Paragraph[]> => {
     })
   );
   
-  return paragraphs;
+  return wrapInBorderedTable(content);
 };
 
 // ============ COVER PAGE WITH SVCE LOGO ============
-const createCoverPageWithSVCE = async (data: ReportData): Promise<Paragraph[]> => {
+const createCoverPageWithSVCE = async (data: ReportData): Promise<Table> => {
   const svceImageData = await imageToBase64(getSVCELogoPath());
-  const paragraphs: Paragraph[] = [];
+  const content: (Paragraph | Table)[] = [];
   
   // Project Type
-  paragraphs.push(
+  content.push(
     new Paragraph({
       alignment: AlignmentType.CENTER,
       spacing: { after: 100 },
@@ -400,13 +392,30 @@ const createCoverPageWithSVCE = async (data: ReportData): Promise<Paragraph[]> =
   );
   
   // Submitted in Fulfillment
-  paragraphs.push(
+  content.push(
     new Paragraph({
       alignment: AlignmentType.CENTER,
       spacing: { after: 50 },
       children: [
         new TextRun({
           text: 'Submitted in Fulfillment for the Award of Under Graduate Degree of',
+          bold: true,
+          size: 22,
+          font: FONT_NAME,
+          color: RED_COLOR,
+        }),
+      ],
+    })
+  );
+  
+  // Degree Name
+  content.push(
+    new Paragraph({
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 200 },
+      children: [
+        new TextRun({
+          text: `BACHELOR OF TECHNOLOGY IN ${data.projectDetails.department.toUpperCase()}`,
           bold: true,
           size: 24,
           font: FONT_NAME,
@@ -416,32 +425,15 @@ const createCoverPageWithSVCE = async (data: ReportData): Promise<Paragraph[]> =
     })
   );
   
-  // Degree Name
-  paragraphs.push(
-    new Paragraph({
-      alignment: AlignmentType.CENTER,
-      spacing: { after: 300 },
-      children: [
-        new TextRun({
-          text: `BACHELOR OF TECHNOLOGY IN ${data.projectDetails.department.toUpperCase()}`,
-          bold: true,
-          size: 28,
-          font: FONT_NAME,
-          color: RED_COLOR,
-        }),
-      ],
-    })
-  );
-  
   // Project Title
-  paragraphs.push(
+  content.push(
     new Paragraph({
       alignment: AlignmentType.CENTER,
-      spacing: { after: 300 },
+      spacing: { after: 200 },
       children: [
         new TextRun({
           text: `"${data.projectDetails.projectTitle}"`,
-          size: 28,
+          size: 26,
           font: FONT_NAME,
           color: BLACK_COLOR,
         }),
@@ -450,7 +442,7 @@ const createCoverPageWithSVCE = async (data: ReportData): Promise<Paragraph[]> =
   );
   
   // Submitted to
-  paragraphs.push(
+  content.push(
     new Paragraph({
       alignment: AlignmentType.CENTER,
       spacing: { after: 50 },
@@ -466,7 +458,7 @@ const createCoverPageWithSVCE = async (data: ReportData): Promise<Paragraph[]> =
     })
   );
   
-  paragraphs.push(
+  content.push(
     new Paragraph({
       alignment: AlignmentType.CENTER,
       spacing: { after: 50 },
@@ -474,7 +466,7 @@ const createCoverPageWithSVCE = async (data: ReportData): Promise<Paragraph[]> =
         new TextRun({
           text: 'Rajiv Gandhi Proudyogiki Vishwavidyalaya',
           bold: true,
-          size: 28,
+          size: 26,
           font: FONT_NAME,
           color: BLUE_COLOR,
         }),
@@ -482,15 +474,15 @@ const createCoverPageWithSVCE = async (data: ReportData): Promise<Paragraph[]> =
     })
   );
   
-  paragraphs.push(
+  content.push(
     new Paragraph({
       alignment: AlignmentType.CENTER,
-      spacing: { after: 200 },
+      spacing: { after: 150 },
       children: [
         new TextRun({
           text: 'BHOPAL (M.P.)',
           bold: true,
-          size: 28,
+          size: 26,
           font: FONT_NAME,
           color: BLUE_COLOR,
         }),
@@ -500,14 +492,14 @@ const createCoverPageWithSVCE = async (data: ReportData): Promise<Paragraph[]> =
   
   // SVCE Logo
   if (svceImageData.length > 0) {
-    paragraphs.push(
+    content.push(
       new Paragraph({
         alignment: AlignmentType.CENTER,
-        spacing: { before: 200, after: 200 },
+        spacing: { before: 100, after: 150 },
         children: [
           new ImageRun({
             data: svceImageData,
-            transformation: { width: 100, height: 100 },
+            transformation: { width: 90, height: 90 },
             type: 'png',
           }),
         ],
@@ -516,31 +508,31 @@ const createCoverPageWithSVCE = async (data: ReportData): Promise<Paragraph[]> =
   }
   
   // Guided By section
-  paragraphs.push(
+  content.push(
     new Paragraph({
-      spacing: { before: 200, after: 50 },
+      spacing: { before: 150, after: 50 },
       children: [
         new TextRun({ text: 'Guided By:-', bold: true, underline: {}, size: 24, font: FONT_NAME, color: RED_COLOR }),
       ],
     })
   );
-  paragraphs.push(
+  content.push(
     new Paragraph({
       children: [
         new TextRun({ text: data.projectDetails.guideName, size: 24, font: FONT_NAME, color: BLACK_COLOR }),
       ],
     })
   );
-  paragraphs.push(
+  content.push(
     new Paragraph({
       children: [
         new TextRun({ text: data.projectDetails.guideDesignation, size: 24, font: FONT_NAME, color: BLACK_COLOR }),
       ],
     })
   );
-  paragraphs.push(
+  content.push(
     new Paragraph({
-      spacing: { after: 200 },
+      spacing: { after: 150 },
       children: [
         new TextRun({ text: `${data.projectDetails.department} Department`, size: 24, font: FONT_NAME, color: BLACK_COLOR }),
       ],
@@ -548,7 +540,7 @@ const createCoverPageWithSVCE = async (data: ReportData): Promise<Paragraph[]> =
   );
   
   // Submitted By section
-  paragraphs.push(
+  content.push(
     new Paragraph({
       spacing: { before: 100, after: 50 },
       children: [
@@ -558,7 +550,7 @@ const createCoverPageWithSVCE = async (data: ReportData): Promise<Paragraph[]> =
   );
   
   data.projectDetails.students.forEach(student => {
-    paragraphs.push(
+    content.push(
       new Paragraph({
         children: [
           new TextRun({ text: `${student.name} [${student.enrollmentNumber}]`, size: 24, font: FONT_NAME, color: BLACK_COLOR }),
@@ -568,13 +560,29 @@ const createCoverPageWithSVCE = async (data: ReportData): Promise<Paragraph[]> =
   });
   
   // Footer content
-  paragraphs.push(
+  content.push(
     new Paragraph({
       alignment: AlignmentType.CENTER,
-      spacing: { before: 300 },
+      spacing: { before: 200 },
       children: [
         new TextRun({
           text: `Department of ${data.projectDetails.department}`,
+          bold: true,
+          size: 22,
+          font: FONT_NAME,
+          color: RED_COLOR,
+        }),
+      ],
+    })
+  );
+  
+  content.push(
+    new Paragraph({
+      alignment: AlignmentType.CENTER,
+      spacing: { before: 50 },
+      children: [
+        new TextRun({
+          text: 'SWAMI VIVEKANAND COLLEGE OF ENGINEERING, INDORE (M.P)',
           bold: true,
           size: 24,
           font: FONT_NAME,
@@ -584,23 +592,7 @@ const createCoverPageWithSVCE = async (data: ReportData): Promise<Paragraph[]> =
     })
   );
   
-  paragraphs.push(
-    new Paragraph({
-      alignment: AlignmentType.CENTER,
-      spacing: { before: 100 },
-      children: [
-        new TextRun({
-          text: 'SWAMI VIVEKANAND COLLEGE OF ENGINEERING, INDORE (M.P)',
-          bold: true,
-          size: 28,
-          font: FONT_NAME,
-          color: RED_COLOR,
-        }),
-      ],
-    })
-  );
-  
-  paragraphs.push(
+  content.push(
     new Paragraph({
       alignment: AlignmentType.CENTER,
       spacing: { before: 50 },
@@ -616,25 +608,41 @@ const createCoverPageWithSVCE = async (data: ReportData): Promise<Paragraph[]> =
     })
   );
   
-  return paragraphs;
+  return wrapInBorderedTable(content);
 };
 
 // ============ CERTIFICATE PAGE ============
-const createCertificatePage = async (data: ReportData): Promise<(Paragraph | Table)[]> => {
+const createCertificatePage = async (data: ReportData): Promise<Table> => {
   const svceImageData = await imageToBase64(getSVCELogoPath());
+  const content: (Paragraph | Table)[] = [];
   const firstStudent = data.projectDetails.students[0];
-  const elements: (Paragraph | Table)[] = [];
   
-  // College Name
-  elements.push(
+  // College Header
+  content.push(
     new Paragraph({
       alignment: AlignmentType.CENTER,
-      spacing: { after: 200 },
+      spacing: { after: 50 },
       children: [
         new TextRun({
-          text: 'SWAMI VIVEKANAND COLLEGE OF ENGINEERING, INDORE (M.P)',
+          text: 'SWAMI VIVEKANAND COLLEGE OF ENGINEERING,',
           bold: true,
-          size: 32,
+          size: 28,
+          font: FONT_NAME,
+          color: RED_COLOR,
+        }),
+      ],
+    })
+  );
+  
+  content.push(
+    new Paragraph({
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 100 },
+      children: [
+        new TextRun({
+          text: 'INDORE (M.P)',
+          bold: true,
+          size: 28,
           font: FONT_NAME,
           color: RED_COLOR,
         }),
@@ -644,14 +652,14 @@ const createCertificatePage = async (data: ReportData): Promise<(Paragraph | Tab
   
   // SVCE Logo
   if (svceImageData.length > 0) {
-    elements.push(
+    content.push(
       new Paragraph({
         alignment: AlignmentType.CENTER,
-        spacing: { before: 100, after: 100 },
+        spacing: { before: 50, after: 100 },
         children: [
           new ImageRun({
             data: svceImageData,
-            transformation: { width: 100, height: 100 },
+            transformation: { width: 80, height: 80 },
             type: 'png',
           }),
         ],
@@ -660,15 +668,15 @@ const createCertificatePage = async (data: ReportData): Promise<(Paragraph | Tab
   }
   
   // Certificate Title
-  elements.push(
+  content.push(
     new Paragraph({
       alignment: AlignmentType.CENTER,
-      spacing: { before: 200, after: 300 },
+      spacing: { after: 200 },
       children: [
         new TextRun({
           text: 'CERTIFICATE',
           bold: true,
-          size: 40,
+          size: 36,
           font: FONT_NAME,
           color: RED_COLOR,
           underline: {},
@@ -677,88 +685,85 @@ const createCertificatePage = async (data: ReportData): Promise<(Paragraph | Tab
     })
   );
   
-  // Certificate Content
-  elements.push(
+  // Certificate content
+  content.push(
     new Paragraph({
       alignment: AlignmentType.JUSTIFIED,
       spacing: { after: 200, line: 360 },
       children: [
-        new TextRun({ text: 'This is to certify that ', size: 24, font: FONT_NAME, color: BLACK_COLOR }),
+        new TextRun({ text: 'This is to certify that ', size: 24, font: FONT_NAME }),
         new TextRun({ text: `${firstStudent?.name} [${firstStudent?.enrollmentNumber}]`, bold: true, size: 24, font: FONT_NAME, color: RED_COLOR }),
-        new TextRun({ text: ' has completed his project work, titled ', size: 24, font: FONT_NAME, color: BLACK_COLOR }),
+        new TextRun({ text: ' has completed his project work, titled ', size: 24, font: FONT_NAME }),
         new TextRun({ text: `"${data.projectDetails.projectTitle}"`, bold: true, size: 24, font: FONT_NAME, color: RED_COLOR }),
-        new TextRun({ text: ' as per the syllabus and has submitted a satisfactory report on this project as a fulfillment towards the degree of', size: 24, font: FONT_NAME, color: BLACK_COLOR }),
+        new TextRun({ text: ' as per the syllabus and has submitted a satisfactory report on this project as a fulfillment towards the degree of', size: 24, font: FONT_NAME }),
       ],
     })
   );
   
-  elements.push(
+  content.push(
     new Paragraph({
       alignment: AlignmentType.CENTER,
-      spacing: { before: 200, after: 100 },
+      spacing: { before: 100, after: 50 },
       children: [
-        new TextRun({ text: 'BACHELOR OF TECHNOLOGY IN', bold: true, size: 24, font: FONT_NAME, color: BLACK_COLOR }),
+        new TextRun({ text: 'BACHELOR OF TECHNOLOGY IN', bold: true, size: 24, font: FONT_NAME }),
       ],
     })
   );
   
-  elements.push(
+  content.push(
     new Paragraph({
       alignment: AlignmentType.CENTER,
-      spacing: { after: 100 },
+      spacing: { after: 50 },
       children: [
-        new TextRun({ text: data.projectDetails.department.toUpperCase(), bold: true, size: 28, font: FONT_NAME, color: BLUE_COLOR }),
+        new TextRun({ text: data.projectDetails.department.toUpperCase(), bold: true, italics: true, size: 24, font: FONT_NAME, color: BLUE_COLOR }),
       ],
     })
   );
   
-  elements.push(
+  content.push(
     new Paragraph({
       alignment: AlignmentType.CENTER,
-      spacing: { after: 100 },
+      spacing: { after: 50 },
       children: [
-        new TextRun({ text: 'From', size: 24, font: FONT_NAME, color: BLACK_COLOR }),
+        new TextRun({ text: 'From', size: 24, font: FONT_NAME }),
       ],
     })
   );
   
-  elements.push(
+  content.push(
     new Paragraph({
       alignment: AlignmentType.CENTER,
-      spacing: { after: 400 },
+      spacing: { after: 200 },
       children: [
-        new TextRun({ text: 'RAJIV GANDHI PROUDYOGIKI VISHWAVIDYALAYA, BHOPAL', bold: true, size: 28, font: FONT_NAME, color: BLUE_COLOR }),
+        new TextRun({ text: 'RAJIV GANDHI PROUDYOGIKI VISHWAVIDYALAYA, BHOPAL', bold: true, size: 24, font: FONT_NAME, color: RED_COLOR }),
       ],
     })
   );
   
-  // Signatures Table
-  elements.push(
+  // Signatures
+  content.push(
     createSignatureTable(
       [
-        new Paragraph({ spacing: { before: 600 }, children: [new TextRun({ text: data.projectDetails.guideName, bold: true, size: 24, font: FONT_NAME })] }),
-        new Paragraph({ children: [new TextRun({ text: 'Project Coordinator', size: 22, font: FONT_NAME })] }),
-        new Paragraph({ children: [new TextRun({ text: `${data.projectDetails.department} Department`, size: 22, font: FONT_NAME })] }),
-        new Paragraph({ children: [new TextRun({ text: 'S.V.C.E., Indore', size: 22, font: FONT_NAME })] }),
+        new Paragraph({ spacing: { before: 400 }, children: [new TextRun({ text: 'Project Coordinator', bold: true, size: 24, font: FONT_NAME })] }),
+        new Paragraph({ children: [new TextRun({ text: `(${data.projectDetails.department} Dept.)`, size: 22, font: FONT_NAME })] }),
+        new Paragraph({ children: [new TextRun({ text: 'SVCE, Indore (M.P)', size: 22, font: FONT_NAME })] }),
       ],
       [
-        new Paragraph({ spacing: { before: 600 }, alignment: AlignmentType.RIGHT, children: [new TextRun({ text: data.projectDetails.hodName, bold: true, size: 24, font: FONT_NAME })] }),
-        new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: 'HOD', size: 22, font: FONT_NAME })] }),
-        new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: `${data.projectDetails.department} Department`, size: 22, font: FONT_NAME })] }),
-        new Paragraph({ alignment: AlignmentType.RIGHT, children: [new TextRun({ text: 'S.V.C.E., Indore', size: 22, font: FONT_NAME })] }),
+        new Paragraph({ spacing: { before: 400 }, alignment: AlignmentType.RIGHT, children: [new TextRun({ text: `HOD, ${data.projectDetails.department} Department`, bold: true, size: 24, font: FONT_NAME })] }),
       ]
     )
   );
   
-  return elements;
+  return wrapInBorderedTable(content);
 };
 
 // ============ DECLARATION PAGE ============
-const createDeclarationPage = (data: ReportData): Paragraph[] => {
+const createDeclarationPage = (data: ReportData): Table => {
+  const content: (Paragraph | Table)[] = [];
   const firstStudent = data.projectDetails.students[0];
   
-  return [
-    // College Name
+  // College Header
+  content.push(
     new Paragraph({
       alignment: AlignmentType.CENTER,
       spacing: { after: 50 },
@@ -766,40 +771,50 @@ const createDeclarationPage = (data: ReportData): Paragraph[] => {
         new TextRun({
           text: 'Swami Vivekanand College of Engineering, Indore',
           bold: true,
-          size: 32,
+          size: 28,
           font: FONT_NAME,
           color: BLUE_COLOR,
         }),
       ],
-    }),
+    })
+  );
+  
+  content.push(
+    new Paragraph({
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 200 },
+      children: [
+        new TextRun({
+          text: `Department of ${data.projectDetails.department}`,
+          bold: true,
+          size: 24,
+          font: FONT_NAME,
+          color: RED_COLOR,
+        }),
+      ],
+    })
+  );
+  
+  // Declaration Title
+  content.push(
     new Paragraph({
       alignment: AlignmentType.CENTER,
       spacing: { after: 300 },
       children: [
         new TextRun({
-          text: `Department of ${data.projectDetails.department}`,
-          size: 24,
-          font: FONT_NAME,
-          color: BLUE_COLOR,
-        }),
-      ],
-    }),
-    // Title
-    new Paragraph({
-      alignment: AlignmentType.CENTER,
-      spacing: { after: 400 },
-      children: [
-        new TextRun({
           text: 'CANDIDATE DECLARATION',
           bold: true,
-          size: 40,
+          size: 36,
           font: FONT_NAME,
           color: RED_COLOR,
           underline: {},
         }),
       ],
-    }),
-    // Content
+    })
+  );
+  
+  // Declaration content
+  content.push(
     new Paragraph({
       alignment: AlignmentType.JUSTIFIED,
       spacing: { after: 300, line: 360 },
@@ -807,65 +822,72 @@ const createDeclarationPage = (data: ReportData): Paragraph[] => {
         new TextRun({ text: 'I hereby declare that the work, which is being presented in the project, entitled ', size: 24, font: FONT_NAME }),
         new TextRun({ text: `"${data.projectDetails.projectTitle}"`, bold: true, size: 24, font: FONT_NAME, color: RED_COLOR }),
         new TextRun({ text: ` in partial fulfillment of the requirement for the award of degree of Bachelor of Technology in ${data.projectDetails.department} and Engineering submitted in the department of ${data.projectDetails.department} and Engineering, Swami Vivekanand College of Engineering Indore, is an authentic record of my own work carried under the guidance of `, size: 24, font: FONT_NAME }),
-        new TextRun({ text: `${data.projectDetails.guideName}.`, bold: true, size: 24, font: FONT_NAME }),
-        new TextRun({ text: ' I have not submitted the matter embodied in this report for the award of any other degree.', size: 24, font: FONT_NAME }),
+        new TextRun({ text: data.projectDetails.guideName, bold: true, size: 24, font: FONT_NAME }),
+        new TextRun({ text: '. I have not submitted the matter embodied in this report for the award of any other degree.', size: 24, font: FONT_NAME }),
       ],
-    }),
-    // Student Signature
+    })
+  );
+  
+  // Student signature
+  content.push(
     new Paragraph({
       alignment: AlignmentType.RIGHT,
-      spacing: { before: 600 },
+      spacing: { before: 400 },
       children: [
         new TextRun({ text: `${firstStudent?.name} [${firstStudent?.enrollmentNumber}]`, bold: true, size: 24, font: FONT_NAME }),
       ],
-    }),
-    // Guide Signature
-    new Paragraph({
-      spacing: { before: 800 },
-      children: [
-        new TextRun({ text: data.projectDetails.guideName, bold: true, size: 24, font: FONT_NAME }),
+    })
+  );
+  
+  // Signatures
+  content.push(
+    createSignatureTable(
+      [
+        new Paragraph({ spacing: { before: 600 }, children: [new TextRun({ text: 'Project Coordinator', bold: true, size: 24, font: FONT_NAME })] }),
+        new Paragraph({ children: [new TextRun({ text: `(${data.projectDetails.department} Dept.)`, size: 22, font: FONT_NAME })] }),
+        new Paragraph({ children: [new TextRun({ text: 'SVCE, Indore (M.P)', size: 22, font: FONT_NAME })] }),
       ],
-    }),
-    new Paragraph({
-      children: [new TextRun({ text: 'Project Coordinator', size: 22, font: FONT_NAME })],
-    }),
-    new Paragraph({
-      children: [new TextRun({ text: `(${data.projectDetails.department} Dept.)`, size: 22, font: FONT_NAME })],
-    }),
-    new Paragraph({
-      children: [new TextRun({ text: 'SVCE, Indore (M.P)', size: 22, font: FONT_NAME })],
-    }),
-    // HOD Signature
-    new Paragraph({
-      alignment: AlignmentType.RIGHT,
-      spacing: { before: 600 },
-      children: [
-        new TextRun({ text: data.projectDetails.hodName, bold: true, size: 24, font: FONT_NAME }),
-      ],
-    }),
-    new Paragraph({
-      alignment: AlignmentType.RIGHT,
-      children: [new TextRun({ text: `HOD, ${data.projectDetails.department} Department`, size: 22, font: FONT_NAME })],
-    }),
-  ];
+      [
+        new Paragraph({ spacing: { before: 600 }, alignment: AlignmentType.RIGHT, children: [new TextRun({ text: `HOD, ${data.projectDetails.department} Department`, bold: true, size: 24, font: FONT_NAME })] }),
+      ]
+    )
+  );
+  
+  return wrapInBorderedTable(content);
 };
 
 // ============ APPROVAL PAGE ============
-const createApprovalPage = async (data: ReportData): Promise<(Paragraph | Table)[]> => {
+const createApprovalPage = async (data: ReportData): Promise<Table> => {
   const svceImageData = await imageToBase64(getSVCELogoPath());
+  const content: (Paragraph | Table)[] = [];
   const firstStudent = data.projectDetails.students[0];
-  const elements: (Paragraph | Table)[] = [];
   
-  // College Name
-  elements.push(
+  // College Header
+  content.push(
     new Paragraph({
       alignment: AlignmentType.CENTER,
-      spacing: { after: 200 },
+      spacing: { after: 50 },
       children: [
         new TextRun({
-          text: 'SWAMI VIVEKANAND COLLEGE OF ENGINEERING, INDORE (M.P)',
+          text: 'SWAMI VIVEKANAND COLLEGE OF ENGINEERING,',
           bold: true,
-          size: 32,
+          size: 28,
+          font: FONT_NAME,
+          color: RED_COLOR,
+        }),
+      ],
+    })
+  );
+  
+  content.push(
+    new Paragraph({
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 100 },
+      children: [
+        new TextRun({
+          text: 'INDORE (M.P)',
+          bold: true,
+          size: 28,
           font: FONT_NAME,
           color: RED_COLOR,
         }),
@@ -875,14 +897,14 @@ const createApprovalPage = async (data: ReportData): Promise<(Paragraph | Table)
   
   // SVCE Logo
   if (svceImageData.length > 0) {
-    elements.push(
+    content.push(
       new Paragraph({
         alignment: AlignmentType.CENTER,
-        spacing: { before: 100, after: 100 },
+        spacing: { before: 50, after: 100 },
         children: [
           new ImageRun({
             data: svceImageData,
-            transformation: { width: 100, height: 100 },
+            transformation: { width: 80, height: 80 },
             type: 'png',
           }),
         ],
@@ -890,16 +912,16 @@ const createApprovalPage = async (data: ReportData): Promise<(Paragraph | Table)
     );
   }
   
-  // Title
-  elements.push(
+  // Approval Title
+  content.push(
     new Paragraph({
       alignment: AlignmentType.CENTER,
-      spacing: { before: 200, after: 400 },
+      spacing: { after: 200 },
       children: [
         new TextRun({
           text: 'PROJECT APPROVAL CERTIFICATE',
           bold: true,
-          size: 40,
+          size: 36,
           font: FONT_NAME,
           color: RED_COLOR,
           underline: {},
@@ -909,10 +931,10 @@ const createApprovalPage = async (data: ReportData): Promise<(Paragraph | Table)
   );
   
   // Content
-  elements.push(
+  content.push(
     new Paragraph({
       alignment: AlignmentType.JUSTIFIED,
-      spacing: { after: 400, line: 360 },
+      spacing: { after: 300, line: 360 },
       children: [
         new TextRun({ text: 'The project entitled ', size: 24, font: FONT_NAME }),
         new TextRun({ text: `"${data.projectDetails.projectTitle}"`, bold: true, size: 24, font: FONT_NAME, color: RED_COLOR }),
@@ -927,47 +949,51 @@ const createApprovalPage = async (data: ReportData): Promise<(Paragraph | Table)
   );
   
   // Examiner Signatures
-  elements.push(
+  content.push(
     createSignatureTable(
       [
-        new Paragraph({ spacing: { before: 1200 }, children: [new TextRun({ text: 'Internal Examiner', bold: true, size: 24, font: FONT_NAME })] }),
-        new Paragraph({ spacing: { before: 400 }, children: [new TextRun({ text: 'Date:', size: 22, font: FONT_NAME })] }),
+        new Paragraph({ spacing: { before: 600 }, children: [new TextRun({ text: 'Internal Examiner', bold: true, size: 24, font: FONT_NAME })] }),
+        new Paragraph({ spacing: { before: 200 }, children: [new TextRun({ text: 'Date:', size: 22, font: FONT_NAME })] }),
       ],
       [
-        new Paragraph({ spacing: { before: 1200 }, alignment: AlignmentType.RIGHT, children: [new TextRun({ text: 'External Examiner', bold: true, size: 24, font: FONT_NAME })] }),
-        new Paragraph({ spacing: { before: 400 }, alignment: AlignmentType.RIGHT, children: [new TextRun({ text: 'Date:', size: 22, font: FONT_NAME })] }),
+        new Paragraph({ spacing: { before: 600 }, alignment: AlignmentType.RIGHT, children: [new TextRun({ text: 'External Examiner', bold: true, size: 24, font: FONT_NAME })] }),
+        new Paragraph({ spacing: { before: 200 }, alignment: AlignmentType.RIGHT, children: [new TextRun({ text: 'Date:', size: 22, font: FONT_NAME })] }),
       ]
     )
   );
   
-  return elements;
+  return wrapInBorderedTable(content);
 };
 
 // ============ ACKNOWLEDGEMENT PAGE ============
-const createAcknowledgementPage = (data: ReportData): Paragraph[] => {
-  const paragraphs: Paragraph[] = [
+const createAcknowledgementPage = (data: ReportData): Table => {
+  const content: (Paragraph | Table)[] = [];
+  
+  content.push(
     new Paragraph({
       alignment: AlignmentType.CENTER,
-      spacing: { after: 400 },
+      spacing: { after: 300 },
       children: [
         new TextRun({
           text: 'ACKNOWLEDGEMENT',
           bold: true,
-          size: 40,
+          size: 36,
           font: FONT_NAME,
           color: RED_COLOR,
           underline: {},
         }),
       ],
-    }),
-  ];
+    })
+  );
   
-  const ackParagraphs = data.acknowledgement.split('\n\n').filter(p => p.trim());
+  const ackText = data.acknowledgement || 'We would like to express our sincere gratitude to all those who have contributed to the successful completion of this project.';
+  const ackParagraphs = ackText.split('\n\n').filter(p => p.trim());
+  
   ackParagraphs.forEach((para) => {
-    paragraphs.push(
+    content.push(
       new Paragraph({
         alignment: AlignmentType.JUSTIFIED,
-        spacing: { after: 300, line: 360 },
+        spacing: { after: 200, line: 360 },
         children: [
           new TextRun({
             text: para.trim(),
@@ -979,34 +1005,38 @@ const createAcknowledgementPage = (data: ReportData): Paragraph[] => {
     );
   });
   
-  return paragraphs;
+  return wrapInBorderedTable(content);
 };
 
 // ============ ABSTRACT PAGE ============
-const createAbstractPage = (data: ReportData): Paragraph[] => {
-  const paragraphs: Paragraph[] = [
+const createAbstractPage = (data: ReportData): Table => {
+  const content: (Paragraph | Table)[] = [];
+  
+  content.push(
     new Paragraph({
       alignment: AlignmentType.CENTER,
-      spacing: { after: 400 },
+      spacing: { after: 300 },
       children: [
         new TextRun({
           text: 'ABSTRACT',
           bold: true,
-          size: 40,
+          size: 36,
           font: FONT_NAME,
           color: RED_COLOR,
           underline: {},
         }),
       ],
-    }),
-  ];
+    })
+  );
   
-  const abstractParagraphs = data.abstract.split('\n\n').filter(p => p.trim());
+  const abstractText = data.abstract || 'This project presents a comprehensive study and implementation of the proposed system.';
+  const abstractParagraphs = abstractText.split('\n\n').filter(p => p.trim());
+  
   abstractParagraphs.forEach((para) => {
-    paragraphs.push(
+    content.push(
       new Paragraph({
         alignment: AlignmentType.JUSTIFIED,
-        spacing: { after: 300, line: 360 },
+        spacing: { after: 200, line: 360 },
         children: [
           new TextRun({
             text: para.trim(),
@@ -1018,27 +1048,36 @@ const createAbstractPage = (data: ReportData): Paragraph[] => {
     );
   });
   
-  return paragraphs;
+  return wrapInBorderedTable(content);
 };
 
-// ============ TABLE OF CONTENTS PAGE ============
-const createTableOfContents = (data: ReportData): Paragraph[] => {
-  const paragraphs: Paragraph[] = [
+// ============ TABLE OF CONTENTS PAGE (with tab stops + dot leaders) ============
+const createTableOfContents = (data: ReportData): Table => {
+  const content: (Paragraph | Table)[] = [];
+  
+  content.push(
     new Paragraph({
       alignment: AlignmentType.CENTER,
-      spacing: { after: 400 },
+      spacing: { after: 300 },
       children: [
         new TextRun({
           text: 'TABLE OF CONTENTS',
           bold: true,
-          size: 40,
+          size: 36,
           font: FONT_NAME,
           color: RED_COLOR,
           underline: {},
         }),
       ],
-    }),
-  ];
+    })
+  );
+  
+  // Tab stop for right-aligned page numbers with dot leader
+  const tocTabStop = {
+    type: TabStopType.RIGHT,
+    position: TabStopPosition.MAX,
+    leader: LeaderType.DOT,
+  };
   
   // Preliminary pages
   const preliminaryItems = [
@@ -1051,12 +1090,13 @@ const createTableOfContents = (data: ReportData): Paragraph[] => {
   ];
   
   preliminaryItems.forEach(item => {
-    paragraphs.push(
+    content.push(
       new Paragraph({
-        spacing: { after: 100 },
+        spacing: { after: 120 },
+        tabStops: [tocTabStop],
         children: [
           new TextRun({ text: item.title, size: 24, font: FONT_NAME }),
-          new TextRun({ text: ' '.repeat(50), size: 24, font: FONT_NAME }),
+          new TextRun({ text: '\t', size: 24, font: FONT_NAME }),
           new TextRun({ text: item.page, size: 24, font: FONT_NAME }),
         ],
       })
@@ -1066,22 +1106,24 @@ const createTableOfContents = (data: ReportData): Paragraph[] => {
   // Chapters
   let pageNum = 1;
   data.chapters.forEach((chapter) => {
-    paragraphs.push(
+    content.push(
       new Paragraph({
-        spacing: { before: 200, after: 100 },
+        spacing: { before: 150, after: 100 },
+        tabStops: [tocTabStop],
         children: [
           new TextRun({ text: `Chapter ${chapter.number}: ${chapter.title}`, bold: true, size: 24, font: FONT_NAME, color: RED_COLOR }),
-          new TextRun({ text: ' '.repeat(30), size: 24, font: FONT_NAME }),
+          new TextRun({ text: '\t', size: 24, font: FONT_NAME }),
           new TextRun({ text: `${pageNum}`, size: 24, font: FONT_NAME }),
         ],
       })
     );
     
     chapter.sections.forEach((section, sectionIdx) => {
-      paragraphs.push(
+      content.push(
         new Paragraph({
-          spacing: { after: 100 },
-          indent: { left: 720 },
+          spacing: { after: 80 },
+          indent: { left: convertInchesToTwip(0.3) },
+          tabStops: [tocTabStop],
           children: [
             new TextRun({ text: `${chapter.number}.${sectionIdx + 1} ${section.heading}`, size: 24, font: FONT_NAME }),
           ],
@@ -1092,15 +1134,17 @@ const createTableOfContents = (data: ReportData): Paragraph[] => {
     pageNum += 2 + Math.ceil(chapter.sections.length / 2);
   });
   
-  return paragraphs;
+  return wrapInBorderedTable(content);
 };
 
 // ============ CHAPTER TITLE PAGE ============
-const createChapterTitlePage = (chapter: { number: number; title: string }): Paragraph[] => {
-  return [
+const createChapterTitlePage = (chapter: { number: number; title: string }): Table => {
+  const content: (Paragraph | Table)[] = [];
+  
+  content.push(
     new Paragraph({
       alignment: AlignmentType.CENTER,
-      spacing: { before: 3000, after: 400 },
+      spacing: { before: convertInchesToTwip(3), after: 300 },
       children: [
         new TextRun({
           text: `CHAPTER ${chapter.number}`,
@@ -1110,10 +1154,13 @@ const createChapterTitlePage = (chapter: { number: number; title: string }): Par
           color: RED_COLOR,
         }),
       ],
-    }),
+    })
+  );
+  
+  content.push(
     new Paragraph({
       alignment: AlignmentType.CENTER,
-      spacing: { after: 400 },
+      spacing: { after: 300 },
       children: [
         new TextRun({
           text: chapter.title.toUpperCase(),
@@ -1123,19 +1170,23 @@ const createChapterTitlePage = (chapter: { number: number; title: string }): Par
           color: RED_COLOR,
         }),
       ],
-    }),
-  ];
+    })
+  );
+  
+  return wrapInBorderedTable(content);
 };
 
-// ============ CHAPTER CONTENT PAGES ============
-const createChapterContent = (chapter: { number: number; sections: { heading: string; content: string }[] }): Paragraph[] => {
-  const paragraphs: Paragraph[] = [];
+// ============ CHAPTER CONTENT PAGES (with images) ============
+const createChapterContent = async (chapter: { number: number; sections: { heading: string; content: string; images?: { url: string; caption: string }[] }[] }): Promise<Table> => {
+  const content: (Paragraph | Table)[] = [];
   
-  chapter.sections.forEach((section, sectionIdx) => {
+  for (let sectionIdx = 0; sectionIdx < chapter.sections.length; sectionIdx++) {
+    const section = chapter.sections[sectionIdx];
+    
     // Section heading
-    paragraphs.push(
+    content.push(
       new Paragraph({
-        spacing: { before: 400, after: 200 },
+        spacing: { before: 300, after: 150 },
         children: [
           new TextRun({
             text: `${chapter.number}.${sectionIdx + 1} ${section.heading}`,
@@ -1149,18 +1200,19 @@ const createChapterContent = (chapter: { number: number; sections: { heading: st
     );
     
     // Section content
-    const contentParagraphs = section.content.split('\n').filter(p => p.trim());
+    const sectionContent = section.content || '';
+    const contentLines = sectionContent.split('\n').filter(p => p.trim());
     
-    contentParagraphs.forEach((para) => {
+    contentLines.forEach((para) => {
       const trimmedPara = para.trim();
       
       // Check if it's a bullet point
       if (trimmedPara.match(/^[•\-\*○]/)) {
-        paragraphs.push(
+        content.push(
           new Paragraph({
             alignment: AlignmentType.LEFT,
-            spacing: { after: 100, line: 360 },
-            indent: { left: 720 },
+            spacing: { after: 80, line: 360 },
+            indent: { left: convertInchesToTwip(0.3) },
             children: [
               new TextRun({
                 text: trimmedPara,
@@ -1170,11 +1222,11 @@ const createChapterContent = (chapter: { number: number; sections: { heading: st
             ],
           })
         );
-      } else {
-        paragraphs.push(
+      } else if (trimmedPara.length > 0) {
+        content.push(
           new Paragraph({
             alignment: AlignmentType.JUSTIFIED,
-            spacing: { after: 200, line: 360 },
+            spacing: { after: 150, line: 360 },
             children: [
               new TextRun({
                 text: trimmedPara,
@@ -1186,96 +1238,142 @@ const createChapterContent = (chapter: { number: number; sections: { heading: st
         );
       }
     });
-  });
+    
+    // Section images
+    if (section.images && section.images.length > 0) {
+      for (let imgIdx = 0; imgIdx < section.images.length; imgIdx++) {
+        const image = section.images[imgIdx];
+        try {
+          const imageData = await imageToBase64(image.url);
+          if (imageData.length > 0) {
+            content.push(
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                spacing: { before: 200, after: 100 },
+                children: [
+                  new ImageRun({
+                    data: imageData,
+                    transformation: { width: 400, height: 250 },
+                    type: 'png',
+                  }),
+                ],
+              })
+            );
+            
+            // Image caption
+            content.push(
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                spacing: { after: 200 },
+                children: [
+                  new TextRun({
+                    text: `Fig ${chapter.number}.${imgIdx + 1}: ${image.caption || 'Figure'}`,
+                    italics: true,
+                    size: 22,
+                    font: FONT_NAME,
+                  }),
+                ],
+              })
+            );
+          }
+        } catch (error) {
+          console.error('Error loading section image:', error);
+        }
+      }
+    }
+  }
   
-  return paragraphs;
+  return wrapInBorderedTable(content);
 };
 
 // ============ MAIN EXPORT FUNCTION ============
 export const generateDOCX = async (data: ReportData, filename: string = 'project-report.docx'): Promise<void> => {
-  // Create sections for each page with borders
   const sections: any[] = [];
   
-  // Page properties with border
-  const pagePropertiesWithBorder = {
+  // Page properties (margins only - borders are handled by table wrapper)
+  const pageProperties = {
     page: {
-      ...PAGE_MARGINS,
-      ...PAGE_BORDERS,
+      margin: {
+        top: convertInchesToTwip(0.5),
+        right: convertInchesToTwip(0.5),
+        bottom: convertInchesToTwip(0.5),
+        left: convertInchesToTwip(0.5),
+      },
     },
   };
   
   // Cover Page with RGPV Logo
-  const coverPageContent = await createCoverPage(data);
+  const coverPage = await createCoverPage(data);
   sections.push({
-    properties: pagePropertiesWithBorder,
-    children: coverPageContent,
+    properties: pageProperties,
+    children: [coverPage],
   });
   
   // Cover Page with SVCE Logo
-  const coverPageSVCEContent = await createCoverPageWithSVCE(data);
+  const coverPageSVCE = await createCoverPageWithSVCE(data);
   sections.push({
-    properties: pagePropertiesWithBorder,
-    children: coverPageSVCEContent,
+    properties: pageProperties,
+    children: [coverPageSVCE],
   });
   
   // Certificate Page
-  const certificateContent = await createCertificatePage(data);
+  const certificatePage = await createCertificatePage(data);
   sections.push({
-    properties: pagePropertiesWithBorder,
-    children: certificateContent,
+    properties: pageProperties,
+    children: [certificatePage],
   });
   
   // Declaration Page
-  const declarationContent = createDeclarationPage(data);
+  const declarationPage = createDeclarationPage(data);
   sections.push({
-    properties: pagePropertiesWithBorder,
-    children: declarationContent,
+    properties: pageProperties,
+    children: [declarationPage],
   });
   
   // Approval Page
-  const approvalContent = await createApprovalPage(data);
+  const approvalPage = await createApprovalPage(data);
   sections.push({
-    properties: pagePropertiesWithBorder,
-    children: approvalContent,
+    properties: pageProperties,
+    children: [approvalPage],
   });
   
   // Acknowledgement Page
-  const acknowledgementContent = createAcknowledgementPage(data);
+  const acknowledgementPage = createAcknowledgementPage(data);
   sections.push({
-    properties: pagePropertiesWithBorder,
-    children: acknowledgementContent,
+    properties: pageProperties,
+    children: [acknowledgementPage],
   });
   
   // Abstract Page
-  const abstractContent = createAbstractPage(data);
+  const abstractPage = createAbstractPage(data);
   sections.push({
-    properties: pagePropertiesWithBorder,
-    children: abstractContent,
+    properties: pageProperties,
+    children: [abstractPage],
   });
   
   // Table of Contents
-  const tocContent = createTableOfContents(data);
+  const tocPage = createTableOfContents(data);
   sections.push({
-    properties: pagePropertiesWithBorder,
-    children: tocContent,
+    properties: pageProperties,
+    children: [tocPage],
   });
   
   // Chapters
-  data.chapters.forEach((chapter) => {
+  for (const chapter of data.chapters) {
     // Chapter title page
-    const chapterTitleContent = createChapterTitlePage(chapter);
+    const chapterTitlePage = createChapterTitlePage(chapter);
     sections.push({
-      properties: pagePropertiesWithBorder,
-      children: chapterTitleContent,
+      properties: pageProperties,
+      children: [chapterTitlePage],
     });
     
     // Chapter content pages
-    const chapterContent = createChapterContent(chapter);
+    const chapterContentPage = await createChapterContent(chapter);
     sections.push({
-      properties: pagePropertiesWithBorder,
-      children: chapterContent,
+      properties: pageProperties,
+      children: [chapterContentPage],
     });
-  });
+  }
   
   const doc = new Document({
     sections: sections,
