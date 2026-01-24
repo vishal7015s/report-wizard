@@ -1,4 +1,4 @@
-import { useRef, useState, useMemo, useEffect } from 'react';
+import { useRef, useState, useMemo } from 'react';
 import { useReportStore } from '@/store/reportStore';
 import { Button } from '@/components/ui/button';
 import { Download, CreditCard, Eye, CheckCircle, Loader2, FileText, FileDown } from 'lucide-react';
@@ -17,16 +17,8 @@ import PDFListOfFigures from '@/components/pdf/PDFListOfFigures';
 import PDFChapterTitle from '@/components/pdf/PDFChapterTitle';
 import PDFChapterContent from '@/components/pdf/PDFChapterContent';
 import { ChapterSection } from '@/types/report';
-import { useInstamojoPayment } from '@/hooks/useInstamojoPayment';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { useUPIPayment } from '@/hooks/useUPIPayment';
+import UPIPaymentDialog from '@/components/UPIPaymentDialog';
 
 const ReportPreview = () => {
   const { reportData, contentMode } = useReportStore();
@@ -34,39 +26,16 @@ const ReportPreview = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [downloadType, setDownloadType] = useState<'pdf' | 'docx' | null>(null);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
-  const [paymentDetails, setPaymentDetails] = useState({
-    buyer_name: reportData.projectDetails.students[0]?.name || '',
-    email: '',
-    phone: '',
-  });
 
   const { 
-    isProcessing, 
     paymentComplete, 
-    initiatePayment, 
-    verifyPayment, 
-    checkPaymentStatus 
-  } = useInstamojoPayment();
+    checkPaymentStatus,
+    markPaymentComplete 
+  } = useUPIPayment();
 
   const isAIGenerated = contentMode === 'ai';
   const isPaid = checkPaymentStatus() || paymentComplete;
   const price = isAIGenerated ? '₹50' : 'Free';
-
-  // Check for payment callback on mount
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const paymentStatus = urlParams.get('payment');
-    const paymentId = urlParams.get('payment_id');
-    const paymentRequestId = sessionStorage.getItem('payment_request_id');
-
-    if (paymentStatus === 'success' && paymentId && paymentRequestId) {
-      // Verify the payment
-      verifyPayment(paymentId, paymentRequestId).then((verified) => {
-        // Clean up URL
-        window.history.replaceState({}, '', '/create');
-      });
-    }
-  }, []);
 
   const handleDownloadPDF = async () => {
     if (!pdfContainerRef.current) return;
@@ -110,29 +79,8 @@ const ReportPreview = () => {
     }
   };
 
-  const handlePayment = () => {
-    if (!paymentDetails.email || !paymentDetails.phone || !paymentDetails.buyer_name) {
-      toast.error('Please fill all payment details');
-      return;
-    }
-
-    if (!/^\d{10}$/.test(paymentDetails.phone)) {
-      toast.error('Please enter a valid 10-digit phone number');
-      return;
-    }
-
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(paymentDetails.email)) {
-      toast.error('Please enter a valid email address');
-      return;
-    }
-
-    initiatePayment({
-      purpose: `AI Report: ${reportData.projectDetails.projectTitle || 'Project Report'}`,
-      amount: '50',
-      buyer_name: paymentDetails.buyer_name,
-      email: paymentDetails.email,
-      phone: paymentDetails.phone,
-    });
+  const handlePaymentConfirmed = () => {
+    markPaymentComplete();
   };
 
   // Generate Roman numerals for preliminary pages
@@ -579,12 +527,12 @@ const ReportPreview = () => {
               {isAIGenerated ? (
                 isPaid ? (
                   <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-sm text-green-600 justify-center mb-2">
+                    <div className="flex items-center gap-2 text-sm text-primary justify-center mb-2">
                       <CheckCircle className="w-4 h-4" />
                       <span>Payment verified - Download unlocked!</span>
                     </div>
                     <Button 
-                      className="w-full gap-2 bg-green-600 hover:bg-green-700" 
+                      className="w-full gap-2 bg-primary hover:bg-primary/90" 
                       size="lg"
                       onClick={handleDownloadPDF}
                       disabled={isGenerating}
@@ -603,7 +551,7 @@ const ReportPreview = () => {
                     </Button>
                     
                     <Button 
-                      className="w-full gap-2 bg-blue-600 hover:bg-blue-700" 
+                      className="w-full gap-2 bg-secondary hover:bg-secondary/80 text-secondary-foreground" 
                       size="lg"
                       onClick={handleDownloadDOCX}
                       disabled={isGenerating}
@@ -623,28 +571,18 @@ const ReportPreview = () => {
                   </div>
                 ) : (
                   <Button 
-                    className="w-full gap-2 bg-[#1a365d] hover:bg-[#2d4a7c]" 
+                    className="w-full gap-2 bg-primary hover:bg-primary/90" 
                     size="lg"
                     onClick={() => setShowPaymentDialog(true)}
-                    disabled={isProcessing}
                   >
-                    {isProcessing ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        Processing...
-                      </>
-                    ) : (
-                      <>
-                        <CreditCard className="w-4 h-4" />
-                        Pay ₹50 to Download
-                      </>
-                    )}
+                    <CreditCard className="w-4 h-4" />
+                    Pay ₹50 to Download
                   </Button>
                 )
               ) : (
                 <div className="space-y-2">
                   <Button 
-                    className="w-full gap-2 bg-green-600 hover:bg-green-700" 
+                    className="w-full gap-2 bg-primary hover:bg-primary/90" 
                     size="lg"
                     onClick={handleDownloadPDF}
                     disabled={isGenerating}
@@ -663,7 +601,7 @@ const ReportPreview = () => {
                   </Button>
                   
                   <Button 
-                    className="w-full gap-2 bg-blue-600 hover:bg-blue-700" 
+                    className="w-full gap-2 bg-secondary hover:bg-secondary/80 text-secondary-foreground" 
                     size="lg"
                     onClick={handleDownloadDOCX}
                     disabled={isGenerating}
@@ -684,7 +622,7 @@ const ReportPreview = () => {
               )}
 
               {!isAIGenerated && (
-                <div className="flex items-center gap-2 text-sm text-green-600 justify-center">
+                <div className="flex items-center gap-2 text-sm text-primary justify-center">
                   <CheckCircle className="w-4 h-4" />
                   <span>Manual content - Free download</span>
                 </div>
@@ -692,14 +630,14 @@ const ReportPreview = () => {
 
               {isAIGenerated && !isPaid && (
                 <p className="text-xs text-center text-muted-foreground">
-                  Secure payment via Instamojo
+                  Secure UPI payment - GPay, PhonePe, Paytm supported
                 </p>
               )}
             </div>
           </div>
 
           <div className="bg-muted/50 rounded-xl p-4 text-sm">
-            <h4 className="font-semibold mb-2 flex items-center gap-2 text-[#1a365d]">
+            <h4 className="font-semibold mb-2 flex items-center gap-2 text-primary">
               <Eye className="w-4 h-4" />
               Preview Note
             </h4>
@@ -711,84 +649,13 @@ const ReportPreview = () => {
         </div>
       </div>
 
-      {/* Payment Dialog */}
-      <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <CreditCard className="w-5 h-5" />
-              Complete Payment
-            </DialogTitle>
-            <DialogDescription>
-              Pay ₹50 to download your AI-generated report
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="buyer_name">Full Name</Label>
-              <Input
-                id="buyer_name"
-                value={paymentDetails.buyer_name}
-                onChange={(e) => setPaymentDetails({ ...paymentDetails, buyer_name: e.target.value })}
-                placeholder="Enter your full name"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="email">Email Address</Label>
-              <Input
-                id="email"
-                type="email"
-                value={paymentDetails.email}
-                onChange={(e) => setPaymentDetails({ ...paymentDetails, email: e.target.value })}
-                placeholder="Enter your email"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="phone">Phone Number</Label>
-              <Input
-                id="phone"
-                type="tel"
-                value={paymentDetails.phone}
-                onChange={(e) => setPaymentDetails({ ...paymentDetails, phone: e.target.value })}
-                placeholder="Enter 10-digit phone number"
-                maxLength={10}
-              />
-            </div>
-
-            <div className="bg-muted/50 rounded-lg p-3 text-sm">
-              <div className="flex justify-between items-center">
-                <span>AI Report Download</span>
-                <span className="font-bold">₹50</span>
-              </div>
-            </div>
-
-            <Button 
-              className="w-full bg-[#1a365d] hover:bg-[#2d4a7c]" 
-              onClick={handlePayment}
-              disabled={isProcessing}
-            >
-              {isProcessing ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                  Redirecting to Instamojo...
-                </>
-              ) : (
-                <>
-                  <CreditCard className="w-4 h-4 mr-2" />
-                  Pay ₹50 with Instamojo
-                </>
-              )}
-            </Button>
-            
-            <p className="text-xs text-center text-muted-foreground">
-              You will be redirected to Instamojo's secure payment page
-            </p>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* UPI Payment Dialog */}
+      <UPIPaymentDialog 
+        open={showPaymentDialog}
+        onOpenChange={setShowPaymentDialog}
+        amount="50"
+        onPaymentConfirmed={handlePaymentConfirmed}
+      />
     </div>
   );
 };
