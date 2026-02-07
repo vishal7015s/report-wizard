@@ -39,7 +39,7 @@ const TermsAndConditions = () => {
           <section>
             <h2 className="text-xl font-semibold text-foreground mt-6 mb-3">3. Payment Terms</h2>
             <p className="text-muted-foreground">
-              AI-generated reports require a one-time payment of ₹50. Payment is processed securely through Instamojo payment gateway. By making a payment, you agree to our Refund and Cancellation Policy.
+              AI-generated reports require a one-time payment of ₹50. Payment is processed securely through Razorpay payment gateway. By making a payment, you agree to our <a href="/refund-policy" className="text-primary hover:underline">Refund and Cancellation Policy</a>. All payments are final and non-refundable as stated in our refund policy.
             </p>
           </section>
 
