@@ -48,8 +48,8 @@ const ContactUs = () => {
                 <Mail className="w-5 h-5 text-primary mt-1 flex-shrink-0" />
                 <div>
                   <p className="font-medium text-foreground">Email</p>
-                  <a href="mailto:support@projectreport.in" className="text-primary hover:underline">
-                    support@projectreport.in
+                  <a href="mailto:developer.vishalshivhare123@gmail.com" className="text-primary hover:underline">
+                    developer.vishalshivhare123@gmail.com
                   </a>
                 </div>
               </div>
@@ -58,8 +58,8 @@ const ContactUs = () => {
                 <Phone className="w-5 h-5 text-primary mt-1 flex-shrink-0" />
                 <div>
                   <p className="font-medium text-foreground">Phone</p>
-                  <a href="tel:+919XXXXXXXXX" className="text-primary hover:underline">
-                    +91 9XXXXXXXXX
+                  <a href="tel:+918839801203" className="text-primary hover:underline">
+                    +91 8839801203
                   </a>
                 </div>
               </div>
@@ -69,7 +69,7 @@ const ContactUs = () => {
                 <div>
                   <p className="font-medium text-foreground">Address</p>
                   <p className="text-muted-foreground">
-                    Bhopal, Madhya Pradesh, India - 462001
+                    Vijay Nagar Colony, Indorama Pithampur, Madhya Pradesh, India - 454774
                   </p>
                 </div>
               </div>

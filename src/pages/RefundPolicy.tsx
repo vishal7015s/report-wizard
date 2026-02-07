@@ -92,8 +92,9 @@ const RefundPolicy = () => {
               For any queries regarding this policy or technical support, please contact us at:
             </p>
             <div className="bg-muted/50 rounded-lg p-4 mt-2">
-              <p className="text-muted-foreground">📧 Email: <a href="mailto:support@projectreport.in" className="text-primary hover:underline">support@projectreport.in</a></p>
-              <p className="text-muted-foreground">📍 Address: Bhopal, Madhya Pradesh, India</p>
+              <p className="text-muted-foreground">📧 Email: <a href="mailto:developer.vishalshivhare123@gmail.com" className="text-primary hover:underline">developer.vishalshivhare123@gmail.com</a></p>
+              <p className="text-muted-foreground">📞 Phone: <a href="tel:+918839801203" className="text-primary hover:underline">+91 8839801203</a></p>
+              <p className="text-muted-foreground">📍 Address: Vijay Nagar Colony, Indorama Pithampur, Madhya Pradesh, India - 454774</p>
             </div>
           </section>
         </div>

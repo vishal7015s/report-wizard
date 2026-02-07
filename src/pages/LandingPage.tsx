@@ -198,7 +198,7 @@ const LandingPage = () => {
           </div>
           <div className="border-t pt-6 text-center text-sm text-muted-foreground">
             <p>© {new Date().getFullYear()} AI Project Report Generator. Made for Engineering Students.</p>
-            <p className="mt-1">Contact: <a href="mailto:support@projectreport.in" className="text-primary hover:underline">support@projectreport.in</a></p>
+            <p className="mt-1">Contact: <a href="mailto:developer.vishalshivhare123@gmail.com" className="text-primary hover:underline">developer.vishalshivhare123@gmail.com</a> | +91 8839801203</p>
           </div>
         </div>
       </footer>
