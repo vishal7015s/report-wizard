@@ -69,7 +69,7 @@ const LandingPage = () => {
             </Button>
             
             <p className="text-sm text-muted-foreground mt-4">
-              No signup required • Pay only ₹10 per report
+              No signup required • Pay only ₹50 per report
             </p>
           </div>
         </div>
