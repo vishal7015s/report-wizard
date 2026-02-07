@@ -1,6 +1,6 @@
 import { FileText, GraduationCap, Sparkles, CheckCircle, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 const LandingPage = () => {
   const navigate = useNavigate();
@@ -170,10 +170,36 @@ const LandingPage = () => {
       </section>
 
       {/* Footer */}
-      <footer className="py-8 border-t">
-        <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-          <p>© 2024 Project Report Generator. Made for Engineering Students.</p>
-          <p className="mt-2">Contact: support@projectreport.in</p>
+      <footer className="py-10 border-t bg-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="grid md:grid-cols-3 gap-8 mb-8">
+            <div>
+              <h3 className="font-semibold text-foreground mb-3">AI Project Report Generator</h3>
+              <p className="text-sm text-muted-foreground">
+                Generate college-approved, faculty-ready project reports for RGPV engineering students. Free manual reports & AI-powered generation at ₹50.
+              </p>
+            </div>
+            <div>
+              <h3 className="font-semibold text-foreground mb-3">Quick Links</h3>
+              <ul className="space-y-2 text-sm">
+                <li><Link to="/about-us" className="text-muted-foreground hover:text-primary transition-colors">About Us</Link></li>
+                <li><Link to="/contact-us" className="text-muted-foreground hover:text-primary transition-colors">Contact Us</Link></li>
+                <li><Link to="/create" className="text-muted-foreground hover:text-primary transition-colors">Create Report</Link></li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="font-semibold text-foreground mb-3">Legal</h3>
+              <ul className="space-y-2 text-sm">
+                <li><Link to="/privacy-policy" className="text-muted-foreground hover:text-primary transition-colors">Privacy Policy</Link></li>
+                <li><Link to="/terms-and-conditions" className="text-muted-foreground hover:text-primary transition-colors">Terms & Conditions</Link></li>
+                <li><Link to="/refund-policy" className="text-muted-foreground hover:text-primary transition-colors">Refund & Cancellation Policy</Link></li>
+              </ul>
+            </div>
+          </div>
+          <div className="border-t pt-6 text-center text-sm text-muted-foreground">
+            <p>© {new Date().getFullYear()} AI Project Report Generator. Made for Engineering Students.</p>
+            <p className="mt-1">Contact: <a href="mailto:support@projectreport.in" className="text-primary hover:underline">support@projectreport.in</a></p>
+          </div>
         </div>
       </footer>
     </div>

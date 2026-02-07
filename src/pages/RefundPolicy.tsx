@@ -89,8 +89,12 @@ const RefundPolicy = () => {
           <section>
             <h2 className="text-xl font-semibold text-foreground mt-6 mb-3">6. Contact Us</h2>
             <p className="text-muted-foreground">
-              For any queries regarding this policy or technical support, please contact us through our website.
+              For any queries regarding this policy or technical support, please contact us at:
             </p>
+            <div className="bg-muted/50 rounded-lg p-4 mt-2">
+              <p className="text-muted-foreground">📧 Email: <a href="mailto:support@projectreport.in" className="text-primary hover:underline">support@projectreport.in</a></p>
+              <p className="text-muted-foreground">📍 Address: Bhopal, Madhya Pradesh, India</p>
+            </div>
           </section>
         </div>
       </div>
