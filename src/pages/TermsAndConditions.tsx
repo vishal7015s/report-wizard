@@ -79,7 +79,7 @@ const TermsAndConditions = () => {
           <section>
             <h2 className="text-xl font-semibold text-foreground mt-6 mb-3">8. Contact Us</h2>
             <p className="text-muted-foreground">
-              If you have any questions about these Terms and Conditions, please contact us through our website.
+              If you have any questions about these Terms and Conditions, please contact us at <a href="mailto:developer.vishalshivhare123@gmail.com" className="text-primary hover:underline">developer.vishalshivhare123@gmail.com</a> or call us at +91 8839801203.
             </p>
           </section>
         </div>
