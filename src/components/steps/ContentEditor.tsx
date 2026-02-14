@@ -44,6 +44,8 @@ const ContentEditor = () => {
     updateSection,
     addImageToSection,
     removeImageFromSection,
+    addImageToAiSection,
+    removeImageFromAiSection,
     setCurrentStep,
     setChapters
   } = useReportStore();
@@ -73,11 +75,16 @@ const ContentEditor = () => {
       const reader = new FileReader();
       reader.onloadend = () => {
         const imageUrl = reader.result as string;
-        addImageToSection(currentSectionForImage.chapterId, currentSectionForImage.sectionId, {
+        const image = {
           id: Date.now().toString(),
           url: imageUrl,
           caption: file.name.replace(/\.[^/.]+$/, '')
-        });
+        };
+        if (contentMode === 'ai') {
+          addImageToAiSection(currentSectionForImage.chapterId, currentSectionForImage.sectionId, image);
+        } else {
+          addImageToSection(currentSectionForImage.chapterId, currentSectionForImage.sectionId, image);
+        }
         setCurrentSectionForImage(null);
       };
       reader.readAsDataURL(file);
