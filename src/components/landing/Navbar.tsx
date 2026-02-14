@@ -1,9 +1,11 @@
-import { FileText } from 'lucide-react';
+import { FileText, Sun, Moon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate, Link } from 'react-router-dom';
+import { useTheme } from '@/hooks/useTheme';
 
 const Navbar = () => {
   const navigate = useNavigate();
+  const { isDark, toggle } = useTheme();
 
   return (
     <nav className="sticky top-0 z-50 bg-background/70 backdrop-blur-xl border-b border-border/40">
@@ -23,6 +25,13 @@ const Navbar = () => {
         </div>
 
         <div className="flex items-center gap-3">
+          <button
+            onClick={toggle}
+            className="w-9 h-9 rounded-xl flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+            aria-label="Toggle theme"
+          >
+            {isDark ? <Sun className="w-[18px] h-[18px]" /> : <Moon className="w-[18px] h-[18px]" />}
+          </button>
           <Button 
             variant="ghost" 
             size="sm"
