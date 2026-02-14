@@ -216,7 +216,7 @@ serve(async (req) => {
   }
 
   try {
-    const { prompt, projectTitle, guideName, students, branch, projectType } =
+    const { prompt, projectTitle, guideName, students, branch, projectType, mode = "full", existingChapters = [] } =
       await req.json();
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -224,7 +224,7 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    console.log("Generating report content for:", projectTitle);
+    console.log("Generating report content for:", projectTitle, "mode:", mode);
 
     const callLovableChat = async (messages: Array<{ role: string; content: string }>, maxTokens: number) => {
       const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -270,13 +270,20 @@ Students: ${students?.map((s: { name: string }) => s.name).join(", ") || "Not sp
 Project Description:
 ${prompt}`;
 
-    // 1) Generate abstract + acknowledgement (small payload)
-    const abstractAckRaw = await callLovableChat(
-      [
-        { role: "system", content: baseSystemPrompt },
-        {
-          role: "user",
-          content: `${projectContext}
+    // For "remaining" mode, skip abstract/ack generation - reuse existing
+    let abstractAck: { abstract: string; acknowledgement: string };
+
+    if (mode === "remaining") {
+      abstractAck = { abstract: "", acknowledgement: "" };
+      console.log("Skipping abstract/ack for remaining mode");
+    } else {
+      // 1) Generate abstract + acknowledgement (small payload)
+      const abstractAckRaw = await callLovableChat(
+        [
+          { role: "system", content: baseSystemPrompt },
+          {
+            role: "user",
+            content: `${projectContext}
 
 Generate ONLY the Abstract and Acknowledgement.
 - Abstract: 200-260 words.
@@ -287,17 +294,18 @@ Respond ONLY with JSON:
   "abstract": "...",
   "acknowledgement": "..."
 }`,
-        },
-      ],
-      2200
-    );
+          },
+        ],
+        2200
+      );
 
-    const abstractAck = parseModelJson<{ abstract: string; acknowledgement: string }>(
-      abstractAckRaw
-    );
+      abstractAck = parseModelJson<{ abstract: string; acknowledgement: string }>(
+        abstractAckRaw
+      );
+    }
 
     // 2) Generate chapters one-by-one (prevents huge single JSON that gets truncated)
-    const blueprints: ChapterBlueprint[] = [
+    const allBlueprints: ChapterBlueprint[] = [
       {
         number: 1,
         title: "INTRODUCTION",
@@ -360,6 +368,16 @@ Respond ONLY with JSON:
         ],
       },
     ];
+
+    // Filter blueprints based on mode
+    let blueprints: ChapterBlueprint[];
+    if (mode === "preview") {
+      blueprints = allBlueprints.filter(ch => ch.number <= 3);
+    } else if (mode === "remaining") {
+      blueprints = allBlueprints.filter(ch => ch.number >= 4);
+    } else {
+      blueprints = allBlueprints;
+    }
 
     const chapterResults: Array<{
       number: number;

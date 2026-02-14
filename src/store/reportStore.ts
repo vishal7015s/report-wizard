@@ -15,11 +15,13 @@ interface ReportStore {
   currentStep: number;
   contentMode: 'ai' | 'manual';
   isAIGenerated: boolean;
+  aiPrompt: string;
   reportData: ReportData;
   
   setCurrentStep: (step: number) => void;
   setContentMode: (mode: 'ai' | 'manual') => void;
   setIsAIGenerated: (value: boolean) => void;
+  setAiPrompt: (prompt: string) => void;
   setCollege: (college: College) => void;
   setProjectDetails: (details: Partial<ProjectDetails>) => void;
   addStudent: () => void;
@@ -53,6 +55,7 @@ export const useReportStore = create<ReportStore>((set) => ({
   currentStep: 0,
   contentMode: 'manual',
   isAIGenerated: false,
+  aiPrompt: '',
   reportData: initialReportData,
 
   setCurrentStep: (step) => set({ currentStep: step }),
@@ -60,6 +63,7 @@ export const useReportStore = create<ReportStore>((set) => ({
   setContentMode: (mode) => set({ contentMode: mode }),
   
   setIsAIGenerated: (value) => set({ isAIGenerated: value }),
+  setAiPrompt: (prompt) => set({ aiPrompt: prompt }),
   setCollege: (college) => set((state) => ({
     reportData: { ...state.reportData, college }
   })),
@@ -282,6 +286,7 @@ export const useReportStore = create<ReportStore>((set) => ({
     currentStep: 0,
     contentMode: 'manual',
     isAIGenerated: false,
+    aiPrompt: '',
     reportData: initialReportData,
   }),
 }));
