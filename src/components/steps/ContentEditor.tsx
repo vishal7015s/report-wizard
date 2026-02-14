@@ -60,7 +60,7 @@ const ContentEditor = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isGeneratingDiagram, setIsGeneratingDiagram] = useState<string | null>(null);
   const { isPaid } = useRazorpayPayment();
-  const [showAllSections, setShowAllSections] = useState(false);
+  const [selectedDiagramChapter, setSelectedDiagramChapter] = useState<string | null>(null);
   // Use appropriate chapters based on content mode
   const activeChapters = contentMode === 'ai' ? aiReportContent.chapters : reportData.chapters;
 
@@ -308,117 +308,115 @@ const ContentEditor = () => {
           {aiReportContent.chapters.some(c => c.sections.some(s => s.content.length > 0)) && (
             <div className="bg-card rounded-xl border p-6 shadow-soft">
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label className="text-base font-semibold text-[#1a365d]">Add Diagrams / Images</Label>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Upload images or generate AI diagrams (max {MAX_AI_DIAGRAMS} AI diagrams)
-                    </p>
-                  </div>
-                  <span className={`text-sm font-medium ${totalAIDiagrams >= MAX_AI_DIAGRAMS ? 'text-destructive' : 'text-green-600'}`}>
-                    {totalAIDiagrams}/{MAX_AI_DIAGRAMS} used
-                  </span>
+                <div>
+                  <Label className="text-base font-semibold text-[#1a365d]">Add Diagrams / Images</Label>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Upload images or generate AI diagrams (max {MAX_AI_DIAGRAMS} AI diagrams)
+                  </p>
                 </div>
 
-                {/* Collapsible All Sections Button */}
-                <Button
-                  variant="outline"
-                  className="w-full gap-2 border-[#1a365d] text-[#1a365d] hover:bg-[#1a365d] hover:text-white"
-                  onClick={() => setShowAllSections(!showAllSections)}
-                >
-                  {showAllSections ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                  {showAllSections ? 'Hide All Sections' : 'Show All Sections'}
-                  <span className="text-xs ml-1 opacity-70">
-                    ({aiReportContent.chapters.reduce((t, c) => t + c.sections.length, 0)} sections)
-                  </span>
-                </Button>
+                {/* Chapter selector tabs */}
+                <div className="flex flex-wrap gap-2">
+                  {aiReportContent.chapters.map((chapter) => (
+                    <Button
+                      key={chapter.id}
+                      variant={selectedDiagramChapter === chapter.id ? 'default' : 'outline'}
+                      size="sm"
+                      className={`text-xs ${selectedDiagramChapter === chapter.id ? 'bg-[#1a365d] text-white' : 'border-[#1a365d] text-[#1a365d]'}`}
+                      onClick={() => setSelectedDiagramChapter(selectedDiagramChapter === chapter.id ? null : chapter.id)}
+                    >
+                      Chapter {chapter.number}
+                    </Button>
+                  ))}
+                </div>
 
-                {showAllSections && (
-                  <div className="space-y-4">
-                    {aiReportContent.chapters.map((chapter) => (
-                      <div key={chapter.id} className="space-y-2">
-                        <h4 className="font-semibold text-sm text-[#1a365d] bg-muted/40 px-3 py-2 rounded-md">
-                          Chapter {chapter.number}: {chapter.title}
-                        </h4>
-                        {chapter.sections.map((section) => (
-                          <div key={section.id} className="p-4 border rounded-lg bg-muted/20 ml-2">
-                            <div className="flex items-center justify-between mb-3">
-                              <span className="font-medium text-sm text-[#1a365d]">
-                                {section.number} {section.heading}
-                              </span>
-                              <span className="text-xs text-muted-foreground">
-                                {section.images?.length || 0} image(s)
-                              </span>
-                            </div>
+                {/* Show sections of selected chapter */}
+                {selectedDiagramChapter && (() => {
+                  const chapter = aiReportContent.chapters.find(c => c.id === selectedDiagramChapter);
+                  if (!chapter) return null;
+                  return (
+                    <div className="space-y-2">
+                      <h4 className="font-semibold text-sm text-[#1a365d] bg-muted/40 px-3 py-2 rounded-md">
+                        Chapter {chapter.number}: {chapter.title}
+                      </h4>
+                      {chapter.sections.map((section) => (
+                        <div key={section.id} className="p-4 border rounded-lg bg-muted/20 ml-2">
+                          <div className="flex items-center justify-between mb-3">
+                            <span className="font-medium text-sm text-[#1a365d]">
+                              {section.number} {section.heading}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {section.images?.length || 0} image(s)
+                            </span>
+                          </div>
 
-                            {/* Uploaded image thumbnails */}
-                            {section.images && section.images.length > 0 && (
-                              <div className="grid grid-cols-3 gap-2 mb-3">
-                                {section.images.map((img) => (
-                                  <div key={img.id} className="relative group">
-                                    <img
-                                      src={img.url}
-                                      alt={img.caption}
-                                      className="w-full h-20 object-cover rounded border"
-                                    />
-                                    <Button
-                                      variant="destructive"
-                                      size="icon"
-                                      className="absolute top-1 right-1 w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity"
-                                      onClick={() => removeImageFromAiSection(chapter.id, section.id, img.id)}
-                                    >
-                                      <X className="w-3 h-3" />
-                                    </Button>
-                                    <p className="text-[10px] text-center mt-0.5 truncate text-muted-foreground">{img.caption}</p>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                            
-                            <div className="flex flex-wrap gap-2">
-                              {/* Upload Image - always active */}
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="gap-1 text-xs"
-                                onClick={() => triggerImageUpload(chapter.id, section.id)}
-                              >
-                                <Upload className="w-3 h-3" />
-                                Upload Image
-                              </Button>
-
-                              {/* AI Diagram buttons - locked until payment */}
-                              {diagramOptions.map(opt => (
-                                <Button
-                                  key={opt.type}
-                                  variant="outline"
-                                  size="sm"
-                                  className={`gap-1 text-xs ${!isPaid ? 'opacity-50' : ''}`}
-                                  onClick={() => handleGenerateDiagram(chapter.id, section.id, opt.type)}
-                                  disabled={!isPaid || isGeneratingDiagram === `${chapter.id}-${section.id}-${opt.type}` || totalAIDiagrams >= MAX_AI_DIAGRAMS}
-                                >
-                                  {isGeneratingDiagram === `${chapter.id}-${section.id}-${opt.type}` ? (
-                                    <Loader2 className="w-3 h-3 animate-spin" />
-                                  ) : !isPaid ? (
-                                    <Lock className="w-3 h-3" />
-                                  ) : (
-                                    <Wand2 className="w-3 h-3" />
-                                  )}
-                                  {opt.label}
-                                </Button>
+                          {/* Uploaded image thumbnails */}
+                          {section.images && section.images.length > 0 && (
+                            <div className="grid grid-cols-3 gap-2 mb-3">
+                              {section.images.map((img) => (
+                                <div key={img.id} className="relative group">
+                                  <img
+                                    src={img.url}
+                                    alt={img.caption}
+                                    className="w-full h-20 object-cover rounded border"
+                                  />
+                                  <Button
+                                    variant="destructive"
+                                    size="icon"
+                                    className="absolute top-1 right-1 w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    onClick={() => removeImageFromAiSection(chapter.id, section.id, img.id)}
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </Button>
+                                  <p className="text-[10px] text-center mt-0.5 truncate text-muted-foreground">{img.caption}</p>
+                                </div>
                               ))}
                             </div>
-                            {!isPaid && (
-                              <p className="text-xs text-muted-foreground mt-2">
-                                🔒 AI diagram generation unlocks after payment. You can upload your own images now.
-                              </p>
-                            )}
+                          )}
+                          
+                          <div className="flex flex-wrap gap-2">
+                            {/* Upload Image - always active */}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="gap-1 text-xs"
+                              onClick={() => triggerImageUpload(chapter.id, section.id)}
+                            >
+                              <Upload className="w-3 h-3" />
+                              Upload Image
+                            </Button>
+
+                            {/* AI Diagram buttons - locked until payment */}
+                            {diagramOptions.map(opt => (
+                              <Button
+                                key={opt.type}
+                                variant="outline"
+                                size="sm"
+                                className={`gap-1 text-xs ${!isPaid ? 'opacity-50' : ''}`}
+                                onClick={() => handleGenerateDiagram(chapter.id, section.id, opt.type)}
+                                disabled={!isPaid || isGeneratingDiagram === `${chapter.id}-${section.id}-${opt.type}` || totalAIDiagrams >= MAX_AI_DIAGRAMS}
+                              >
+                                {isGeneratingDiagram === `${chapter.id}-${section.id}-${opt.type}` ? (
+                                  <Loader2 className="w-3 h-3 animate-spin" />
+                                ) : !isPaid ? (
+                                  <Lock className="w-3 h-3" />
+                                ) : (
+                                  <Wand2 className="w-3 h-3" />
+                                )}
+                                {opt.label}
+                              </Button>
+                            ))}
                           </div>
-                        ))}
-                      </div>
-                    ))}
-                  </div>
-                )}
+                          {!isPaid && (
+                            <p className="text-xs text-muted-foreground mt-2">
+                              🔒 AI diagram generation unlocks after payment. You can upload your own images now.
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           )}
