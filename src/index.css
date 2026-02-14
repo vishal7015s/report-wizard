@@ -7,25 +7,25 @@
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 224 71% 4%;
+    --foreground: 222 47% 11%;
 
     --card: 0 0% 100%;
-    --card-foreground: 224 71% 4%;
+    --card-foreground: 222 47% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 224 71% 4%;
+    --popover-foreground: 222 47% 11%;
 
     --primary: 239 84% 67%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 220 14% 96%;
-    --secondary-foreground: 224 71% 4%;
+    --secondary-foreground: 222 47% 11%;
 
     --muted: 220 14% 96%;
-    --muted-foreground: 220 9% 46%;
+    --muted-foreground: 215 16% 47%;
 
-    --accent: 239 84% 67%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 220 14% 96%;
+    --accent-foreground: 222 47% 11%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
@@ -36,13 +36,11 @@
 
     --radius: 0.75rem;
 
-    /* Custom colors for the app */
     --rgpv-red: 0 75% 48%;
     --rgpv-blue: 210 100% 35%;
     --college-blue: 213 60% 25%;
     --college-gold: 45 90% 50%;
     
-    /* PDF specific colors */
     --pdf-border: 213 60% 25%;
     --pdf-heading-red: 0 75% 48%;
     --pdf-text-blue: 210 100% 35%;
@@ -58,32 +56,32 @@
   }
 
   .dark {
-    --background: 224 71% 4%;
+    --background: 222 47% 4%;
     --foreground: 210 40% 98%;
 
-    --card: 224 50% 8%;
+    --card: 222 40% 7%;
     --card-foreground: 210 40% 98%;
 
-    --popover: 224 50% 8%;
+    --popover: 222 40% 7%;
     --popover-foreground: 210 40% 98%;
 
     --primary: 239 84% 67%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 215 28% 17%;
+    --secondary: 215 28% 14%;
     --secondary-foreground: 210 40% 98%;
 
-    --muted: 215 28% 17%;
+    --muted: 215 28% 14%;
     --muted-foreground: 217 10% 64%;
 
-    --accent: 239 84% 67%;
+    --accent: 215 28% 14%;
     --accent-foreground: 210 40% 98%;
 
     --destructive: 0 62% 35%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 215 28% 17%;
-    --input: 215 28% 17%;
+    --border: 215 25% 15%;
+    --input: 215 25% 15%;
     --ring: 239 84% 67%;
 
     --sidebar-background: 240 5.9% 10%;
@@ -103,11 +101,14 @@
   }
 
   body {
-    @apply bg-background text-foreground font-sans antialiased;
-    font-family: 'Inter', sans-serif;
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
-  /* PDF Preview styling - uses Times New Roman for academic look */
+  /* PDF Preview styling */
   .pdf-page {
     font-family: 'Times New Roman', Times, serif;
     background: white;
@@ -146,16 +147,8 @@
 }
 
 @layer utilities {
-  .gradient-hero {
-    background: linear-gradient(135deg, hsl(239 84% 67%) 0%, hsl(260 80% 60%) 50%, hsl(280 70% 55%) 100%);
-  }
-
-  .gradient-accent {
-    background: linear-gradient(135deg, hsl(var(--accent)) 0%, hsl(260 80% 60%) 100%);
-  }
-
   .text-gradient {
-    background: linear-gradient(135deg, hsl(239 84% 67%) 0%, hsl(280 70% 55%) 100%);
+    background: linear-gradient(135deg, hsl(239 84% 67%) 0%, hsl(260 70% 58%) 50%, hsl(280 65% 55%) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -166,8 +159,8 @@
   }
 
   .card-hover:hover {
-    @apply -translate-y-1;
-    box-shadow: 0 20px 40px -12px rgba(99, 102, 241, 0.15);
+    @apply -translate-y-0.5;
+    box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.02);
   }
 
   .animate-float {
@@ -176,33 +169,33 @@
 
   @keyframes float {
     0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-10px); }
+    50% { transform: translateY(-8px); }
   }
 
   .animate-fade-in {
-    animation: fadeIn 0.6s ease-out forwards;
+    animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
 
   @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(20px); }
+    from { opacity: 0; transform: translateY(16px); }
     to { opacity: 1; transform: translateY(0); }
   }
 
   .animate-slide-up {
-    animation: slideUp 0.6s ease-out forwards;
+    animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
 
   @keyframes slideUp {
-    from { opacity: 0; transform: translateY(30px); }
+    from { opacity: 0; transform: translateY(24px); }
     to { opacity: 1; transform: translateY(0); }
   }
 
   .animate-scale-in {
-    animation: scaleIn 0.5s ease-out forwards;
+    animation: scaleIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
 
   @keyframes scaleIn {
-    from { opacity: 0; transform: scale(0.95); }
+    from { opacity: 0; transform: scale(0.96); }
     to { opacity: 1; transform: scale(1); }
   }
 }
