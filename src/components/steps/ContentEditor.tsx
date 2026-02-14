@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { handlePasteFormat, formatOnChange } from '@/lib/formatContent';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { useRazorpayPayment } from '@/hooks/useRazorpayPayment';
 import { 
   Sparkles, 
   PenLine, 
@@ -18,7 +19,8 @@ import {
   Image as ImageIcon,
   X,
   Loader2,
-  Wand2
+  Wand2,
+  Lock
 } from 'lucide-react';
 
 const ContentEditor = () => {
@@ -52,7 +54,7 @@ const ContentEditor = () => {
   const [currentSectionForImage, setCurrentSectionForImage] = useState<{chapterId: string, sectionId: string} | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isGeneratingDiagram, setIsGeneratingDiagram] = useState<string | null>(null);
-
+  const { isPaid } = useRazorpayPayment();
   // Use appropriate chapters based on content mode
   const activeChapters = contentMode === 'ai' ? aiReportContent.chapters : reportData.chapters;
 
@@ -339,17 +341,31 @@ const ContentEditor = () => {
                           </div>
                           
                           <div className="flex flex-wrap gap-2">
+                            {/* Upload Image - always active */}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="gap-1 text-xs"
+                              onClick={() => triggerImageUpload(currentChapter.id, section.id)}
+                            >
+                              <Upload className="w-3 h-3" />
+                              Upload Image
+                            </Button>
+
+                            {/* AI Diagram buttons - locked until payment */}
                             {diagramOptions.map(opt => (
                               <Button
                                 key={opt.type}
                                 variant="outline"
                                 size="sm"
-                                className="gap-1 text-xs"
+                                className={`gap-1 text-xs ${!isPaid ? 'opacity-50' : ''}`}
                                 onClick={() => handleGenerateDiagram(currentChapter.id, section.id, opt.type)}
-                                disabled={isGeneratingDiagram === `${currentChapter.id}-${section.id}-${opt.type}` || totalAIDiagrams >= MAX_AI_DIAGRAMS}
+                                disabled={!isPaid || isGeneratingDiagram === `${currentChapter.id}-${section.id}-${opt.type}` || totalAIDiagrams >= MAX_AI_DIAGRAMS}
                               >
                                 {isGeneratingDiagram === `${currentChapter.id}-${section.id}-${opt.type}` ? (
                                   <Loader2 className="w-3 h-3 animate-spin" />
+                                ) : !isPaid ? (
+                                  <Lock className="w-3 h-3" />
                                 ) : (
                                   <Wand2 className="w-3 h-3" />
                                 )}
@@ -357,6 +373,11 @@ const ContentEditor = () => {
                               </Button>
                             ))}
                           </div>
+                          {!isPaid && (
+                            <p className="text-xs text-muted-foreground mt-2">
+                              🔒 AI diagram generation unlocks after payment. You can upload your own images now.
+                            </p>
+                          )}
                         </div>
                       ))}
                     </div>
