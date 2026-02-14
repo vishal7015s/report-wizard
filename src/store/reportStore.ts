@@ -43,6 +43,8 @@ interface ReportStore {
   updateSection: (chapterId: string, sectionId: string, data: Partial<ChapterSection>) => void;
   addImageToSection: (chapterId: string, sectionId: string, image: SectionImage) => void;
   removeImageFromSection: (chapterId: string, sectionId: string, imageId: string) => void;
+  addImageToAiSection: (chapterId: string, sectionId: string, image: SectionImage) => void;
+  removeImageFromAiSection: (chapterId: string, sectionId: string, imageId: string) => void;
   setAbstract: (abstract: string) => void;
   setAcknowledgement: (acknowledgement: string) => void;
   setReferences: (references: string[]) => void;
@@ -275,6 +277,44 @@ export const useReportStore = create<ReportStore>((set, get) => ({
     reportData: {
       ...state.reportData,
       chapters: state.reportData.chapters.map(chapter => {
+        if (chapter.id === chapterId) {
+          return {
+            ...chapter,
+            sections: chapter.sections.map(section =>
+              section.id === sectionId 
+                ? { ...section, images: section.images.filter(img => img.id !== imageId) } 
+                : section
+            )
+          };
+        }
+        return chapter;
+      })
+    }
+  })),
+
+  addImageToAiSection: (chapterId, sectionId, image) => set((state) => ({
+    aiReportContent: {
+      ...state.aiReportContent,
+      chapters: state.aiReportContent.chapters.map(chapter => {
+        if (chapter.id === chapterId) {
+          return {
+            ...chapter,
+            sections: chapter.sections.map(section =>
+              section.id === sectionId 
+                ? { ...section, images: [...section.images, image] } 
+                : section
+            )
+          };
+        }
+        return chapter;
+      })
+    }
+  })),
+
+  removeImageFromAiSection: (chapterId, sectionId, imageId) => set((state) => ({
+    aiReportContent: {
+      ...state.aiReportContent,
+      chapters: state.aiReportContent.chapters.map(chapter => {
         if (chapter.id === chapterId) {
           return {
             ...chapter,
