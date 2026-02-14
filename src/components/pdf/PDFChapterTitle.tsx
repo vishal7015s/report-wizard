@@ -11,7 +11,7 @@ const PDFChapterTitle = ({ chapterNumber, chapterTitle, data, pageNumber }: PDFC
   const { projectDetails } = data;
   
   return (
-    <div className="pdf-page" style={{ width: '210mm', minHeight: '297mm', position: 'relative', backgroundColor: '#ffffff', fontFamily: 'Times New Roman, serif' }}>
+    <div className="pdf-page" style={{ width: '210mm', height: '297mm', maxHeight: '297mm', position: 'relative', backgroundColor: '#ffffff', fontFamily: 'Times New Roman, serif', overflow: 'hidden' }}>
       {/* Border */}
       <div 
         style={{
@@ -41,7 +41,7 @@ const PDFChapterTitle = ({ chapterNumber, chapterTitle, data, pageNumber }: PDFC
         {projectDetails.projectTitle || 'Project Title'}
       </div>
       {/* Centered Chapter Info */}
-      <div className="flex flex-col items-center justify-center" style={{ minHeight: '297mm' }}>
+      <div className="flex flex-col items-center justify-center" style={{ height: '297mm' }}>
         <h1 
           className="font-bold text-center"
           style={{ color: '#1e3a5f', fontSize: '36px', letterSpacing: '2px' }}

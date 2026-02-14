@@ -112,10 +112,12 @@
     font-family: 'Times New Roman', Times, serif;
     background: white;
     width: 210mm;
-    min-height: 297mm;
+    height: 297mm;
+    max-height: 297mm;
     padding: 20mm;
     position: relative;
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
   }
 
   .pdf-page::before {
