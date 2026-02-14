@@ -35,32 +35,32 @@ const Testimonials = () => {
   ];
 
   return (
-    <section className="py-24 bg-secondary/30">
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="text-center mb-16">
-          <p className="text-sm font-semibold text-primary uppercase tracking-widest mb-3">Testimonials</p>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-foreground tracking-tight mb-4">
+    <section className="py-24 lg:py-28 bg-secondary/30">
+      <div className="max-w-6xl mx-auto px-6">
+        <div className="text-center mb-14">
+          <p className="text-[13px] font-semibold text-primary uppercase tracking-[0.12em] mb-3">Testimonials</p>
+          <h2 className="text-3xl sm:text-[2.25rem] font-extrabold text-foreground tracking-[-0.02em] leading-tight mb-4">
             Loved by students across MP
           </h2>
-          <p className="text-muted-foreground">Real feedback from real students</p>
+          <p className="text-[15px] text-muted-foreground">Real feedback from real students</p>
         </div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-5xl mx-auto">
           {testimonials.map((t, i) => (
-            <div key={i} className="bg-card rounded-2xl border border-border p-7 card-hover">
-              <div className="flex gap-0.5 mb-4">
+            <div key={i} className="bg-card rounded-xl border border-border/60 p-6 card-hover">
+              <div className="flex gap-0.5 mb-3">
                 {[...Array(5)].map((_, j) => (
-                  <Star key={j} className="w-4 h-4 fill-primary text-primary" />
+                  <Star key={j} className="w-3.5 h-3.5 fill-primary/80 text-primary/80" />
                 ))}
               </div>
-              <p className="text-sm text-foreground leading-relaxed mb-5">"{t.quote}"</p>
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">
+              <p className="text-[13px] text-foreground/85 leading-relaxed mb-5">"{t.quote}"</p>
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-primary/[0.07] flex items-center justify-center text-[12px] font-semibold text-primary">
                   {t.name[0]}
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-foreground">{t.name}</p>
-                  <p className="text-xs text-muted-foreground">{t.branch}</p>
+                  <p className="text-[13px] font-semibold text-foreground leading-tight">{t.name}</p>
+                  <p className="text-[11px] text-muted-foreground">{t.branch}</p>
                 </div>
               </div>
             </div>
