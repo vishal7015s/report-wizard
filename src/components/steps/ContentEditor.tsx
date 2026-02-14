@@ -28,6 +28,7 @@ const ContentEditor = () => {
     reportData, 
     isAIGenerated,
     setIsAIGenerated,
+    setAiPrompt,
     setAbstract,
     setAcknowledgement,
     addChapter,
@@ -41,7 +42,7 @@ const ContentEditor = () => {
     setChapters
   } = useReportStore();
   
-  const [aiPrompt, setAiPrompt] = useState('');
+  const [aiPromptText, setAiPromptText] = useState('');
   const [activeChapter, setActiveChapter] = useState(reportData.chapters[0]?.id || '');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [currentSectionForImage, setCurrentSectionForImage] = useState<{chapterId: string, sectionId: string} | null>(null);
@@ -83,28 +84,29 @@ const ContentEditor = () => {
   };
 
   const handleGenerateContent = async () => {
-    if (!aiPrompt.trim()) {
+    if (!aiPromptText.trim()) {
       toast.error('Please enter a project description');
       return;
     }
 
-    if (aiPrompt.trim().length < 50) {
+    if (aiPromptText.trim().length < 50) {
       toast.error('Please provide a more detailed description (at least 50 characters)');
       return;
     }
 
     setIsGenerating(true);
-    toast.info('Generating report content... This may take a minute.');
+    toast.info('Generating preview content... This may take a moment.');
 
     try {
       const { data, error } = await supabase.functions.invoke('generate-report-content', {
         body: {
-          prompt: aiPrompt,
+          prompt: aiPromptText,
           projectTitle: reportData.projectDetails.projectTitle,
           guideName: reportData.projectDetails.guideName,
           students: reportData.projectDetails.students,
           branch: reportData.projectDetails.branch,
-          projectType: reportData.projectDetails.projectType
+          projectType: reportData.projectDetails.projectType,
+          mode: 'preview'
         }
       });
 
@@ -117,14 +119,15 @@ const ContentEditor = () => {
         throw new Error(data.error);
       }
 
-      // Update the store with generated content
+      // Update the store with generated preview content
       setAbstract(data.abstract);
       setAcknowledgement(data.acknowledgement);
       setChapters(data.chapters);
       setActiveChapter(data.chapters[0]?.id || '');
       setIsAIGenerated(true);
+      setAiPrompt(aiPromptText); // Save prompt for full generation after payment
 
-      toast.success('Report content generated successfully!');
+      toast.success('Preview content generated! Pay to unlock full report with all 7 chapters.');
       
       // Switch to manual mode to show the generated content
       setContentMode('manual');
@@ -238,20 +241,20 @@ const ContentEditor = () => {
               <Textarea
                 placeholder="Example: My project is about predicting multiple diseases using machine learning. The system uses patient health parameters like blood pressure, glucose levels, cholesterol, BMI, and age to predict the likelihood of heart disease and diabetes. We implemented Logistic Regression, SVM, Random Forest, and KNN algorithms. The frontend is built with React and backend uses Python Flask with MySQL database..."
                 className="min-h-[200px] font-serif"
-                value={aiPrompt}
-                onChange={(e) => setAiPrompt(e.target.value)}
+                value={aiPromptText}
+                onChange={(e) => setAiPromptText(e.target.value)}
                 disabled={isGenerating}
               />
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <span className={aiPrompt.length < 50 ? 'text-destructive' : 'text-green-600'}>
-                  {aiPrompt.length} characters
+                <span className={aiPromptText.length < 50 ? 'text-destructive' : 'text-green-600'}>
+                  {aiPromptText.length} characters
                 </span>
                 <span>(minimum 50 required)</span>
               </div>
               <Button 
                 className="w-full gap-2 bg-[#1a365d] hover:bg-[#2d4a7c]" 
                 onClick={handleGenerateContent}
-                disabled={isGenerating || aiPrompt.length < 50}
+                disabled={isGenerating || aiPromptText.length < 50}
               >
                 {isGenerating ? (
                   <>
@@ -261,12 +264,12 @@ const ContentEditor = () => {
                 ) : (
                   <>
                     <Sparkles className="w-4 h-4" />
-                    Generate Complete Report
+                    Generate Preview Report
                   </>
                 )}
               </Button>
               <p className="text-xs text-center text-muted-foreground">
-                AI will generate Abstract, Acknowledgement, and 7 Chapters with proper sections. You can edit the content after generation.
+                AI will generate a preview with Abstract, Acknowledgement, and 3 Chapters. Full 7-chapter report unlocks after payment (₹50).
               </p>
             </div>
           </div>

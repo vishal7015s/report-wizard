@@ -1,10 +1,11 @@
-import { useRef, useState, useMemo } from 'react';
+import { useRef, useState, useMemo, useCallback } from 'react';
 import { useReportStore } from '@/store/reportStore';
 import { Button } from '@/components/ui/button';
-import { Download, CreditCard, Eye, CheckCircle, Loader2, FileText, FileDown } from 'lucide-react';
+import { Download, CreditCard, Eye, CheckCircle, Loader2, FileText, FileDown, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import { generatePDF } from '@/lib/pdfGenerator';
 import { generateDOCX } from '@/lib/docxGenerator';
+import { supabase } from '@/integrations/supabase/client';
 import PDFCoverPage from '@/components/pdf/PDFCoverPage';
 import PDFCoverPageWithSVCE from '@/components/pdf/PDFCoverPageWithSVCE';
 import PDFCertificate from '@/components/pdf/PDFCertificate';
@@ -20,10 +21,11 @@ import { ChapterSection } from '@/types/report';
 import { useRazorpayPayment } from '@/hooks/useRazorpayPayment';
 
 const ReportPreview = () => {
-  const { reportData, contentMode } = useReportStore();
+  const { reportData, contentMode, aiPrompt, setChapters, setAbstract, setAcknowledgement } = useReportStore();
   const pdfContainerRef = useRef<HTMLDivElement>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [downloadType, setDownloadType] = useState<'pdf' | 'docx' | null>(null);
+  const [isGeneratingFull, setIsGeneratingFull] = useState(false);
 
   const { 
     isProcessing,
@@ -32,7 +34,53 @@ const ReportPreview = () => {
   } = useRazorpayPayment();
 
   const isAIGenerated = contentMode === 'ai';
+  const isPreviewOnly = isAIGenerated && !isPaid && reportData.chapters.length <= 3;
   const price = isAIGenerated ? '₹50' : 'Free';
+
+  // After payment, generate remaining chapters
+  const generateRemainingChapters = useCallback(async () => {
+    if (!aiPrompt) return;
+    
+    setIsGeneratingFull(true);
+    toast.info('Generating full report with all 7 chapters...');
+
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-report-content', {
+        body: {
+          prompt: aiPrompt,
+          projectTitle: reportData.projectDetails.projectTitle,
+          guideName: reportData.projectDetails.guideName,
+          students: reportData.projectDetails.students,
+          branch: reportData.projectDetails.branch,
+          projectType: reportData.projectDetails.projectType,
+          mode: 'remaining'
+        }
+      });
+
+      if (error) throw new Error(error.message || 'Failed to generate remaining content');
+      if (data.error) throw new Error(data.error);
+
+      // Merge remaining chapters with existing preview chapters
+      const existingChapters = reportData.chapters;
+      const allChapters = [...existingChapters, ...data.chapters];
+      setChapters(allChapters);
+
+      toast.success('Full report generated! You can now download.');
+    } catch (error) {
+      console.error('Full generation error:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to generate full report');
+    } finally {
+      setIsGeneratingFull(false);
+    }
+  }, [aiPrompt, reportData, setChapters]);
+
+  const handlePaymentAndGenerate = async () => {
+    const success = await initiatePayment(50);
+    if (success) {
+      // After successful payment, generate remaining chapters
+      await generateRemainingChapters();
+    }
+  };
 
   const handleDownloadPDF = async () => {
     if (!pdfContainerRef.current) return;
@@ -522,11 +570,11 @@ const ReportPreview = () => {
               </div>
 
               {isAIGenerated ? (
-                isPaid ? (
+                isPaid && !isGeneratingFull ? (
                   <div className="space-y-2">
                     <div className="flex items-center gap-2 text-sm text-primary justify-center mb-2">
                       <CheckCircle className="w-4 h-4" />
-                      <span>Payment verified - Download unlocked!</span>
+                      <span>Payment verified - Full report ready!</span>
                     </div>
                     <Button 
                       className="w-full gap-2 bg-primary hover:bg-primary/90" 
@@ -566,25 +614,43 @@ const ReportPreview = () => {
                       )}
                     </Button>
                   </div>
+                ) : isGeneratingFull ? (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-sm text-primary justify-center">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Generating full report (Chapters 4-7)...</span>
+                    </div>
+                    <p className="text-xs text-center text-muted-foreground">
+                      Please wait, this may take a minute. Don't close this page.
+                    </p>
+                  </div>
                 ) : (
-                  <Button 
-                    className="w-full gap-2 bg-primary hover:bg-primary/90" 
-                    size="lg"
-                    onClick={handlePayment}
-                    disabled={isProcessing}
-                  >
-                    {isProcessing ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        Processing...
-                      </>
-                    ) : (
-                      <>
-                        <CreditCard className="w-4 h-4" />
-                        Pay ₹50 to Download
-                      </>
+                  <div className="space-y-3">
+                    {isPreviewOnly && (
+                      <div className="flex items-center gap-2 text-xs text-amber-600 justify-center bg-amber-50 rounded-lg p-2">
+                        <Lock className="w-3 h-3" />
+                        <span>Preview: 3 chapters shown. Pay to unlock all 7 chapters.</span>
+                      </div>
                     )}
-                  </Button>
+                    <Button 
+                      className="w-full gap-2 bg-primary hover:bg-primary/90" 
+                      size="lg"
+                      onClick={handlePaymentAndGenerate}
+                      disabled={isProcessing}
+                    >
+                      {isProcessing ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          <CreditCard className="w-4 h-4" />
+                          Pay ₹50 & Generate Full Report
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 )
               ) : (
                 <div className="space-y-2">
