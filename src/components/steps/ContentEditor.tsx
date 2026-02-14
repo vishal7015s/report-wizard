@@ -26,11 +26,15 @@ const ContentEditor = () => {
     contentMode, 
     setContentMode, 
     reportData, 
+    aiReportContent,
     isAIGenerated,
     setIsAIGenerated,
     setAiPrompt,
     setAbstract,
     setAcknowledgement,
+    setAiChapters,
+    setAiAbstract,
+    setAiAcknowledgement,
     addChapter,
     removeChapter,
     addSection,
@@ -49,8 +53,11 @@ const ContentEditor = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isGeneratingDiagram, setIsGeneratingDiagram] = useState<string | null>(null);
 
-  // Count total AI-generated diagrams across all chapters
-  const totalAIDiagrams = reportData.chapters.reduce((total, chapter) => {
+  // Use appropriate chapters based on content mode
+  const activeChapters = contentMode === 'ai' ? aiReportContent.chapters : reportData.chapters;
+
+  // Count total AI-generated diagrams across AI chapters
+  const totalAIDiagrams = aiReportContent.chapters.reduce((total, chapter) => {
     return total + chapter.sections.reduce((sectionTotal, section) => {
       return sectionTotal + (section.images?.filter(img => img.id.startsWith('ai-diagram-')).length || 0);
     }, 0);
@@ -119,18 +126,15 @@ const ContentEditor = () => {
         throw new Error(data.error);
       }
 
-      // Update the store with generated preview content
-      setAbstract(data.abstract);
-      setAcknowledgement(data.acknowledgement);
-      setChapters(data.chapters);
+      // Update AI report content (separate from manual)
+      setAiAbstract(data.abstract);
+      setAiAcknowledgement(data.acknowledgement);
+      setAiChapters(data.chapters);
       setActiveChapter(data.chapters[0]?.id || '');
       setIsAIGenerated(true);
       setAiPrompt(aiPromptText); // Save prompt for full generation after payment
 
       toast.success('Preview content generated! Pay to unlock full report with all 7 chapters.');
-      
-      // Switch to manual mode to show the generated content
-      setContentMode('manual');
       
     } catch (error) {
       console.error('Generation error:', error);
@@ -190,7 +194,7 @@ const ContentEditor = () => {
     setCurrentStep(3);
   };
 
-  const currentChapter = reportData.chapters.find(c => c.id === activeChapter);
+  const currentChapter = activeChapters.find(c => c.id === activeChapter);
 
   const diagramOptions = [
     { type: 'er-diagram', label: 'ER Diagram' },
@@ -287,7 +291,7 @@ const ContentEditor = () => {
           </div>
 
           {/* AI Diagram Generation - Only shown after content is generated */}
-          {reportData.chapters.some(c => c.sections.some(s => s.content.length > 0)) && (
+          {aiReportContent.chapters.some(c => c.sections.some(s => s.content.length > 0)) && (
             <div className="bg-card rounded-xl border p-6 shadow-soft">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
@@ -305,7 +309,7 @@ const ContentEditor = () => {
                 {/* Chapter Selection for Diagrams */}
                 <div className="space-y-4">
                   <div className="flex flex-wrap gap-2">
-                    {reportData.chapters.map((chapter) => (
+                    {aiReportContent.chapters.map((chapter) => (
                       <Button
                         key={chapter.id}
                         variant={activeChapter === chapter.id ? 'default' : 'outline'}
