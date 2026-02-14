@@ -41,7 +41,7 @@ const PDFChapterContent = ({ sections, data, pageNumber }: PDFChapterContentProp
       </div>
       
       {/* Content Area - Fixed font size 14px throughout */}
-      <div style={{ paddingTop: '20mm', paddingLeft: '20mm', paddingRight: '20mm', paddingBottom: '22mm', fontSize: '14px', fontFamily: 'Times New Roman, serif' }}>
+      <div style={{ paddingTop: '20mm', paddingLeft: '20mm', paddingRight: '20mm', paddingBottom: '28mm', fontSize: '14px', fontFamily: 'Times New Roman, serif', maxHeight: 'calc(297mm - 48mm)', overflow: 'hidden' }}>
         {sections.map((section) => (
           <div key={section.id} style={{ marginBottom: '6mm' }}>
             {/* Section Heading */}
@@ -77,7 +77,7 @@ const PDFChapterContent = ({ sections, data, pageNumber }: PDFChapterContentProp
                     <img 
                       src={image.url} 
                       alt={image.caption || `Figure ${section.number}.${imgIndex + 1}`}
-                      style={{ maxWidth: '100%', maxHeight: '200px', objectFit: 'contain', margin: '0 auto' }}
+                      style={{ maxWidth: '80%', maxHeight: '150px', objectFit: 'contain', margin: '0 auto' }}
                     />
                     <p style={{ fontSize: '12px', marginTop: '2mm', color: '#000000' }}>
                       Figure {section.number}.{imgIndex + 1}: {image.caption || 'Diagram'}

@@ -145,10 +145,10 @@ const ReportPreview = () => {
   // Split sections into pages - smart content management with proper page breaks
   const splitSectionsIntoPages = (sections: ChapterSection[]): ChapterSection[][] => {
     // Page capacity settings - strict limits to enforce fixed A4 page size
-    const MAX_CHARS_PER_PAGE = 1800; // Strict limit to prevent any overflow
-    const MIN_CHARS_FOR_NEW_PAGE = 400;
+    const MAX_CHARS_PER_PAGE = 1500; // Strict limit to prevent any overflow
+    const MIN_CHARS_FOR_NEW_PAGE = 300;
     const MAX_SECTIONS_PER_PAGE = 2; // Fewer sections per page to prevent overflow
-    const IMAGE_COST = 1400; // Images take significant space - higher cost to prevent overflow
+    const IMAGE_COST = 1800; // Each image takes nearly a full page worth of space
     const HEADING_COST = 250;
     
     const pages: ChapterSection[][] = [];
@@ -229,12 +229,13 @@ const ReportPreview = () => {
       const cost = calculateCost(section);
       const content = section.content || '';
       
-      // Keep together if:
-      // - Section is small enough to fit on one page
-      // - Section has only bullet points (don't split lists)
-      // - Section has images (keep with their content)
+      // If section has images, only keep together if text is very short
+      if (section.images && section.images.length > 0) {
+        const textOnly = (content.length) + HEADING_COST;
+        return textOnly + (section.images.length * IMAGE_COST) <= MAX_CHARS_PER_PAGE;
+      }
+      
       if (cost <= MAX_CHARS_PER_PAGE) return true;
-      if (section.images && section.images.length > 0 && cost <= MAX_CHARS_PER_PAGE * 1.2) return true;
       
       // Check if mostly bullet points - try to keep together
       const bulletLines = (content.match(/^[•\-\*○]\s/gm) || []).length;
