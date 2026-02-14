@@ -11,12 +11,19 @@ import {
   defaultChapters 
 } from '@/types/report';
 
+interface AIReportContent {
+  chapters: Chapter[];
+  abstract: string;
+  acknowledgement: string;
+}
+
 interface ReportStore {
   currentStep: number;
   contentMode: 'ai' | 'manual';
   isAIGenerated: boolean;
   aiPrompt: string;
   reportData: ReportData;
+  aiReportContent: AIReportContent;
   
   setCurrentStep: (step: number) => void;
   setContentMode: (mode: 'ai' | 'manual') => void;
@@ -39,6 +46,12 @@ interface ReportStore {
   setAbstract: (abstract: string) => void;
   setAcknowledgement: (acknowledgement: string) => void;
   setReferences: (references: string[]) => void;
+  // AI-specific setters
+  setAiChapters: (chapters: Chapter[]) => void;
+  setAiAbstract: (abstract: string) => void;
+  setAiAcknowledgement: (acknowledgement: string) => void;
+  // Helper to get active report data based on contentMode
+  getActiveReportData: () => ReportData;
   resetReport: () => void;
 }
 
@@ -51,12 +64,19 @@ const initialReportData: ReportData = {
   references: [],
 };
 
-export const useReportStore = create<ReportStore>((set) => ({
+const initialAIContent: AIReportContent = {
+  chapters: [],
+  abstract: '',
+  acknowledgement: '',
+};
+
+export const useReportStore = create<ReportStore>((set, get) => ({
   currentStep: 0,
   contentMode: 'manual',
   isAIGenerated: false,
   aiPrompt: '',
   reportData: initialReportData,
+  aiReportContent: initialAIContent,
 
   setCurrentStep: (step) => set({ currentStep: step }),
   
@@ -282,11 +302,38 @@ export const useReportStore = create<ReportStore>((set) => ({
     reportData: { ...state.reportData, references }
   })),
   
+  // AI-specific setters
+  setAiChapters: (chapters) => set((state) => ({
+    aiReportContent: { ...state.aiReportContent, chapters }
+  })),
+  
+  setAiAbstract: (abstract) => set((state) => ({
+    aiReportContent: { ...state.aiReportContent, abstract }
+  })),
+  
+  setAiAcknowledgement: (acknowledgement) => set((state) => ({
+    aiReportContent: { ...state.aiReportContent, acknowledgement }
+  })),
+
+  getActiveReportData: () => {
+    const state = get();
+    if (state.contentMode === 'ai') {
+      return {
+        ...state.reportData,
+        chapters: state.aiReportContent.chapters,
+        abstract: state.aiReportContent.abstract,
+        acknowledgement: state.aiReportContent.acknowledgement,
+      };
+    }
+    return state.reportData;
+  },
+
   resetReport: () => set({
     currentStep: 0,
     contentMode: 'manual',
     isAIGenerated: false,
     aiPrompt: '',
     reportData: initialReportData,
+    aiReportContent: initialAIContent,
   }),
 }));
