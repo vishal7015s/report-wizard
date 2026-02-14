@@ -5,14 +5,14 @@ const TrustLogos = () => {
   ];
 
   return (
-    <section className="py-10 border-y border-border/30">
-      <div className="max-w-6xl mx-auto px-6">
-        <p className="text-center text-[11px] font-medium text-muted-foreground/60 uppercase tracking-[0.15em] mb-6">
+    <section className="py-12 border-y border-border/50 bg-secondary/30">
+      <div className="max-w-7xl mx-auto px-6">
+        <p className="text-center text-xs font-medium text-muted-foreground uppercase tracking-widest mb-8">
           Trusted by students from top RGPV affiliated colleges
         </p>
-        <div className="flex flex-wrap justify-center items-center gap-x-8 gap-y-3">
+        <div className="flex flex-wrap justify-center items-center gap-x-10 gap-y-4">
           {universities.map((uni) => (
-            <span key={uni} className="text-[13px] font-medium text-muted-foreground/40 hover:text-muted-foreground/70 transition-colors duration-300 cursor-default">
+            <span key={uni} className="text-sm font-semibold text-muted-foreground/60 hover:text-muted-foreground transition-colors">
               {uni}
             </span>
           ))}

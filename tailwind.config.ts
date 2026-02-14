@@ -57,6 +57,7 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        // Custom colors
         rgpv: {
           red: "hsl(var(--rgpv-red))",
           blue: "hsl(var(--rgpv-blue))",
@@ -67,7 +68,7 @@ export default {
         },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        sans: ['Inter', 'sans-serif'],
         serif: ['Times New Roman', 'Georgia', 'serif'],
       },
       borderRadius: {
@@ -90,11 +91,9 @@ export default {
         "accordion-up": "accordion-up 0.2s ease-out",
       },
       boxShadow: {
-        'soft': '0 1px 3px 0 rgba(0,0,0,0.04), 0 1px 2px -1px rgba(0,0,0,0.03)',
-        'card': '0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.04)',
-        'elevated': '0 4px 6px -1px rgba(0,0,0,0.05), 0 10px 30px -5px rgba(0,0,0,0.08)',
-        'hero': '0 20px 60px -15px rgba(99,102,241,0.15), 0 0 0 1px rgba(99,102,241,0.05)',
-        'glow': '0 0 60px -12px rgba(99,102,241,0.25)',
+        'soft': '0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 10px 20px -2px rgba(0, 0, 0, 0.04)',
+        'card': '0 4px 20px rgba(0, 0, 0, 0.08)',
+        'elevated': '0 10px 40px rgba(0, 0, 0, 0.12)',
       },
     },
   },
