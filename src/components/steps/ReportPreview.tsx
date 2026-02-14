@@ -17,24 +17,21 @@ import PDFListOfFigures from '@/components/pdf/PDFListOfFigures';
 import PDFChapterTitle from '@/components/pdf/PDFChapterTitle';
 import PDFChapterContent from '@/components/pdf/PDFChapterContent';
 import { ChapterSection } from '@/types/report';
-import { useUPIPayment } from '@/hooks/useUPIPayment';
-import UPIPaymentDialog from '@/components/UPIPaymentDialog';
+import { useRazorpayPayment } from '@/hooks/useRazorpayPayment';
 
 const ReportPreview = () => {
   const { reportData, contentMode } = useReportStore();
   const pdfContainerRef = useRef<HTMLDivElement>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [downloadType, setDownloadType] = useState<'pdf' | 'docx' | null>(null);
-  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
 
   const { 
-    paymentComplete, 
-    checkPaymentStatus,
-    markPaymentComplete 
-  } = useUPIPayment();
+    isProcessing,
+    isPaid,
+    initiatePayment, 
+  } = useRazorpayPayment();
 
   const isAIGenerated = contentMode === 'ai';
-  const isPaid = checkPaymentStatus() || paymentComplete;
   const price = isAIGenerated ? '₹50' : 'Free';
 
   const handleDownloadPDF = async () => {
@@ -79,8 +76,8 @@ const ReportPreview = () => {
     }
   };
 
-  const handlePaymentConfirmed = () => {
-    markPaymentComplete();
+  const handlePayment = async () => {
+    await initiatePayment(50);
   };
 
   // Generate Roman numerals for preliminary pages
@@ -573,10 +570,20 @@ const ReportPreview = () => {
                   <Button 
                     className="w-full gap-2 bg-primary hover:bg-primary/90" 
                     size="lg"
-                    onClick={() => setShowPaymentDialog(true)}
+                    onClick={handlePayment}
+                    disabled={isProcessing}
                   >
-                    <CreditCard className="w-4 h-4" />
-                    Pay ₹50 to Download
+                    {isProcessing ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <CreditCard className="w-4 h-4" />
+                        Pay ₹50 to Download
+                      </>
+                    )}
                   </Button>
                 )
               ) : (
@@ -630,7 +637,7 @@ const ReportPreview = () => {
 
               {isAIGenerated && !isPaid && (
                 <p className="text-xs text-center text-muted-foreground">
-                  Secure UPI payment - GPay, PhonePe, Paytm supported
+                  Secure payment via Razorpay - UPI, Cards, Net Banking supported
                 </p>
               )}
             </div>
@@ -648,14 +655,6 @@ const ReportPreview = () => {
           </div>
         </div>
       </div>
-
-      {/* UPI Payment Dialog */}
-      <UPIPaymentDialog 
-        open={showPaymentDialog}
-        onOpenChange={setShowPaymentDialog}
-        amount="50"
-        onPaymentConfirmed={handlePaymentConfirmed}
-      />
     </div>
   );
 };
