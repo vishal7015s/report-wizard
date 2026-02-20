@@ -13,11 +13,11 @@ import {
 import { Plus, Trash2, User, ArrowRight, BookOpen, Users, GraduationCap } from 'lucide-react';
 
 const SectionHeader = ({ icon: Icon, title }: { icon: React.ElementType; title: string }) => (
-  <div className="flex items-center gap-2 mb-4">
-    <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
+  <div className="flex items-center gap-2.5 mb-5">
+    <div className="w-7 h-7 rounded-lg bg-primary/8 flex items-center justify-center ring-1 ring-primary/15">
       <Icon className="w-3.5 h-3.5 text-primary" />
     </div>
-    <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+    <h3 className="text-sm font-semibold tracking-tight text-foreground">{title}</h3>
   </div>
 );
 
@@ -39,16 +39,16 @@ const UserDetailsForm = () => {
 
   return (
     <div className="max-w-2xl mx-auto animate-fade-in">
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold text-foreground mb-1">Project Details</h2>
-        <p className="text-muted-foreground text-sm">
+      <div className="mb-10">
+        <h2 className="text-2xl font-bold tracking-tight text-foreground mb-2">Project Details</h2>
+        <p className="text-muted-foreground text-sm leading-relaxed">
           Enter your project and student information • Takes less than 1 minute
         </p>
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-7">
         {/* Project Information */}
-        <div className="bg-card rounded-2xl border p-6">
+        <div className="bg-card/80 rounded-2xl border border-border/50 p-7 shadow-sm">
           <SectionHeader icon={BookOpen} title="Project Information" />
           <div className="space-y-4">
             <div className="grid sm:grid-cols-2 gap-4">
@@ -117,7 +117,7 @@ const UserDetailsForm = () => {
         </div>
 
         {/* Guide Information */}
-        <div className="bg-card rounded-2xl border p-6">
+        <div className="bg-card/80 rounded-2xl border border-border/50 p-7 shadow-sm">
           <SectionHeader icon={GraduationCap} title="Guide & HOD Details" />
           <div className="space-y-4">
             <div className="grid sm:grid-cols-2 gap-4">
@@ -163,7 +163,7 @@ const UserDetailsForm = () => {
         </div>
 
         {/* Students */}
-        <div className="bg-card rounded-2xl border p-6">
+        <div className="bg-card/80 rounded-2xl border border-border/50 p-7 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <SectionHeader icon={Users} title="Students" />
             <Button
@@ -225,8 +225,8 @@ const UserDetailsForm = () => {
       </div>
 
       {/* Navigation */}
-      <div className="flex justify-end mt-6">
-        <Button onClick={handleNext} className="gap-2 rounded-xl">
+      <div className="flex justify-end mt-8">
+        <Button onClick={handleNext} className="gap-2 rounded-xl px-6 h-11 shadow-sm shadow-primary/20 hover:shadow-md hover:shadow-primary/25 transition-all">
           Next: Add Content
           <ArrowRight className="w-4 h-4" />
         </Button>
