@@ -428,7 +428,7 @@ const ReportPreview = () => {
   let pageCounter = 1;
 
   return (
-    <div className="animate-fade-in h-[calc(100vh-140px)] flex flex-col overflow-hidden">
+    <div className="animate-fade-in lg:h-[calc(100vh-140px)] lg:flex lg:flex-col lg:overflow-hidden">
       <div className="mb-4 flex-shrink-0">
         <h2 className="text-2xl font-bold text-foreground mb-1">Preview Your Report</h2>
         <p className="text-muted-foreground">
@@ -436,10 +436,10 @@ const ReportPreview = () => {
         </p>
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-8 flex-1 min-h-0">
+      <div className="flex flex-col lg:grid lg:grid-cols-3 gap-6 lg:gap-8 lg:flex-1 lg:min-h-0">
         {/* Preview Area */}
-        <div className="lg:col-span-2 min-h-0">
-          <div className="bg-muted/50 p-8 rounded-xl overflow-auto h-full">
+        <div className="lg:col-span-2 lg:min-h-0 order-2 lg:order-1">
+          <div className="bg-muted/50 p-4 sm:p-8 rounded-xl overflow-auto max-h-[60vh] lg:max-h-none lg:h-full">
             <div className="space-y-8 flex flex-col items-center">
               {/* Preliminary Pages */}
               <div className="transform scale-[0.5] origin-top">
@@ -588,7 +588,7 @@ const ReportPreview = () => {
         </div>
 
         {/* Sidebar */}
-        <div className="space-y-6">
+        <div className="space-y-6 order-1 lg:order-2">
           <div className="bg-card rounded-2xl p-6 shadow-lg border">
             <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
               <Download className="w-5 h-5" />
