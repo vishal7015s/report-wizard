@@ -16,17 +16,12 @@ const stepIcons = [Building2, ClipboardList, FileEdit, Eye];
 
 const StepIndicator = ({ steps, currentStep, onStepClick }: StepIndicatorProps) => {
   return (
-    <div className="w-72 flex-shrink-0 hidden lg:block">
-      <div className="sticky top-28 bg-card/80 backdrop-blur-sm border border-border/50 rounded-2xl p-7 shadow-soft">
-        <div className="flex items-center justify-between mb-7">
-          <h3 className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
-            Progress
-          </h3>
-          <span className="text-[11px] font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full">
-            {Math.round(((currentStep) / (steps.length - 1)) * 100)}%
-          </span>
-        </div>
-        <div className="space-y-0.5">
+    <div className="w-64 flex-shrink-0 hidden lg:block">
+      <div className="sticky top-24 bg-card border rounded-2xl p-6 shadow-sm">
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-6">
+          Progress
+        </h3>
+        <div className="space-y-1">
           {steps.map((step, index) => {
             const isCompleted = currentStep > index;
             const isActive = currentStep === index;
@@ -38,21 +33,21 @@ const StepIndicator = ({ steps, currentStep, onStepClick }: StepIndicatorProps) 
                 <button
                   onClick={() => isCompleted && onStepClick?.(index)}
                   disabled={isFuture}
-                  className={`w-full flex items-center gap-3.5 px-3.5 py-3 rounded-xl text-left transition-all duration-200 ${
+                  className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left transition-all duration-200 ${
                     isActive
-                      ? 'bg-primary/8 ring-1 ring-primary/20'
+                      ? 'bg-primary/10 text-primary'
                       : isCompleted
-                      ? 'hover:bg-muted/40 cursor-pointer'
-                      : 'opacity-50 cursor-default'
+                      ? 'text-foreground hover:bg-muted/50 cursor-pointer'
+                      : 'text-muted-foreground cursor-default'
                   }`}
                 >
                   <div
-                    className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-all duration-300 ${
+                    className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-all ${
                       isCompleted
-                        ? 'bg-green-500/10 text-green-600 dark:text-green-400 ring-1 ring-green-500/20'
+                        ? 'bg-green-500/10 text-green-600 dark:text-green-400'
                         : isActive
-                        ? 'bg-primary text-primary-foreground shadow-md shadow-primary/25'
-                        : 'bg-muted/60 text-muted-foreground'
+                        ? 'bg-primary text-primary-foreground shadow-sm'
+                        : 'bg-muted text-muted-foreground'
                     }`}
                   >
                     {isCompleted ? (
@@ -63,24 +58,24 @@ const StepIndicator = ({ steps, currentStep, onStepClick }: StepIndicatorProps) 
                   </div>
                   <div className="min-w-0">
                     <p
-                      className={`text-[13px] font-medium truncate leading-tight ${
+                      className={`text-sm font-medium truncate ${
                         isActive ? 'text-primary' : isCompleted ? 'text-foreground' : 'text-muted-foreground'
                       }`}
                     >
                       {step.title}
                     </p>
                     {step.description && (
-                      <p className="text-[11px] text-muted-foreground/70 truncate mt-0.5">
+                      <p className="text-xs text-muted-foreground truncate mt-0.5">
                         {step.description}
                       </p>
                     )}
                   </div>
                 </button>
                 {index < steps.length - 1 && (
-                  <div className="ml-[23px] h-3 flex items-center">
+                  <div className="ml-[22px] h-4 flex items-center">
                     <div
-                      className={`w-[1.5px] h-full rounded-full transition-colors duration-300 ${
-                        isCompleted ? 'bg-green-500/25' : 'bg-border/40'
+                      className={`w-0.5 h-full rounded-full ${
+                        isCompleted ? 'bg-green-500/30' : 'bg-border'
                       }`}
                     />
                   </div>
@@ -91,13 +86,14 @@ const StepIndicator = ({ steps, currentStep, onStepClick }: StepIndicatorProps) 
         </div>
 
         {/* Progress bar */}
-        <div className="mt-7 pt-5 border-t border-border/40">
-          <div className="flex items-center justify-between text-[11px] text-muted-foreground mb-2.5">
-            <span className="font-medium">Step {currentStep + 1} of {steps.length}</span>
+        <div className="mt-6 pt-4 border-t">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
+            <span>Step {currentStep + 1} of {steps.length}</span>
+            <span>{Math.round(((currentStep) / (steps.length - 1)) * 100)}%</span>
           </div>
-          <div className="w-full h-1 bg-muted/40 rounded-full overflow-hidden">
+          <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
             <div
-              className="h-full bg-gradient-to-r from-primary to-primary/70 rounded-full transition-all duration-700 ease-out"
+              className="h-full bg-primary rounded-full transition-all duration-500 ease-out"
               style={{ width: `${(currentStep / (steps.length - 1)) * 100}%` }}
             />
           </div>
