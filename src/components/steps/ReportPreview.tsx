@@ -428,18 +428,18 @@ const ReportPreview = () => {
   let pageCounter = 1;
 
   return (
-    <div className="animate-fade-in">
-      <div className="mb-8">
+    <div className="animate-fade-in h-[calc(100vh-140px)] flex flex-col overflow-hidden">
+      <div className="mb-4 flex-shrink-0">
         <h2 className="text-2xl font-bold text-foreground mb-1">Preview Your Report</h2>
         <p className="text-muted-foreground">
           Review the formatted pages before downloading
         </p>
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-8">
+      <div className="grid lg:grid-cols-3 gap-8 flex-1 min-h-0">
         {/* Preview Area */}
-        <div className="lg:col-span-2 space-y-8">
-          <div className="bg-muted/50 p-8 rounded-xl overflow-auto max-h-[800px]">
+        <div className="lg:col-span-2 min-h-0">
+          <div className="bg-muted/50 p-8 rounded-xl overflow-auto h-full">
             <div className="space-y-8 flex flex-col items-center">
               {/* Preliminary Pages */}
               <div className="transform scale-[0.5] origin-top">
