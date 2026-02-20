@@ -429,8 +429,8 @@ const ReportPreview = () => {
 
   return (
     <div className="animate-fade-in">
-      <div className="text-center mb-8">
-        <h2 className="text-2xl font-bold text-[#1a365d] mb-2">Preview Your Report</h2>
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold text-foreground mb-1">Preview Your Report</h2>
         <p className="text-muted-foreground">
           Review the formatted pages before downloading
         </p>
@@ -589,8 +589,8 @@ const ReportPreview = () => {
 
         {/* Sidebar */}
         <div className="space-y-6">
-          <div className="bg-card rounded-xl p-6 shadow-lg border">
-            <h3 className="text-lg font-semibold text-[#1a365d] mb-4 flex items-center gap-2">
+          <div className="bg-card rounded-2xl p-6 shadow-lg border">
+            <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
               <Download className="w-5 h-5" />
               Download Report
             </h3>
@@ -625,7 +625,7 @@ const ReportPreview = () => {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <span className="font-semibold">Total</span>
-                <span className={`text-2xl font-bold ${isAIGenerated ? 'text-[#1a365d]' : 'text-green-600'}`}>
+                <span className={`text-2xl font-bold ${isAIGenerated ? 'text-primary' : 'text-green-600 dark:text-green-400'}`}>
                   {price}
                 </span>
               </div>

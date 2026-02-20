@@ -219,7 +219,7 @@ const ContentEditor = () => {
   ];
 
   return (
-    <div className="max-w-4xl mx-auto animate-fade-in">
+    <div className="max-w-3xl mx-auto animate-fade-in">
       <input
         type="file"
         ref={fileInputRef}
@@ -228,8 +228,8 @@ const ContentEditor = () => {
         className="hidden"
       />
 
-      <div className="text-center mb-8">
-        <h2 className="text-2xl font-bold text-[#1a365d] mb-2">Add Content</h2>
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold text-foreground mb-1">Add Content</h2>
         <p className="text-muted-foreground">
           Choose how you want to add content to your report
         </p>
@@ -251,7 +251,7 @@ const ContentEditor = () => {
           <div className="bg-card rounded-xl border p-6 shadow-soft">
             <div className="space-y-4">
               <div>
-                <Label className="text-base font-semibold text-[#1a365d]">Describe Your Project</Label>
+                <Label className="text-base font-semibold text-foreground">Describe Your Project</Label>
                 <p className="text-sm text-muted-foreground mt-1">
                   Enter a detailed description of your project. AI will generate content for all chapters including abstract, acknowledgement, and technical details.
                 </p>
@@ -270,7 +270,7 @@ const ContentEditor = () => {
                 <span>(minimum 50 required)</span>
               </div>
               <Button 
-                className="w-full gap-2 bg-[#1a365d] hover:bg-[#2d4a7c]" 
+                className="w-full gap-2 rounded-xl" 
                 onClick={handleGenerateContent}
                 disabled={isGenerating || aiPromptText.length < 50}
               >
@@ -294,7 +294,7 @@ const ContentEditor = () => {
 
           {/* Tips for better generation */}
           <div className="bg-muted/50 rounded-xl border p-4">
-            <h4 className="font-semibold text-[#1a365d] mb-2">Tips for Better Results</h4>
+            <h4 className="font-semibold text-foreground mb-2">Tips for Better Results</h4>
             <ul className="text-sm text-muted-foreground space-y-1">
               <li>• Include the technologies you're using (React, Python, MySQL, etc.)</li>
               <li>• Mention the problem your project solves</li>
@@ -309,7 +309,7 @@ const ContentEditor = () => {
             <div className="bg-card rounded-xl border p-6 shadow-soft">
               <div className="space-y-4">
                 <div>
-                  <Label className="text-base font-semibold text-[#1a365d]">Add Diagrams / Images</Label>
+                  <Label className="text-base font-semibold text-foreground">Add Diagrams / Images</Label>
                   <p className="text-sm text-muted-foreground mt-1">
                     Upload images or generate AI diagrams (max {MAX_AI_DIAGRAMS} AI diagrams)
                   </p>
@@ -322,7 +322,7 @@ const ContentEditor = () => {
                       key={chapter.id}
                       variant={selectedDiagramChapter === chapter.id ? 'default' : 'outline'}
                       size="sm"
-                      className={`text-xs ${selectedDiagramChapter === chapter.id ? 'bg-[#1a365d] text-white' : 'border-[#1a365d] text-[#1a365d]'}`}
+                      className="text-xs rounded-xl"
                       onClick={() => setSelectedDiagramChapter(selectedDiagramChapter === chapter.id ? null : chapter.id)}
                     >
                       Chapter {chapter.number}
@@ -336,13 +336,13 @@ const ContentEditor = () => {
                   if (!chapter) return null;
                   return (
                     <div className="space-y-2">
-                      <h4 className="font-semibold text-sm text-[#1a365d] bg-muted/40 px-3 py-2 rounded-md">
+                      <h4 className="font-semibold text-sm text-foreground bg-muted/40 px-3 py-2 rounded-lg">
                         Chapter {chapter.number}: {chapter.title}
                       </h4>
                       {chapter.sections.map((section) => (
                         <div key={section.id} className="p-4 border rounded-lg bg-muted/20 ml-2">
                           <div className="flex items-center justify-between mb-3">
-                            <span className="font-medium text-sm text-[#1a365d]">
+                            <span className="font-medium text-sm text-foreground">
                               {section.number} {section.heading}
                             </span>
                             <span className="text-xs text-muted-foreground">
@@ -425,7 +425,7 @@ const ContentEditor = () => {
         <TabsContent value="manual" className="space-y-6">
           {/* Abstract */}
           <div className="bg-card rounded-xl border p-6 shadow-soft">
-            <Label className="text-base font-semibold text-[#1a365d]">Abstract</Label>
+            <Label className="text-base font-semibold text-foreground">Abstract</Label>
             <p className="text-sm text-muted-foreground mt-1 mb-3">
               A brief summary of your project (150-300 words)
             </p>
@@ -443,7 +443,7 @@ const ContentEditor = () => {
 
           {/* Acknowledgement */}
           <div className="bg-card rounded-xl border p-6 shadow-soft">
-            <Label className="text-base font-semibold text-[#1a365d]">Acknowledgement</Label>
+            <Label className="text-base font-semibold text-foreground">Acknowledgement</Label>
             <p className="text-sm text-muted-foreground mt-1 mb-3">
               Thank your guides, HOD, principal, and others
             </p>
@@ -462,12 +462,12 @@ const ContentEditor = () => {
           {/* Chapter-wise Editor */}
           <div className="bg-card rounded-xl border shadow-soft overflow-hidden">
             <div className="flex items-center justify-between p-4 border-b bg-muted/30">
-              <h3 className="font-semibold text-[#1a365d]">Chapter-wise Editor</h3>
+              <h3 className="font-semibold text-foreground">Chapter-wise Editor</h3>
               <Button 
                 variant="outline" 
                 size="sm" 
                 onClick={addChapter}
-                className="gap-2 border-[#1a365d] text-[#1a365d] hover:bg-[#1a365d] hover:text-white"
+                className="gap-2 rounded-xl"
               >
                 <Plus className="w-4 h-4" />
                 Add Chapter
@@ -483,10 +483,7 @@ const ContentEditor = () => {
                     variant={activeChapter === chapter.id ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => setActiveChapter(chapter.id)}
-                    className={activeChapter === chapter.id 
-                      ? 'bg-[#1a365d] hover:bg-[#2d4a7c]' 
-                      : 'border-[#1a365d] text-[#1a365d]'
-                    }
+                    className="rounded-xl"
                   >
                     Chapter {chapter.number}
                   </Button>
@@ -498,7 +495,7 @@ const ContentEditor = () => {
             {currentChapter && (
               <div className="p-6 space-y-6">
                 {/* Chapter Title */}
-                <div className="bg-[#1a365d] text-white py-3 px-4 rounded-lg text-center">
+                <div className="bg-primary text-primary-foreground py-3 px-4 rounded-xl text-center">
                   <Input
                     value={currentChapter.title}
                     onChange={(e) => {
@@ -586,7 +583,7 @@ const ContentEditor = () => {
                         
                         <div className="flex flex-col items-center gap-3">
                           <ImageIcon className="w-10 h-10 text-muted-foreground" />
-                          <span className="text-sm text-[#1a365d]">Add a diagram</span>
+                          <span className="text-sm text-foreground">Add a diagram</span>
                           
                           {/* Show AI diagram buttons only for AI-generated content */}
                           {isAIGenerated && section.content.length > 0 && (
@@ -682,7 +679,7 @@ const ContentEditor = () => {
 
       {/* Navigation */}
       <div className="flex justify-end mt-6">
-        <Button onClick={handleNext} className="gap-2 bg-[#1a365d] hover:bg-[#2d4a7c]">
+        <Button onClick={handleNext} className="gap-2 rounded-xl">
           Preview Report
           <ArrowRight className="w-4 h-4" />
         </Button>
