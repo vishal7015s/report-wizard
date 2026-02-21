@@ -62,7 +62,7 @@ const CollegeSelection = () => {
       <div className="mt-6 text-center">
         <p className="text-xs text-muted-foreground">
           Don't see your college? Email us at{' '}
-          <span className="text-primary font-medium">support@projectreport.in</span>
+          <span className="text-primary font-medium">developer.vishalshivhare123@gmail.com</span>
         </p>
       </div>
     </div>
