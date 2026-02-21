@@ -115,6 +115,22 @@ export const colleges: College[] = [
     university: 'Rajiv Gandhi Proudyogiki Vishwavidyalaya, Bhopal',
     logo: '/svce-logo.png',
   },
+  {
+    id: 'cdgi-indore',
+    name: 'Chameli Devi Group of Institutions',
+    shortName: 'CDGI',
+    location: 'Indore (M.P)',
+    university: 'Rajiv Gandhi Proudyogiki Vishwavidyalaya, Bhopal',
+    logo: '',
+  },
+  {
+    id: 'iist-indore',
+    name: 'Indore Institute of Science & Technology',
+    shortName: 'IIST',
+    location: 'Indore (M.P)',
+    university: 'Rajiv Gandhi Proudyogiki Vishwavidyalaya, Bhopal',
+    logo: '',
+  },
 ];
 
 export const branches = [
