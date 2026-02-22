@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,33 +6,33 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 224 71% 4%;
+    --background: 0 0% 98%;
+    --foreground: 220 20% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 224 71% 4%;
+    --card-foreground: 220 20% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 224 71% 4%;
+    --popover-foreground: 220 20% 15%;
 
-    --primary: 239 84% 67%;
+    --primary: 213 60% 25%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 14% 96%;
-    --secondary-foreground: 224 71% 4%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 213 60% 25%;
 
-    --muted: 220 14% 96%;
-    --muted-foreground: 220 9% 46%;
+    --muted: 210 30% 95%;
+    --muted-foreground: 215 20% 45%;
 
-    --accent: 239 84% 67%;
+    --accent: 0 75% 48%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 239 84% 67%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 213 60% 25%;
 
     --radius: 0.75rem;
 
@@ -54,46 +54,46 @@
     --sidebar-accent: 240 4.8% 95.9%;
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 239 84% 67%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
   .dark {
-    --background: 224 71% 4%;
+    --background: 222 30% 8%;
     --foreground: 210 40% 98%;
 
-    --card: 224 50% 8%;
+    --card: 222 30% 12%;
     --card-foreground: 210 40% 98%;
 
-    --popover: 224 50% 8%;
+    --popover: 222 30% 12%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 239 84% 67%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 210 100% 55%;
+    --primary-foreground: 222 30% 8%;
 
-    --secondary: 215 28% 17%;
+    --secondary: 217 32% 20%;
     --secondary-foreground: 210 40% 98%;
 
-    --muted: 215 28% 17%;
-    --muted-foreground: 217 10% 64%;
+    --muted: 217 32% 20%;
+    --muted-foreground: 215 20% 65%;
 
-    --accent: 239 84% 67%;
+    --accent: 0 70% 55%;
     --accent-foreground: 210 40% 98%;
 
     --destructive: 0 62% 35%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 215 28% 17%;
-    --input: 215 28% 17%;
-    --ring: 239 84% 67%;
+    --border: 217 32% 20%;
+    --input: 217 32% 20%;
+    --ring: 212 27% 84%;
 
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 239 84% 67%;
+    --sidebar-primary: 224.3 76.3% 48%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 240 3.7% 15.9%;
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 239 84% 67%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
   }
 }
 
@@ -104,7 +104,7 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Poppins', sans-serif;
   }
 
   /* PDF Preview styling - uses Times New Roman for academic look */
@@ -147,15 +147,15 @@
 
 @layer utilities {
   .gradient-hero {
-    background: linear-gradient(135deg, hsl(239 84% 67%) 0%, hsl(260 80% 60%) 50%, hsl(280 70% 55%) 100%);
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(210 80% 35%) 100%);
   }
 
   .gradient-accent {
-    background: linear-gradient(135deg, hsl(var(--accent)) 0%, hsl(260 80% 60%) 100%);
+    background: linear-gradient(135deg, hsl(var(--accent)) 0%, hsl(0 60% 40%) 100%);
   }
 
   .text-gradient {
-    background: linear-gradient(135deg, hsl(239 84% 67%) 0%, hsl(280 70% 55%) 100%);
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--accent)) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -166,8 +166,7 @@
   }
 
   .card-hover:hover {
-    @apply -translate-y-1;
-    box-shadow: 0 20px 40px -12px rgba(99, 102, 241, 0.15);
+    @apply -translate-y-1 shadow-xl;
   }
 
   .animate-float {
@@ -180,11 +179,11 @@
   }
 
   .animate-fade-in {
-    animation: fadeIn 0.6s ease-out forwards;
+    animation: fadeIn 0.5s ease-out forwards;
   }
 
   @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(20px); }
+    from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
   }
 
@@ -195,14 +194,5 @@
   @keyframes slideUp {
     from { opacity: 0; transform: translateY(30px); }
     to { opacity: 1; transform: translateY(0); }
-  }
-
-  .animate-scale-in {
-    animation: scaleIn 0.5s ease-out forwards;
-  }
-
-  @keyframes scaleIn {
-    from { opacity: 0; transform: scale(0.95); }
-    to { opacity: 1; transform: scale(1); }
   }
 }

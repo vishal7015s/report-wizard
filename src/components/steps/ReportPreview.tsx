@@ -248,65 +248,16 @@ const ReportPreview = () => {
     // Process each section
     sections.forEach((section) => {
       const sectionCost = calculateCost(section);
-      const hasImages = section.images && section.images.length > 0;
-      const textLength = (section.content || '').length;
       
-      // If section has images AND significant text, split text and images onto separate pages
-      if (hasImages && textLength > 600) {
-        // Flush current page
-        if (currentPage.length > 0) {
-          flushPage();
-        }
-        
-        const content = section.content || '';
-        const availableForContent = MAX_CHARS_PER_PAGE - HEADING_COST - 200;
-        
-        if (content.length > availableForContent) {
-          // Split text across pages, images on last page
-          const chunks = splitLongContent(content, availableForContent);
-          chunks.forEach((chunk, idx) => {
-            const isFirst = idx === 0;
-            pages.push([{
-              ...section,
-              id: `${section.id}-part-${idx + 1}`,
-              heading: isFirst ? section.heading : `${section.heading} (Continued)`,
-              content: chunk,
-              images: [],
-            }]);
-          });
-        } else {
-          // Text fits on one page
-          pages.push([{
-            ...section,
-            id: `${section.id}-text`,
-            content: content,
-            images: [],
-          }]);
-        }
-        
-        // Images get their own dedicated page(s) - one page per image for large display
-        const images = section.images!;
-        // Group max 2 images per page
-        for (let i = 0; i < images.length; i += 2) {
-          const pageImages = images.slice(i, i + 2);
-          pages.push([{
-            ...section,
-            id: `${section.id}-img-${i}`,
-            heading: `${section.heading} - Figures`,
-            content: '',
-            images: pageImages,
-          }]);
-        }
-      }
       // If section is too large and shouldn't be kept together, split it
-      else if (sectionCost > MAX_CHARS_PER_PAGE && !shouldKeepTogether(section)) {
+      if (sectionCost > MAX_CHARS_PER_PAGE && !shouldKeepTogether(section)) {
         // Flush current page first
         if (currentPage.length > 0) {
           flushPage();
         }
         
         const content = section.content || '';
-        const availableForContent = MAX_CHARS_PER_PAGE - HEADING_COST - 200;
+        const availableForContent = MAX_CHARS_PER_PAGE - HEADING_COST - 200; // Reserve space for heading + margin
         const chunks = splitLongContent(content, availableForContent);
         
         chunks.forEach((chunk, idx) => {
@@ -318,7 +269,7 @@ const ReportPreview = () => {
             id: `${section.id}-part-${idx + 1}`,
             heading: isFirst ? section.heading : `${section.heading} (Continued)`,
             content: chunk,
-            images: isLast ? section.images : [],
+            images: isLast ? section.images : [], // Only show images on last chunk
           }]);
         });
       } else {

@@ -71,32 +71,15 @@ const PDFChapterContent = ({ sections, data, pageNumber }: PDFChapterContentProp
             
             {/* Section Images */}
             {section.images && section.images.length > 0 && (
-              <div style={{ marginTop: '8mm' }}>
+              <div style={{ marginTop: '6mm' }}>
                 {section.images.map((image, imgIndex) => (
-                  <div key={image.id} style={{ textAlign: 'center', marginBottom: '8mm' }}>
-                    <div style={{ 
-                      display: 'inline-block',
-                      border: '1px solid #d0d0d0',
-                      padding: '3mm',
-                      backgroundColor: '#fafafa',
-                    }}>
-                      <img 
-                        src={image.url} 
-                        alt={image.caption || `Figure ${section.number}.${imgIndex + 1}`}
-                        style={{ 
-                          maxWidth: '140mm', 
-                          maxHeight: '180mm', 
-                          objectFit: 'contain', 
-                          display: 'block',
-                        }}
-                      />
-                    </div>
-                    <p style={{ 
-                      fontSize: '12px', 
-                      marginTop: '3mm', 
-                      color: '#000000',
-                      fontWeight: 'bold',
-                    }}>
+                  <div key={image.id} style={{ textAlign: 'center', marginBottom: '4mm' }}>
+                    <img 
+                      src={image.url} 
+                      alt={image.caption || `Figure ${section.number}.${imgIndex + 1}`}
+                      style={{ maxWidth: '80%', maxHeight: '150px', objectFit: 'contain', margin: '0 auto' }}
+                    />
+                    <p style={{ fontSize: '12px', marginTop: '2mm', color: '#000000' }}>
                       Figure {section.number}.{imgIndex + 1}: {image.caption || 'Diagram'}
                     </p>
                   </div>
