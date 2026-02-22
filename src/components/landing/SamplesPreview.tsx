@@ -1,15 +1,19 @@
-import { FileText, Eye } from 'lucide-react';
+import { Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
+import sampleCoverPage from '@/assets/sample-cover-page.jpg';
+import sampleCertificate from '@/assets/sample-certificate.jpg';
+import sampleChapter from '@/assets/sample-chapter.jpg';
+import sampleToc from '@/assets/sample-toc.jpg';
 
 const SamplesPreview = () => {
   const navigate = useNavigate();
 
   const samples = [
-    { title: 'Cover Page', desc: 'With university & college logos' },
-    { title: 'Certificate', desc: 'Official certificate format' },
-    { title: 'Chapter Content', desc: 'Formatted text with figures' },
-    { title: 'Table of Contents', desc: 'Auto-generated TOC' },
+    { title: 'Cover Page', desc: 'With university & college logos', image: sampleCoverPage },
+    { title: 'Certificate', desc: 'Official certificate format', image: sampleCertificate },
+    { title: 'Chapter Content', desc: 'Formatted text with figures', image: sampleChapter },
+    { title: 'Table of Contents', desc: 'Auto-generated TOC', image: sampleToc },
   ];
 
   return (
@@ -26,8 +30,8 @@ const SamplesPreview = () => {
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-5xl mx-auto">
           {samples.map((sample, i) => (
             <div key={i} className="group bg-card rounded-2xl border border-border overflow-hidden card-hover">
-              <div className="aspect-[3/4] bg-secondary/50 flex items-center justify-center relative">
-                <FileText className="w-12 h-12 text-muted-foreground/30" />
+              <div className="aspect-[3/4] bg-secondary/50 relative overflow-hidden">
+                <img src={sample.image} alt={sample.title} className="w-full h-full object-cover" />
                 <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                   <Eye className="w-6 h-6 text-primary" />
                 </div>
