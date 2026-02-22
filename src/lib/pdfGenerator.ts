@@ -4,12 +4,14 @@ import html2canvas from 'html2canvas';
 const waitForImages = async (container: HTMLElement): Promise<void> => {
   const images = container.querySelectorAll('img');
   const promises = Array.from(images).map((img) => {
+    // Already loaded
     if (img.complete && img.naturalHeight > 0) return Promise.resolve();
     return new Promise<void>((resolve) => {
-      img.onload = () => resolve();
-      img.onerror = () => resolve();
-      // Force reload with crossOrigin for CORS images
-      if (img.src && !img.src.startsWith('data:')) {
+      const timeout = setTimeout(() => resolve(), 5000); // 5s timeout per image
+      img.onload = () => { clearTimeout(timeout); resolve(); };
+      img.onerror = () => { clearTimeout(timeout); resolve(); };
+      // Only force reload for external URLs, NOT for data: or blob: URLs
+      if (img.src && !img.src.startsWith('data:') && !img.src.startsWith('blob:')) {
         img.crossOrigin = 'anonymous';
         const src = img.src;
         img.src = '';
@@ -19,13 +21,22 @@ const waitForImages = async (container: HTMLElement): Promise<void> => {
   });
   await Promise.all(promises);
   // Extra wait for rendering
-  await new Promise((r) => setTimeout(r, 500));
+  await new Promise((r) => setTimeout(r, 300));
 };
 
 export const generatePDF = async (
   pagesContainer: HTMLElement,
   filename: string = 'project-report.pdf'
 ): Promise<void> => {
+  // Temporarily move the container on-screen for accurate rendering
+  const originalStyle = pagesContainer.style.cssText;
+  pagesContainer.style.position = 'absolute';
+  pagesContainer.style.left = '0';
+  pagesContainer.style.top = '0';
+  pagesContainer.style.zIndex = '-9999';
+  pagesContainer.style.opacity = '0';
+  pagesContainer.style.pointerEvents = 'none';
+
   // Wait for all images in the container to load
   await waitForImages(pagesContainer);
 
@@ -65,6 +76,9 @@ export const generatePDF = async (
 
     pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
   }
+
+  // Restore original position
+  pagesContainer.style.cssText = originalStyle;
 
   pdf.save(filename);
 };
