@@ -12,7 +12,7 @@ const Footer = () => {
               <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
                 <FileText className="w-4 h-4 text-primary-foreground" />
               </div>
-              <span className="font-bold text-base text-foreground">ReportGen</span>
+              <span className="font-bold text-base text-foreground">FormatPro</span>
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed">
               AI-powered project report generator for RGPV engineering students. Faculty-ready reports in minutes.
@@ -52,7 +52,7 @@ const Footer = () => {
 
         <div className="border-t border-border pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-xs text-muted-foreground">
-            © {new Date().getFullYear()} ReportGen. Made for engineering students.
+            © {new Date().getFullYear()} FormatPro. Made for engineering students.
           </p>
           <p className="text-xs text-muted-foreground">
             <a href="mailto:developer.vishalshivhare123@gmail.com" className="hover:text-foreground transition-colors">
