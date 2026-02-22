@@ -21,7 +21,18 @@ import { ChapterSection } from '@/types/report';
 import { useRazorpayPayment } from '@/hooks/useRazorpayPayment';
 
 const ReportPreview = () => {
-  const { reportData, contentMode, aiPrompt, setChapters, setAbstract, setAcknowledgement } = useReportStore();
+  const { reportData, contentMode, aiPrompt, aiReportContent, setAiChapters, setChapters, setAbstract, setAcknowledgement } = useReportStore();
+  const activeData = useMemo(() => {
+    if (contentMode === 'ai') {
+      return {
+        ...reportData,
+        chapters: aiReportContent.chapters,
+        abstract: aiReportContent.abstract,
+        acknowledgement: aiReportContent.acknowledgement,
+      };
+    }
+    return reportData;
+  }, [contentMode, reportData, aiReportContent]);
   const pdfContainerRef = useRef<HTMLDivElement>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [downloadType, setDownloadType] = useState<'pdf' | 'docx' | null>(null);
@@ -34,7 +45,7 @@ const ReportPreview = () => {
   } = useRazorpayPayment();
 
   const isAIGenerated = contentMode === 'ai';
-  const isPreviewOnly = isAIGenerated && !isPaid && reportData.chapters.length <= 3;
+  const isPreviewOnly = isAIGenerated && !isPaid && activeData.chapters.length <= 3;
   const price = isAIGenerated ? '₹50' : 'Free';
 
   // After payment, generate remaining chapters
@@ -60,10 +71,10 @@ const ReportPreview = () => {
       if (error) throw new Error(error.message || 'Failed to generate remaining content');
       if (data.error) throw new Error(data.error);
 
-      // Merge remaining chapters with existing preview chapters
-      const existingChapters = reportData.chapters;
+      // Merge remaining chapters with existing AI preview chapters
+      const existingChapters = aiReportContent.chapters;
       const allChapters = [...existingChapters, ...data.chapters];
-      setChapters(allChapters);
+      setAiChapters(allChapters);
 
       toast.success('Full report generated! You can now download.');
     } catch (error) {
@@ -72,7 +83,7 @@ const ReportPreview = () => {
     } finally {
       setIsGeneratingFull(false);
     }
-  }, [aiPrompt, reportData, setChapters]);
+  }, [aiPrompt, reportData, aiReportContent, setAiChapters]);
 
   const handlePaymentAndGenerate = async () => {
     const success = await initiatePayment(50);
@@ -90,7 +101,7 @@ const ReportPreview = () => {
     toast.info('Generating PDF... Please wait');
 
     try {
-      const projectTitle = reportData.projectDetails.projectTitle || 'project-report';
+      const projectTitle = activeData.projectDetails.projectTitle || 'project-report';
       const filename = `${projectTitle.replace(/\s+/g, '-').toLowerCase()}.pdf`;
       
       await generatePDF(pdfContainerRef.current, filename);
@@ -110,10 +121,10 @@ const ReportPreview = () => {
     toast.info('Generating Word document... Please wait');
 
     try {
-      const projectTitle = reportData.projectDetails.projectTitle || 'project-report';
+      const projectTitle = activeData.projectDetails.projectTitle || 'project-report';
       const filename = `${projectTitle.replace(/\s+/g, '-').toLowerCase()}.docx`;
       
-      await generateDOCX(reportData, filename);
+      await generateDOCX(activeData, filename);
       toast.success('Word document downloaded successfully! You can open it in Google Docs.');
     } catch (error) {
       console.error('DOCX generation error:', error);
@@ -133,12 +144,12 @@ const ReportPreview = () => {
   
   // Split sections into pages - smart content management with proper page breaks
   const splitSectionsIntoPages = (sections: ChapterSection[]): ChapterSection[][] => {
-    // Page capacity settings - reduced to prevent content overflow and maintain consistent font size
-    const MAX_CHARS_PER_PAGE = 2200; // Reduced to ensure consistent font size across pages
-    const MIN_CHARS_FOR_NEW_PAGE = 500; // Minimum content needed to justify a page
-    const MAX_SECTIONS_PER_PAGE = 3; // Max sections per page to prevent overcrowding
-    const IMAGE_COST = 1000; // Images take significant space
-    const HEADING_COST = 200; // Each heading takes space
+    // Page capacity settings - strict limits to enforce fixed A4 page size
+    const MAX_CHARS_PER_PAGE = 1500; // Strict limit to prevent any overflow
+    const MIN_CHARS_FOR_NEW_PAGE = 300;
+    const MAX_SECTIONS_PER_PAGE = 2; // Fewer sections per page to prevent overflow
+    const IMAGE_COST = 1800; // Each image takes nearly a full page worth of space
+    const HEADING_COST = 250;
     
     const pages: ChapterSection[][] = [];
     let currentPage: ChapterSection[] = [];
@@ -218,12 +229,13 @@ const ReportPreview = () => {
       const cost = calculateCost(section);
       const content = section.content || '';
       
-      // Keep together if:
-      // - Section is small enough to fit on one page
-      // - Section has only bullet points (don't split lists)
-      // - Section has images (keep with their content)
+      // If section has images, only keep together if text is very short
+      if (section.images && section.images.length > 0) {
+        const textOnly = (content.length) + HEADING_COST;
+        return textOnly + (section.images.length * IMAGE_COST) <= MAX_CHARS_PER_PAGE;
+      }
+      
       if (cost <= MAX_CHARS_PER_PAGE) return true;
-      if (section.images && section.images.length > 0 && cost <= MAX_CHARS_PER_PAGE * 1.2) return true;
       
       // Check if mostly bullet points - try to keep together
       const bulletLines = (content.match(/^[•\-\*○]\s/gm) || []).length;
@@ -236,16 +248,65 @@ const ReportPreview = () => {
     // Process each section
     sections.forEach((section) => {
       const sectionCost = calculateCost(section);
+      const hasImages = section.images && section.images.length > 0;
+      const textLength = (section.content || '').length;
       
+      // If section has images AND significant text, split text and images onto separate pages
+      if (hasImages && textLength > 600) {
+        // Flush current page
+        if (currentPage.length > 0) {
+          flushPage();
+        }
+        
+        const content = section.content || '';
+        const availableForContent = MAX_CHARS_PER_PAGE - HEADING_COST - 200;
+        
+        if (content.length > availableForContent) {
+          // Split text across pages, images on last page
+          const chunks = splitLongContent(content, availableForContent);
+          chunks.forEach((chunk, idx) => {
+            const isFirst = idx === 0;
+            pages.push([{
+              ...section,
+              id: `${section.id}-part-${idx + 1}`,
+              heading: isFirst ? section.heading : `${section.heading} (Continued)`,
+              content: chunk,
+              images: [],
+            }]);
+          });
+        } else {
+          // Text fits on one page
+          pages.push([{
+            ...section,
+            id: `${section.id}-text`,
+            content: content,
+            images: [],
+          }]);
+        }
+        
+        // Images get their own dedicated page(s) - one page per image for large display
+        const images = section.images!;
+        // Group max 2 images per page
+        for (let i = 0; i < images.length; i += 2) {
+          const pageImages = images.slice(i, i + 2);
+          pages.push([{
+            ...section,
+            id: `${section.id}-img-${i}`,
+            heading: `${section.heading} - Figures`,
+            content: '',
+            images: pageImages,
+          }]);
+        }
+      }
       // If section is too large and shouldn't be kept together, split it
-      if (sectionCost > MAX_CHARS_PER_PAGE && !shouldKeepTogether(section)) {
+      else if (sectionCost > MAX_CHARS_PER_PAGE && !shouldKeepTogether(section)) {
         // Flush current page first
         if (currentPage.length > 0) {
           flushPage();
         }
         
         const content = section.content || '';
-        const availableForContent = MAX_CHARS_PER_PAGE - HEADING_COST - 200; // Reserve space for heading + margin
+        const availableForContent = MAX_CHARS_PER_PAGE - HEADING_COST - 200;
         const chunks = splitLongContent(content, availableForContent);
         
         chunks.forEach((chunk, idx) => {
@@ -257,7 +318,7 @@ const ReportPreview = () => {
             id: `${section.id}-part-${idx + 1}`,
             heading: isFirst ? section.heading : `${section.heading} (Continued)`,
             content: chunk,
-            images: isLast ? section.images : [], // Only show images on last chunk
+            images: isLast ? section.images : [],
           }]);
         });
       } else {
@@ -302,7 +363,7 @@ const ReportPreview = () => {
     ];
 
     let currentPage = 1;
-    reportData.chapters.forEach((chapter) => {
+    activeData.chapters.forEach((chapter) => {
       const sectionPages = splitSectionsIntoPages(chapter.sections);
       
       // Add chapter title
@@ -329,7 +390,7 @@ const ReportPreview = () => {
     });
 
     return entries;
-  }, [reportData.chapters]);
+  }, [activeData.chapters]);
 
   // Generate figure entries for List of Figures
   const figureEntries = useMemo(() => {
@@ -337,7 +398,7 @@ const ReportPreview = () => {
     let figureCounter = 1;
     let currentPage = 1;
 
-    reportData.chapters.forEach((chapter) => {
+    activeData.chapters.forEach((chapter) => {
       const sectionPages = splitSectionsIntoPages(chapter.sections);
       let sectionPage = currentPage + 1;
 
@@ -361,7 +422,7 @@ const ReportPreview = () => {
     });
 
     return figures;
-  }, [reportData.chapters]);
+  }, [activeData.chapters]);
 
   // Calculate total content pages
   let pageCounter = 1;
@@ -382,31 +443,31 @@ const ReportPreview = () => {
             <div className="space-y-8 flex flex-col items-center">
               {/* Preliminary Pages */}
               <div className="transform scale-[0.5] origin-top">
-                <PDFCoverPage data={reportData} pageNumber="I" />
+                <PDFCoverPage data={activeData} pageNumber="I" />
               </div>
               
               <div className="transform scale-[0.5] origin-top -mt-[400px]">
-                <PDFCoverPageWithSVCE data={reportData} pageNumber="II" />
+                <PDFCoverPageWithSVCE data={activeData} pageNumber="II" />
               </div>
               
               <div className="transform scale-[0.5] origin-top -mt-[400px]">
-                <PDFCertificate data={reportData} pageNumber="i" />
+                <PDFCertificate data={activeData} pageNumber="i" />
               </div>
               
               <div className="transform scale-[0.5] origin-top -mt-[400px]">
-                <PDFDeclaration data={reportData} pageNumber="ii" />
+                <PDFDeclaration data={activeData} pageNumber="ii" />
               </div>
               
               <div className="transform scale-[0.5] origin-top -mt-[400px]">
-                <PDFApproval data={reportData} pageNumber="iii" />
+                <PDFApproval data={activeData} pageNumber="iii" />
               </div>
               
               <div className="transform scale-[0.5] origin-top -mt-[400px]">
-                <PDFAcknowledgement data={reportData} pageNumber="iv" />
+                <PDFAcknowledgement data={activeData} pageNumber="iv" />
               </div>
               
               <div className="transform scale-[0.5] origin-top -mt-[400px]">
-                <PDFAbstract data={reportData} pageNumber="v" />
+                <PDFAbstract data={activeData} pageNumber="v" />
               </div>
 
               {/* List of Figures */}
@@ -414,8 +475,8 @@ const ReportPreview = () => {
                 <PDFListOfFigures 
                   figures={figureEntries}
                   projectDetails={{
-                    projectTitle: reportData.projectDetails.projectTitle,
-                    department: reportData.projectDetails.department,
+                    projectTitle: activeData.projectDetails.projectTitle,
+                    department: activeData.projectDetails.department,
                   }}
                 />
               </div>
@@ -425,14 +486,14 @@ const ReportPreview = () => {
                 <PDFTableOfContents 
                   entries={tocEntries}
                   projectDetails={{
-                    projectTitle: reportData.projectDetails.projectTitle,
-                    department: reportData.projectDetails.department,
+                    projectTitle: activeData.projectDetails.projectTitle,
+                    department: activeData.projectDetails.department,
                   }}
                 />
               </div>
 
               {/* Chapter Pages */}
-              {reportData.chapters.map((chapter) => {
+              {activeData.chapters.map((chapter) => {
                 const sectionPages = splitSectionsIntoPages(chapter.sections);
                 const titlePageNum = pageCounter++;
                 
@@ -443,7 +504,7 @@ const ReportPreview = () => {
                       <PDFChapterTitle 
                         chapterNumber={chapter.number}
                         chapterTitle={chapter.title}
-                        data={reportData} 
+                        data={activeData} 
                         pageNumber={titlePageNum.toString()} 
                       />
                     </div>
@@ -455,7 +516,7 @@ const ReportPreview = () => {
                         <div key={`${chapter.id}-page-${pageIdx}`} className="transform scale-[0.5] origin-top -mt-[400px]">
                           <PDFChapterContent 
                             sections={sections}
-                            data={reportData} 
+                            data={activeData} 
                             pageNumber={contentPageNum.toString()} 
                           />
                         </div>
@@ -473,30 +534,30 @@ const ReportPreview = () => {
             className="absolute left-[-9999px] top-0"
             style={{ width: '210mm' }}
           >
-            <PDFCoverPage data={reportData} pageNumber="I" />
-            <PDFCoverPageWithSVCE data={reportData} pageNumber="II" />
-            <PDFCertificate data={reportData} pageNumber="i" />
-            <PDFDeclaration data={reportData} pageNumber="ii" />
-            <PDFApproval data={reportData} pageNumber="iii" />
-            <PDFAcknowledgement data={reportData} pageNumber="iv" />
-            <PDFAbstract data={reportData} pageNumber="v" />
+            <PDFCoverPage data={activeData} pageNumber="I" />
+            <PDFCoverPageWithSVCE data={activeData} pageNumber="II" />
+            <PDFCertificate data={activeData} pageNumber="i" />
+            <PDFDeclaration data={activeData} pageNumber="ii" />
+            <PDFApproval data={activeData} pageNumber="iii" />
+            <PDFAcknowledgement data={activeData} pageNumber="iv" />
+            <PDFAbstract data={activeData} pageNumber="v" />
             <PDFListOfFigures 
               figures={figureEntries}
               projectDetails={{
-                projectTitle: reportData.projectDetails.projectTitle,
-                department: reportData.projectDetails.department,
+                projectTitle: activeData.projectDetails.projectTitle,
+                department: activeData.projectDetails.department,
               }}
             />
             <PDFTableOfContents 
               entries={tocEntries}
               projectDetails={{
-                projectTitle: reportData.projectDetails.projectTitle,
-                department: reportData.projectDetails.department,
+                projectTitle: activeData.projectDetails.projectTitle,
+                department: activeData.projectDetails.department,
               }}
             />
             {(() => {
               let hiddenPageCounter = 1;
-              return reportData.chapters.map((chapter) => {
+              return activeData.chapters.map((chapter) => {
                 const sectionPages = splitSectionsIntoPages(chapter.sections);
                 const titlePageNum = hiddenPageCounter++;
                 
@@ -505,7 +566,7 @@ const ReportPreview = () => {
                     <PDFChapterTitle 
                       chapterNumber={chapter.number}
                       chapterTitle={chapter.title}
-                      data={reportData} 
+                      data={activeData} 
                       pageNumber={titlePageNum.toString()} 
                     />
                     {sectionPages.map((sections, pageIdx) => {
@@ -514,7 +575,7 @@ const ReportPreview = () => {
                         <PDFChapterContent 
                           key={`hidden-${chapter.id}-page-${pageIdx}`}
                           sections={sections}
-                          data={reportData} 
+                          data={activeData} 
                           pageNumber={contentPageNum.toString()} 
                         />
                       );
@@ -537,21 +598,21 @@ const ReportPreview = () => {
             <div className="space-y-3 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Project</span>
-                <span className="font-medium truncate max-w-[150px]" title={reportData.projectDetails.projectTitle}>
-                  {reportData.projectDetails.projectTitle || 'Untitled'}
+                <span className="font-medium truncate max-w-[150px]" title={activeData.projectDetails.projectTitle}>
+                  {activeData.projectDetails.projectTitle || 'Untitled'}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Students</span>
-                <span className="font-medium">{reportData.projectDetails.students.length}</span>
+                <span className="font-medium">{activeData.projectDetails.students.length}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Chapters</span>
-                <span className="font-medium">{reportData.chapters.length}</span>
+                <span className="font-medium">{activeData.chapters.length}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Total Pages</span>
-                <span className="font-medium">{7 + reportData.chapters.length}</span>
+                <span className="font-medium">{7 + activeData.chapters.length}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Content Mode</span>

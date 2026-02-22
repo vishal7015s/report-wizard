@@ -10,7 +10,7 @@ const PDFChapterContent = ({ sections, data, pageNumber }: PDFChapterContentProp
   const { projectDetails } = data;
   
   return (
-    <div className="pdf-page" style={{ width: '210mm', minHeight: '297mm', position: 'relative', backgroundColor: '#ffffff', fontFamily: 'Times New Roman, serif' }}>
+    <div className="pdf-page" style={{ width: '210mm', height: '297mm', maxHeight: '297mm', position: 'relative', backgroundColor: '#ffffff', fontFamily: 'Times New Roman, serif', overflow: 'hidden' }}>
       {/* Border */}
       <div 
         style={{
@@ -41,7 +41,7 @@ const PDFChapterContent = ({ sections, data, pageNumber }: PDFChapterContentProp
       </div>
       
       {/* Content Area - Fixed font size 14px throughout */}
-      <div style={{ paddingTop: '20mm', paddingLeft: '20mm', paddingRight: '20mm', paddingBottom: '22mm', fontSize: '14px', fontFamily: 'Times New Roman, serif' }}>
+      <div style={{ paddingTop: '20mm', paddingLeft: '20mm', paddingRight: '20mm', paddingBottom: '28mm', fontSize: '14px', fontFamily: 'Times New Roman, serif', maxHeight: 'calc(297mm - 48mm)', overflow: 'hidden' }}>
         {sections.map((section) => (
           <div key={section.id} style={{ marginBottom: '6mm' }}>
             {/* Section Heading */}
@@ -71,15 +71,32 @@ const PDFChapterContent = ({ sections, data, pageNumber }: PDFChapterContentProp
             
             {/* Section Images */}
             {section.images && section.images.length > 0 && (
-              <div style={{ marginTop: '6mm' }}>
+              <div style={{ marginTop: '8mm' }}>
                 {section.images.map((image, imgIndex) => (
-                  <div key={image.id} style={{ textAlign: 'center', marginBottom: '4mm' }}>
-                    <img 
-                      src={image.url} 
-                      alt={image.caption || `Figure ${section.number}.${imgIndex + 1}`}
-                      style={{ maxWidth: '100%', maxHeight: '200px', objectFit: 'contain', margin: '0 auto' }}
-                    />
-                    <p style={{ fontSize: '12px', marginTop: '2mm', color: '#000000' }}>
+                  <div key={image.id} style={{ textAlign: 'center', marginBottom: '8mm' }}>
+                    <div style={{ 
+                      display: 'inline-block',
+                      border: '1px solid #d0d0d0',
+                      padding: '3mm',
+                      backgroundColor: '#fafafa',
+                    }}>
+                      <img 
+                        src={image.url} 
+                        alt={image.caption || `Figure ${section.number}.${imgIndex + 1}`}
+                        style={{ 
+                          maxWidth: '140mm', 
+                          maxHeight: '180mm', 
+                          objectFit: 'contain', 
+                          display: 'block',
+                        }}
+                      />
+                    </div>
+                    <p style={{ 
+                      fontSize: '12px', 
+                      marginTop: '3mm', 
+                      color: '#000000',
+                      fontWeight: 'bold',
+                    }}>
                       Figure {section.number}.{imgIndex + 1}: {image.caption || 'Diagram'}
                     </p>
                   </div>

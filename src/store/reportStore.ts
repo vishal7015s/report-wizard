@@ -11,12 +11,19 @@ import {
   defaultChapters 
 } from '@/types/report';
 
+interface AIReportContent {
+  chapters: Chapter[];
+  abstract: string;
+  acknowledgement: string;
+}
+
 interface ReportStore {
   currentStep: number;
   contentMode: 'ai' | 'manual';
   isAIGenerated: boolean;
   aiPrompt: string;
   reportData: ReportData;
+  aiReportContent: AIReportContent;
   
   setCurrentStep: (step: number) => void;
   setContentMode: (mode: 'ai' | 'manual') => void;
@@ -36,9 +43,17 @@ interface ReportStore {
   updateSection: (chapterId: string, sectionId: string, data: Partial<ChapterSection>) => void;
   addImageToSection: (chapterId: string, sectionId: string, image: SectionImage) => void;
   removeImageFromSection: (chapterId: string, sectionId: string, imageId: string) => void;
+  addImageToAiSection: (chapterId: string, sectionId: string, image: SectionImage) => void;
+  removeImageFromAiSection: (chapterId: string, sectionId: string, imageId: string) => void;
   setAbstract: (abstract: string) => void;
   setAcknowledgement: (acknowledgement: string) => void;
   setReferences: (references: string[]) => void;
+  // AI-specific setters
+  setAiChapters: (chapters: Chapter[]) => void;
+  setAiAbstract: (abstract: string) => void;
+  setAiAcknowledgement: (acknowledgement: string) => void;
+  // Helper to get active report data based on contentMode
+  getActiveReportData: () => ReportData;
   resetReport: () => void;
 }
 
@@ -51,12 +66,19 @@ const initialReportData: ReportData = {
   references: [],
 };
 
-export const useReportStore = create<ReportStore>((set) => ({
+const initialAIContent: AIReportContent = {
+  chapters: [],
+  abstract: '',
+  acknowledgement: '',
+};
+
+export const useReportStore = create<ReportStore>((set, get) => ({
   currentStep: 0,
   contentMode: 'manual',
   isAIGenerated: false,
   aiPrompt: '',
   reportData: initialReportData,
+  aiReportContent: initialAIContent,
 
   setCurrentStep: (step) => set({ currentStep: step }),
   
@@ -269,6 +291,44 @@ export const useReportStore = create<ReportStore>((set) => ({
       })
     }
   })),
+
+  addImageToAiSection: (chapterId, sectionId, image) => set((state) => ({
+    aiReportContent: {
+      ...state.aiReportContent,
+      chapters: state.aiReportContent.chapters.map(chapter => {
+        if (chapter.id === chapterId) {
+          return {
+            ...chapter,
+            sections: chapter.sections.map(section =>
+              section.id === sectionId 
+                ? { ...section, images: [...section.images, image] } 
+                : section
+            )
+          };
+        }
+        return chapter;
+      })
+    }
+  })),
+
+  removeImageFromAiSection: (chapterId, sectionId, imageId) => set((state) => ({
+    aiReportContent: {
+      ...state.aiReportContent,
+      chapters: state.aiReportContent.chapters.map(chapter => {
+        if (chapter.id === chapterId) {
+          return {
+            ...chapter,
+            sections: chapter.sections.map(section =>
+              section.id === sectionId 
+                ? { ...section, images: section.images.filter(img => img.id !== imageId) } 
+                : section
+            )
+          };
+        }
+        return chapter;
+      })
+    }
+  })),
   
   setAbstract: (abstract) => set((state) => ({
     reportData: { ...state.reportData, abstract }
@@ -282,11 +342,38 @@ export const useReportStore = create<ReportStore>((set) => ({
     reportData: { ...state.reportData, references }
   })),
   
+  // AI-specific setters
+  setAiChapters: (chapters) => set((state) => ({
+    aiReportContent: { ...state.aiReportContent, chapters }
+  })),
+  
+  setAiAbstract: (abstract) => set((state) => ({
+    aiReportContent: { ...state.aiReportContent, abstract }
+  })),
+  
+  setAiAcknowledgement: (acknowledgement) => set((state) => ({
+    aiReportContent: { ...state.aiReportContent, acknowledgement }
+  })),
+
+  getActiveReportData: () => {
+    const state = get();
+    if (state.contentMode === 'ai') {
+      return {
+        ...state.reportData,
+        chapters: state.aiReportContent.chapters,
+        abstract: state.aiReportContent.abstract,
+        acknowledgement: state.aiReportContent.acknowledgement,
+      };
+    }
+    return state.reportData;
+  },
+
   resetReport: () => set({
     currentStep: 0,
     contentMode: 'manual',
     isAIGenerated: false,
     aiPrompt: '',
     reportData: initialReportData,
+    aiReportContent: initialAIContent,
   }),
 }));
