@@ -45,15 +45,23 @@ export const generatePDF = async (
   pagesContainer: HTMLElement,
   filename: string = 'project-report.pdf'
 ): Promise<void> => {
-  // Move container on-screen temporarily so html2canvas can measure it
+  // Save originals
   const originalStyle = pagesContainer.style.cssText;
-  pagesContainer.style.position = 'fixed';
-  pagesContainer.style.left = '0';
-  pagesContainer.style.top = '0';
-  pagesContainer.style.zIndex = '99999';
-  pagesContainer.style.opacity = '0.01';
-  pagesContainer.style.pointerEvents = 'none';
-  pagesContainer.style.width = '210mm';
+  const originalClassName = pagesContainer.className;
+
+  // Remove Tailwind classes (e.g. left-[-9999px]) that override inline styles
+  pagesContainer.className = '';
+
+  // Move container on-screen temporarily so html2canvas can measure it
+  pagesContainer.style.cssText = `
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 99999;
+    opacity: 0.01;
+    pointer-events: none;
+    width: 210mm;
+  `;
 
   // Wait for layout to settle
   await new Promise((r) => setTimeout(r, 300));
@@ -97,7 +105,8 @@ export const generatePDF = async (
     pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
   }
 
-  // Restore original position
+  // Restore original class and styles
+  pagesContainer.className = originalClassName;
   pagesContainer.style.cssText = originalStyle;
 
   pdf.save(filename);
