@@ -4,15 +4,15 @@ import UserDetailsForm from '@/components/steps/UserDetailsForm';
 import ContentEditor from '@/components/steps/ContentEditor';
 import ReportPreview from '@/components/steps/ReportPreview';
 import StepIndicator from '@/components/StepIndicator';
-import { ArrowLeft, FileText } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 
 const steps = [
-  { id: 0, title: 'Select College', description: 'Choose your institution' },
-  { id: 1, title: 'Project Details', description: 'Enter project info' },
-  { id: 2, title: 'Content', description: 'Add report content' },
-  { id: 3, title: 'Preview & Download', description: 'Review and export' },
+  { id: 0, title: 'Select College' },
+  { id: 1, title: 'Project Details' },
+  { id: 2, title: 'Content' },
+  { id: 3, title: 'Preview & Download' },
 ];
 
 const CreateReportPage = () => {
@@ -37,73 +37,33 @@ const CreateReportPage = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b bg-card/80 backdrop-blur-xl sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-3">
+      <header className="border-b bg-card sticky top-0 z-50">
+        <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Button
-                variant="ghost"
+            <div className="flex items-center gap-4">
+              <Button 
+                variant="ghost" 
                 size="icon"
-                className="rounded-xl"
-                onClick={() =>
-                  currentStep > 0
-                    ? setCurrentStep(currentStep - 1)
-                    : navigate('/')
-                }
+                onClick={() => currentStep > 0 ? setCurrentStep(currentStep - 1) : navigate('/')}
               >
                 <ArrowLeft className="w-5 h-5" />
               </Button>
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <FileText className="w-4 h-4 text-primary" />
-                </div>
-                <div>
-                  <h1 className="text-base font-semibold text-foreground">
-                    Report Generator
-                  </h1>
-                  <p className="text-xs text-muted-foreground">
-                    {steps[currentStep]?.title}
-                  </p>
-                </div>
+              <div>
+                <h1 className="text-xl font-bold text-foreground">Project Report Generator</h1>
+                <p className="text-sm text-muted-foreground">{steps[currentStep]?.title}</p>
               </div>
-            </div>
-
-            {/* Mobile step indicator */}
-            <div className="lg:hidden flex items-center gap-2 text-xs text-muted-foreground">
-              <span className="font-medium text-foreground">
-                {currentStep + 1}
-              </span>
-              <span>/</span>
-              <span>{steps.length}</span>
             </div>
           </div>
         </div>
-
-        {/* Mobile progress bar */}
-        <div className="lg:hidden h-0.5 bg-muted">
-          <div
-            className="h-full bg-primary transition-all duration-500 ease-out"
-            style={{
-              width: `${((currentStep + 1) / steps.length) * 100}%`,
-            }}
-          />
-        </div>
       </header>
 
-      {/* Main layout with sidebar */}
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex gap-8">
-          {/* Sidebar step indicator */}
-          <StepIndicator
-            steps={steps}
-            currentStep={currentStep}
-            onStepClick={setCurrentStep}
-          />
+      {/* Step Indicator */}
+      <StepIndicator steps={steps} currentStep={currentStep} />
 
-          {/* Content */}
-          <main className="flex-1 min-w-0">{renderStep()}</main>
-        </div>
-      </div>
+      {/* Content */}
+      <main className="container mx-auto px-4 py-8">
+        {renderStep()}
+      </main>
     </div>
   );
 };

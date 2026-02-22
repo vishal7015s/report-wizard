@@ -17,7 +17,7 @@ The developed model generates accurate predictions for both diseases based on a 
 The results demonstrate that machine learning models can significantly enhance medical prediction accuracy and help identify high-risk cases at an early stage. With further advancements, integration of more diseases, real-time monitoring, and deployment as a web or mobile platform, this system holds strong potential for practical applications in the healthcare domain.`;
 
   return (
-    <div className="pdf-page" style={{ width: '210mm', height: '297mm', maxHeight: '297mm', position: 'relative', backgroundColor: '#ffffff', fontFamily: 'Times New Roman, serif', overflow: 'hidden' }}>
+    <div className="pdf-page" style={{ width: '210mm', minHeight: '297mm', position: 'relative', backgroundColor: '#ffffff', fontFamily: 'Times New Roman, serif' }}>
       {/* Border */}
       <div 
         style={{

@@ -13,10 +13,10 @@ export const generatePDF = async (
 
   const pages = pagesContainer.querySelectorAll('.pdf-page');
   const pagesArray = Array.from(pages);
-
+  
   for (let i = 0; i < pagesArray.length; i++) {
     const page = pagesArray[i] as HTMLElement;
-
+    
     const canvas = await html2canvas(page, {
       scale: 2,
       useCORS: true,
@@ -27,7 +27,7 @@ export const generatePDF = async (
     });
 
     const imgData = canvas.toDataURL('image/jpeg', 0.95);
-
+    
     const pdfWidth = 210;
     const pdfHeight = 297;
 

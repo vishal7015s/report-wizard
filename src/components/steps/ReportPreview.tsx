@@ -21,18 +21,7 @@ import { ChapterSection } from '@/types/report';
 import { useRazorpayPayment } from '@/hooks/useRazorpayPayment';
 
 const ReportPreview = () => {
-  const { reportData, contentMode, aiPrompt, aiReportContent, setAiChapters, setChapters, setAbstract, setAcknowledgement } = useReportStore();
-  const activeData = useMemo(() => {
-    if (contentMode === 'ai') {
-      return {
-        ...reportData,
-        chapters: aiReportContent.chapters,
-        abstract: aiReportContent.abstract,
-        acknowledgement: aiReportContent.acknowledgement,
-      };
-    }
-    return reportData;
-  }, [contentMode, reportData, aiReportContent]);
+  const { reportData, contentMode, aiPrompt, setChapters, setAbstract, setAcknowledgement } = useReportStore();
   const pdfContainerRef = useRef<HTMLDivElement>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [downloadType, setDownloadType] = useState<'pdf' | 'docx' | null>(null);
@@ -45,7 +34,7 @@ const ReportPreview = () => {
   } = useRazorpayPayment();
 
   const isAIGenerated = contentMode === 'ai';
-  const isPreviewOnly = isAIGenerated && !isPaid && activeData.chapters.length <= 3;
+  const isPreviewOnly = isAIGenerated && !isPaid && reportData.chapters.length <= 3;
   const price = isAIGenerated ? '₹50' : 'Free';
 
   // After payment, generate remaining chapters
@@ -71,10 +60,10 @@ const ReportPreview = () => {
       if (error) throw new Error(error.message || 'Failed to generate remaining content');
       if (data.error) throw new Error(data.error);
 
-      // Merge remaining chapters with existing AI preview chapters
-      const existingChapters = aiReportContent.chapters;
+      // Merge remaining chapters with existing preview chapters
+      const existingChapters = reportData.chapters;
       const allChapters = [...existingChapters, ...data.chapters];
-      setAiChapters(allChapters);
+      setChapters(allChapters);
 
       toast.success('Full report generated! You can now download.');
     } catch (error) {
@@ -83,7 +72,7 @@ const ReportPreview = () => {
     } finally {
       setIsGeneratingFull(false);
     }
-  }, [aiPrompt, reportData, aiReportContent, setAiChapters]);
+  }, [aiPrompt, reportData, setChapters]);
 
   const handlePaymentAndGenerate = async () => {
     const success = await initiatePayment(50);
@@ -101,7 +90,7 @@ const ReportPreview = () => {
     toast.info('Generating PDF... Please wait');
 
     try {
-      const projectTitle = activeData.projectDetails.projectTitle || 'project-report';
+      const projectTitle = reportData.projectDetails.projectTitle || 'project-report';
       const filename = `${projectTitle.replace(/\s+/g, '-').toLowerCase()}.pdf`;
       
       await generatePDF(pdfContainerRef.current, filename);
@@ -121,10 +110,10 @@ const ReportPreview = () => {
     toast.info('Generating Word document... Please wait');
 
     try {
-      const projectTitle = activeData.projectDetails.projectTitle || 'project-report';
+      const projectTitle = reportData.projectDetails.projectTitle || 'project-report';
       const filename = `${projectTitle.replace(/\s+/g, '-').toLowerCase()}.docx`;
       
-      await generateDOCX(activeData, filename);
+      await generateDOCX(reportData, filename);
       toast.success('Word document downloaded successfully! You can open it in Google Docs.');
     } catch (error) {
       console.error('DOCX generation error:', error);
@@ -144,12 +133,12 @@ const ReportPreview = () => {
   
   // Split sections into pages - smart content management with proper page breaks
   const splitSectionsIntoPages = (sections: ChapterSection[]): ChapterSection[][] => {
-    // Page capacity settings - strict limits to enforce fixed A4 page size
-    const MAX_CHARS_PER_PAGE = 1500; // Strict limit to prevent any overflow
-    const MIN_CHARS_FOR_NEW_PAGE = 300;
-    const MAX_SECTIONS_PER_PAGE = 2; // Fewer sections per page to prevent overflow
-    const IMAGE_COST = 1800; // Each image takes nearly a full page worth of space
-    const HEADING_COST = 250;
+    // Page capacity settings - reduced to prevent content overflow and maintain consistent font size
+    const MAX_CHARS_PER_PAGE = 2200; // Reduced to ensure consistent font size across pages
+    const MIN_CHARS_FOR_NEW_PAGE = 500; // Minimum content needed to justify a page
+    const MAX_SECTIONS_PER_PAGE = 3; // Max sections per page to prevent overcrowding
+    const IMAGE_COST = 1000; // Images take significant space
+    const HEADING_COST = 200; // Each heading takes space
     
     const pages: ChapterSection[][] = [];
     let currentPage: ChapterSection[] = [];
@@ -229,13 +218,12 @@ const ReportPreview = () => {
       const cost = calculateCost(section);
       const content = section.content || '';
       
-      // If section has images, only keep together if text is very short
-      if (section.images && section.images.length > 0) {
-        const textOnly = (content.length) + HEADING_COST;
-        return textOnly + (section.images.length * IMAGE_COST) <= MAX_CHARS_PER_PAGE;
-      }
-      
+      // Keep together if:
+      // - Section is small enough to fit on one page
+      // - Section has only bullet points (don't split lists)
+      // - Section has images (keep with their content)
       if (cost <= MAX_CHARS_PER_PAGE) return true;
+      if (section.images && section.images.length > 0 && cost <= MAX_CHARS_PER_PAGE * 1.2) return true;
       
       // Check if mostly bullet points - try to keep together
       const bulletLines = (content.match(/^[•\-\*○]\s/gm) || []).length;
@@ -248,65 +236,16 @@ const ReportPreview = () => {
     // Process each section
     sections.forEach((section) => {
       const sectionCost = calculateCost(section);
-      const hasImages = section.images && section.images.length > 0;
-      const textLength = (section.content || '').length;
       
-      // If section has images AND significant text, split text and images onto separate pages
-      if (hasImages && textLength > 600) {
-        // Flush current page
-        if (currentPage.length > 0) {
-          flushPage();
-        }
-        
-        const content = section.content || '';
-        const availableForContent = MAX_CHARS_PER_PAGE - HEADING_COST - 200;
-        
-        if (content.length > availableForContent) {
-          // Split text across pages, images on last page
-          const chunks = splitLongContent(content, availableForContent);
-          chunks.forEach((chunk, idx) => {
-            const isFirst = idx === 0;
-            pages.push([{
-              ...section,
-              id: `${section.id}-part-${idx + 1}`,
-              heading: isFirst ? section.heading : `${section.heading} (Continued)`,
-              content: chunk,
-              images: [],
-            }]);
-          });
-        } else {
-          // Text fits on one page
-          pages.push([{
-            ...section,
-            id: `${section.id}-text`,
-            content: content,
-            images: [],
-          }]);
-        }
-        
-        // Images get their own dedicated page(s) - one page per image for large display
-        const images = section.images!;
-        // Group max 2 images per page
-        for (let i = 0; i < images.length; i += 2) {
-          const pageImages = images.slice(i, i + 2);
-          pages.push([{
-            ...section,
-            id: `${section.id}-img-${i}`,
-            heading: `${section.heading} - Figures`,
-            content: '',
-            images: pageImages,
-          }]);
-        }
-      }
       // If section is too large and shouldn't be kept together, split it
-      else if (sectionCost > MAX_CHARS_PER_PAGE && !shouldKeepTogether(section)) {
+      if (sectionCost > MAX_CHARS_PER_PAGE && !shouldKeepTogether(section)) {
         // Flush current page first
         if (currentPage.length > 0) {
           flushPage();
         }
         
         const content = section.content || '';
-        const availableForContent = MAX_CHARS_PER_PAGE - HEADING_COST - 200;
+        const availableForContent = MAX_CHARS_PER_PAGE - HEADING_COST - 200; // Reserve space for heading + margin
         const chunks = splitLongContent(content, availableForContent);
         
         chunks.forEach((chunk, idx) => {
@@ -318,7 +257,7 @@ const ReportPreview = () => {
             id: `${section.id}-part-${idx + 1}`,
             heading: isFirst ? section.heading : `${section.heading} (Continued)`,
             content: chunk,
-            images: isLast ? section.images : [],
+            images: isLast ? section.images : [], // Only show images on last chunk
           }]);
         });
       } else {
@@ -363,7 +302,7 @@ const ReportPreview = () => {
     ];
 
     let currentPage = 1;
-    activeData.chapters.forEach((chapter) => {
+    reportData.chapters.forEach((chapter) => {
       const sectionPages = splitSectionsIntoPages(chapter.sections);
       
       // Add chapter title
@@ -390,7 +329,7 @@ const ReportPreview = () => {
     });
 
     return entries;
-  }, [activeData.chapters]);
+  }, [reportData.chapters]);
 
   // Generate figure entries for List of Figures
   const figureEntries = useMemo(() => {
@@ -398,7 +337,7 @@ const ReportPreview = () => {
     let figureCounter = 1;
     let currentPage = 1;
 
-    activeData.chapters.forEach((chapter) => {
+    reportData.chapters.forEach((chapter) => {
       const sectionPages = splitSectionsIntoPages(chapter.sections);
       let sectionPage = currentPage + 1;
 
@@ -422,52 +361,52 @@ const ReportPreview = () => {
     });
 
     return figures;
-  }, [activeData.chapters]);
+  }, [reportData.chapters]);
 
   // Calculate total content pages
   let pageCounter = 1;
 
   return (
-    <div className="animate-fade-in lg:h-[calc(100vh-140px)] lg:flex lg:flex-col lg:overflow-hidden">
-      <div className="mb-4 flex-shrink-0">
-        <h2 className="text-2xl font-bold text-foreground mb-1">Preview Your Report</h2>
+    <div className="animate-fade-in">
+      <div className="text-center mb-8">
+        <h2 className="text-2xl font-bold text-[#1a365d] mb-2">Preview Your Report</h2>
         <p className="text-muted-foreground">
           Review the formatted pages before downloading
         </p>
       </div>
 
-      <div className="flex flex-col lg:grid lg:grid-cols-3 gap-6 lg:gap-8 lg:flex-1 lg:min-h-0">
+      <div className="grid lg:grid-cols-3 gap-8">
         {/* Preview Area */}
-        <div className="lg:col-span-2 lg:min-h-0 order-2 lg:order-1">
-          <div className="bg-muted/50 p-4 sm:p-8 rounded-xl overflow-auto max-h-[60vh] lg:max-h-none lg:h-full">
+        <div className="lg:col-span-2 space-y-8">
+          <div className="bg-muted/50 p-8 rounded-xl overflow-auto max-h-[800px]">
             <div className="space-y-8 flex flex-col items-center">
               {/* Preliminary Pages */}
               <div className="transform scale-[0.5] origin-top">
-                <PDFCoverPage data={activeData} pageNumber="I" />
+                <PDFCoverPage data={reportData} pageNumber="I" />
               </div>
               
               <div className="transform scale-[0.5] origin-top -mt-[400px]">
-                <PDFCoverPageWithSVCE data={activeData} pageNumber="II" />
+                <PDFCoverPageWithSVCE data={reportData} pageNumber="II" />
               </div>
               
               <div className="transform scale-[0.5] origin-top -mt-[400px]">
-                <PDFCertificate data={activeData} pageNumber="i" />
+                <PDFCertificate data={reportData} pageNumber="i" />
               </div>
               
               <div className="transform scale-[0.5] origin-top -mt-[400px]">
-                <PDFDeclaration data={activeData} pageNumber="ii" />
+                <PDFDeclaration data={reportData} pageNumber="ii" />
               </div>
               
               <div className="transform scale-[0.5] origin-top -mt-[400px]">
-                <PDFApproval data={activeData} pageNumber="iii" />
+                <PDFApproval data={reportData} pageNumber="iii" />
               </div>
               
               <div className="transform scale-[0.5] origin-top -mt-[400px]">
-                <PDFAcknowledgement data={activeData} pageNumber="iv" />
+                <PDFAcknowledgement data={reportData} pageNumber="iv" />
               </div>
               
               <div className="transform scale-[0.5] origin-top -mt-[400px]">
-                <PDFAbstract data={activeData} pageNumber="v" />
+                <PDFAbstract data={reportData} pageNumber="v" />
               </div>
 
               {/* List of Figures */}
@@ -475,8 +414,8 @@ const ReportPreview = () => {
                 <PDFListOfFigures 
                   figures={figureEntries}
                   projectDetails={{
-                    projectTitle: activeData.projectDetails.projectTitle,
-                    department: activeData.projectDetails.department,
+                    projectTitle: reportData.projectDetails.projectTitle,
+                    department: reportData.projectDetails.department,
                   }}
                 />
               </div>
@@ -486,14 +425,14 @@ const ReportPreview = () => {
                 <PDFTableOfContents 
                   entries={tocEntries}
                   projectDetails={{
-                    projectTitle: activeData.projectDetails.projectTitle,
-                    department: activeData.projectDetails.department,
+                    projectTitle: reportData.projectDetails.projectTitle,
+                    department: reportData.projectDetails.department,
                   }}
                 />
               </div>
 
               {/* Chapter Pages */}
-              {activeData.chapters.map((chapter) => {
+              {reportData.chapters.map((chapter) => {
                 const sectionPages = splitSectionsIntoPages(chapter.sections);
                 const titlePageNum = pageCounter++;
                 
@@ -504,7 +443,7 @@ const ReportPreview = () => {
                       <PDFChapterTitle 
                         chapterNumber={chapter.number}
                         chapterTitle={chapter.title}
-                        data={activeData} 
+                        data={reportData} 
                         pageNumber={titlePageNum.toString()} 
                       />
                     </div>
@@ -516,7 +455,7 @@ const ReportPreview = () => {
                         <div key={`${chapter.id}-page-${pageIdx}`} className="transform scale-[0.5] origin-top -mt-[400px]">
                           <PDFChapterContent 
                             sections={sections}
-                            data={activeData} 
+                            data={reportData} 
                             pageNumber={contentPageNum.toString()} 
                           />
                         </div>
@@ -534,30 +473,30 @@ const ReportPreview = () => {
             className="absolute left-[-9999px] top-0"
             style={{ width: '210mm' }}
           >
-            <PDFCoverPage data={activeData} pageNumber="I" />
-            <PDFCoverPageWithSVCE data={activeData} pageNumber="II" />
-            <PDFCertificate data={activeData} pageNumber="i" />
-            <PDFDeclaration data={activeData} pageNumber="ii" />
-            <PDFApproval data={activeData} pageNumber="iii" />
-            <PDFAcknowledgement data={activeData} pageNumber="iv" />
-            <PDFAbstract data={activeData} pageNumber="v" />
+            <PDFCoverPage data={reportData} pageNumber="I" />
+            <PDFCoverPageWithSVCE data={reportData} pageNumber="II" />
+            <PDFCertificate data={reportData} pageNumber="i" />
+            <PDFDeclaration data={reportData} pageNumber="ii" />
+            <PDFApproval data={reportData} pageNumber="iii" />
+            <PDFAcknowledgement data={reportData} pageNumber="iv" />
+            <PDFAbstract data={reportData} pageNumber="v" />
             <PDFListOfFigures 
               figures={figureEntries}
               projectDetails={{
-                projectTitle: activeData.projectDetails.projectTitle,
-                department: activeData.projectDetails.department,
+                projectTitle: reportData.projectDetails.projectTitle,
+                department: reportData.projectDetails.department,
               }}
             />
             <PDFTableOfContents 
               entries={tocEntries}
               projectDetails={{
-                projectTitle: activeData.projectDetails.projectTitle,
-                department: activeData.projectDetails.department,
+                projectTitle: reportData.projectDetails.projectTitle,
+                department: reportData.projectDetails.department,
               }}
             />
             {(() => {
               let hiddenPageCounter = 1;
-              return activeData.chapters.map((chapter) => {
+              return reportData.chapters.map((chapter) => {
                 const sectionPages = splitSectionsIntoPages(chapter.sections);
                 const titlePageNum = hiddenPageCounter++;
                 
@@ -566,7 +505,7 @@ const ReportPreview = () => {
                     <PDFChapterTitle 
                       chapterNumber={chapter.number}
                       chapterTitle={chapter.title}
-                      data={activeData} 
+                      data={reportData} 
                       pageNumber={titlePageNum.toString()} 
                     />
                     {sectionPages.map((sections, pageIdx) => {
@@ -575,7 +514,7 @@ const ReportPreview = () => {
                         <PDFChapterContent 
                           key={`hidden-${chapter.id}-page-${pageIdx}`}
                           sections={sections}
-                          data={activeData} 
+                          data={reportData} 
                           pageNumber={contentPageNum.toString()} 
                         />
                       );
@@ -588,9 +527,9 @@ const ReportPreview = () => {
         </div>
 
         {/* Sidebar */}
-        <div className="space-y-6 order-1 lg:order-2">
-          <div className="bg-card rounded-2xl p-6 shadow-lg border">
-            <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+        <div className="space-y-6">
+          <div className="bg-card rounded-xl p-6 shadow-lg border">
+            <h3 className="text-lg font-semibold text-[#1a365d] mb-4 flex items-center gap-2">
               <Download className="w-5 h-5" />
               Download Report
             </h3>
@@ -598,21 +537,21 @@ const ReportPreview = () => {
             <div className="space-y-3 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Project</span>
-                <span className="font-medium truncate max-w-[150px]" title={activeData.projectDetails.projectTitle}>
-                  {activeData.projectDetails.projectTitle || 'Untitled'}
+                <span className="font-medium truncate max-w-[150px]" title={reportData.projectDetails.projectTitle}>
+                  {reportData.projectDetails.projectTitle || 'Untitled'}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Students</span>
-                <span className="font-medium">{activeData.projectDetails.students.length}</span>
+                <span className="font-medium">{reportData.projectDetails.students.length}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Chapters</span>
-                <span className="font-medium">{activeData.chapters.length}</span>
+                <span className="font-medium">{reportData.chapters.length}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Total Pages</span>
-                <span className="font-medium">{7 + activeData.chapters.length}</span>
+                <span className="font-medium">{7 + reportData.chapters.length}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Content Mode</span>
@@ -625,7 +564,7 @@ const ReportPreview = () => {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <span className="font-semibold">Total</span>
-                <span className={`text-2xl font-bold ${isAIGenerated ? 'text-primary' : 'text-green-600 dark:text-green-400'}`}>
+                <span className={`text-2xl font-bold ${isAIGenerated ? 'text-[#1a365d]' : 'text-green-600'}`}>
                   {price}
                 </span>
               </div>

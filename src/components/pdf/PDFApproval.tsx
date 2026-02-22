@@ -11,7 +11,7 @@ const PDFApproval = ({ data, pageNumber }: PDFPageProps) => {
   const firstStudent = projectDetails.students[0];
 
   return (
-    <div className="pdf-page" style={{ width: '210mm', height: '297mm', maxHeight: '297mm', position: 'relative', backgroundColor: '#ffffff', fontFamily: 'Times New Roman, serif', overflow: 'hidden' }}>
+    <div className="pdf-page" style={{ width: '210mm', minHeight: '297mm', position: 'relative', backgroundColor: '#ffffff', fontFamily: 'Times New Roman, serif' }}>
       {/* Border */}
       <div 
         style={{
