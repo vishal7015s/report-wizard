@@ -1,17 +1,44 @@
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
-const ensureImagesLoaded = (doc: Document): Promise<void> => {
-  const images = doc.querySelectorAll('img');
-  const promises = Array.from(images).map((img) => {
-    if (img.complete && img.naturalHeight > 0) return Promise.resolve();
-    return new Promise<void>((resolve) => {
-      const timeout = setTimeout(() => resolve(), 8000);
-      img.onload = () => { clearTimeout(timeout); resolve(); };
-      img.onerror = () => { clearTimeout(timeout); resolve(); };
-    });
+/**
+ * Convert all images in a container to inline base64 data URLs.
+ * This ensures html2canvas can always render them, regardless of
+ * whether the original src was a blob:, data:, or regular URL.
+ */
+const preConvertImages = async (container: HTMLElement): Promise<void> => {
+  const images = container.querySelectorAll('img');
+  const promises = Array.from(images).map(async (img) => {
+    // Wait for the image to load first
+    if (!img.complete) {
+      await new Promise<void>((resolve) => {
+        const timeout = setTimeout(() => resolve(), 5000);
+        img.onload = () => { clearTimeout(timeout); resolve(); };
+        img.onerror = () => { clearTimeout(timeout); resolve(); };
+      });
+    }
+
+    // Skip images that failed to load
+    if (!img.naturalWidth || !img.naturalHeight) return;
+
+    // Already a usable data URL — skip
+    if (img.src.startsWith('data:image/')) return;
+
+    // Convert to data URL via canvas
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(img, 0, 0);
+        img.src = canvas.toDataURL('image/png');
+      }
+    } catch {
+      // Cross-origin or tainted — keep original src
+    }
   });
-  return Promise.all(promises).then(() => {});
+  await Promise.all(promises);
 };
 
 export const generatePDF = async (
@@ -24,12 +51,18 @@ export const generatePDF = async (
   pagesContainer.style.left = '0';
   pagesContainer.style.top = '0';
   pagesContainer.style.zIndex = '99999';
-  pagesContainer.style.opacity = '0.01'; // Nearly invisible but still "visible" for rendering
+  pagesContainer.style.opacity = '0.01';
   pagesContainer.style.pointerEvents = 'none';
   pagesContainer.style.width = '210mm';
 
   // Wait for layout to settle
-  await new Promise((r) => setTimeout(r, 500));
+  await new Promise((r) => setTimeout(r, 300));
+
+  // Pre-convert ALL images to base64 data URLs so html2canvas can render them
+  await preConvertImages(pagesContainer);
+
+  // Extra settle after image conversion
+  await new Promise((r) => setTimeout(r, 200));
 
   const pdf = new jsPDF({
     orientation: 'portrait',
@@ -39,10 +72,10 @@ export const generatePDF = async (
 
   const pages = pagesContainer.querySelectorAll('.pdf-page');
   const pagesArray = Array.from(pages);
-  
+
   for (let i = 0; i < pagesArray.length; i++) {
     const page = pagesArray[i] as HTMLElement;
-    
+
     const canvas = await html2canvas(page, {
       scale: 2,
       useCORS: true,
@@ -51,43 +84,9 @@ export const generatePDF = async (
       width: page.offsetWidth,
       height: page.offsetHeight,
       logging: false,
-      onclone: async (clonedDoc: Document) => {
-        // Copy all image sources to cloned document explicitly
-        const originalImages = page.querySelectorAll('img');
-        const clonedImages = clonedDoc.querySelectorAll('img');
-        
-        clonedImages.forEach((clonedImg, idx) => {
-          const originalImg = originalImages[idx];
-          if (originalImg) {
-            // For data URLs and blob URLs, draw to canvas and use that
-            if (originalImg.src.startsWith('data:') || originalImg.src.startsWith('blob:')) {
-              try {
-                const tempCanvas = document.createElement('canvas');
-                tempCanvas.width = originalImg.naturalWidth || originalImg.width || 400;
-                tempCanvas.height = originalImg.naturalHeight || originalImg.height || 300;
-                const ctx = tempCanvas.getContext('2d');
-                if (ctx && originalImg.naturalWidth > 0) {
-                  ctx.drawImage(originalImg, 0, 0);
-                  clonedImg.src = tempCanvas.toDataURL('image/png');
-                }
-              } catch (e) {
-                // Fallback: keep original src
-                clonedImg.src = originalImg.src;
-              }
-            } else {
-              clonedImg.src = originalImg.src;
-              clonedImg.crossOrigin = 'anonymous';
-            }
-          }
-        });
-        
-        // Wait for cloned images to load
-        await ensureImagesLoaded(clonedDoc);
-      },
     });
 
     const imgData = canvas.toDataURL('image/jpeg', 0.95);
-    
     const pdfWidth = 210;
     const pdfHeight = 297;
 
