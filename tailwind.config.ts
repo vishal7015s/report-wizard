@@ -57,7 +57,6 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
-        // Custom colors
         rgpv: {
           red: "hsl(var(--rgpv-red))",
           blue: "hsl(var(--rgpv-blue))",
@@ -66,15 +65,25 @@ export default {
           blue: "hsl(var(--college-blue))",
           gold: "hsl(var(--college-gold))",
         },
+        indigo: {
+          50: "hsl(var(--indigo-50))",
+          100: "hsl(var(--indigo-100))",
+          500: "hsl(var(--indigo-500))",
+          600: "hsl(var(--indigo-600))",
+          700: "hsl(var(--indigo-700))",
+          900: "hsl(var(--indigo-900))",
+        },
       },
       fontFamily: {
-        sans: ['Poppins', 'sans-serif'],
+        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
         serif: ['Times New Roman', 'Georgia', 'serif'],
       },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+        "2xl": "1rem",
+        "3xl": "1.5rem",
       },
       keyframes: {
         "accordion-down": {
@@ -92,8 +101,9 @@ export default {
       },
       boxShadow: {
         'soft': '0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 10px 20px -2px rgba(0, 0, 0, 0.04)',
-        'card': '0 4px 20px rgba(0, 0, 0, 0.08)',
-        'elevated': '0 10px 40px rgba(0, 0, 0, 0.12)',
+        'card': '0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.06)',
+        'elevated': '0 8px 30px rgba(0, 0, 0, 0.08)',
+        'glow': '0 0 40px -10px hsl(239 84% 67% / 0.3)',
       },
     },
   },
