@@ -10,10 +10,10 @@ const SamplesPreview = () => {
   const navigate = useNavigate();
 
   const samples = [
-    { title: 'Cover Page', desc: 'With university & college logos', image: sampleCoverPage },
+    { title: 'Front Page', desc: 'With university & college logos', image: sampleCoverPage },
     { title: 'Certificate', desc: 'Official certificate format', image: sampleCertificate },
-    { title: 'Chapter Content', desc: 'Formatted text with figures', image: sampleChapter },
-    { title: 'Table of Contents', desc: 'Auto-generated TOC', image: sampleToc },
+    { title: 'Project Approval', desc: 'Approval certificate format', image: sampleChapter },
+    { title: 'Candidate Declaration', desc: 'Declaration statement', image: sampleToc },
   ];
 
   return (
