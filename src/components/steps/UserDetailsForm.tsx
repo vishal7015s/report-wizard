@@ -90,7 +90,7 @@ const UserDetailsForm = () => {
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">Project Title</Label>
               <Input
-                placeholder='e.g., "Multiple-Disease-Prediction"'
+                placeholder='e.g., "SVCE Aptitude"'
                 className="rounded-xl"
                 value={projectDetails.projectTitle}
                 onChange={(e) => setProjectDetails({ projectTitle: e.target.value })}
@@ -124,7 +124,7 @@ const UserDetailsForm = () => {
               <div className="space-y-1.5">
                 <Label className="text-xs text-muted-foreground">Guide Name</Label>
                 <Input
-                  placeholder="e.g., Ms. Priyanka Choudhary"
+                  placeholder="e.g., Ms. Suchita Rathore"
                   className="rounded-xl"
                   value={projectDetails.guideName}
                   onChange={(e) => setProjectDetails({ guideName: e.target.value })}
@@ -153,7 +153,7 @@ const UserDetailsForm = () => {
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground">HOD Name</Label>
               <Input
-                placeholder="e.g., Mr. Ashish Tiwari"
+                placeholder="e.g., Mr. Chandrashekhar Kothari"
                 className="rounded-xl"
                 value={projectDetails.hodName}
                 onChange={(e) => setProjectDetails({ hodName: e.target.value })}
@@ -191,7 +191,7 @@ const UserDetailsForm = () => {
                   <div className="space-y-1">
                     <Label className="text-xs text-muted-foreground">Name</Label>
                     <Input
-                      placeholder="e.g., Sachin Patel"
+                      placeholder="e.g., Vishal Hardiya"
                       className="rounded-xl h-9"
                       value={student.name}
                       onChange={(e) => updateStudent(student.id, { name: e.target.value })}
@@ -200,7 +200,7 @@ const UserDetailsForm = () => {
                   <div className="space-y-1">
                     <Label className="text-xs text-muted-foreground">Enrollment No.</Label>
                     <Input
-                      placeholder="e.g., 0822IT221103"
+                      placeholder="e.g., 0822IT221136"
                       className="rounded-xl h-9"
                       value={student.enrollmentNumber}
                       onChange={(e) => updateStudent(student.id, { enrollmentNumber: e.target.value })}
