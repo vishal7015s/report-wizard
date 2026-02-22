@@ -1,44 +1,35 @@
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
-const waitForImages = async (container: HTMLElement): Promise<void> => {
-  const images = container.querySelectorAll('img');
+const ensureImagesLoaded = (doc: Document): Promise<void> => {
+  const images = doc.querySelectorAll('img');
   const promises = Array.from(images).map((img) => {
-    // Already loaded
     if (img.complete && img.naturalHeight > 0) return Promise.resolve();
     return new Promise<void>((resolve) => {
-      const timeout = setTimeout(() => resolve(), 5000); // 5s timeout per image
+      const timeout = setTimeout(() => resolve(), 8000);
       img.onload = () => { clearTimeout(timeout); resolve(); };
       img.onerror = () => { clearTimeout(timeout); resolve(); };
-      // Only force reload for external URLs, NOT for data: or blob: URLs
-      if (img.src && !img.src.startsWith('data:') && !img.src.startsWith('blob:')) {
-        img.crossOrigin = 'anonymous';
-        const src = img.src;
-        img.src = '';
-        img.src = src;
-      }
     });
   });
-  await Promise.all(promises);
-  // Extra wait for rendering
-  await new Promise((r) => setTimeout(r, 300));
+  return Promise.all(promises).then(() => {});
 };
 
 export const generatePDF = async (
   pagesContainer: HTMLElement,
   filename: string = 'project-report.pdf'
 ): Promise<void> => {
-  // Temporarily move the container on-screen for accurate rendering
+  // Move container on-screen temporarily so html2canvas can measure it
   const originalStyle = pagesContainer.style.cssText;
-  pagesContainer.style.position = 'absolute';
+  pagesContainer.style.position = 'fixed';
   pagesContainer.style.left = '0';
   pagesContainer.style.top = '0';
-  pagesContainer.style.zIndex = '-9999';
-  pagesContainer.style.opacity = '0';
+  pagesContainer.style.zIndex = '99999';
+  pagesContainer.style.opacity = '0.01'; // Nearly invisible but still "visible" for rendering
   pagesContainer.style.pointerEvents = 'none';
+  pagesContainer.style.width = '210mm';
 
-  // Wait for all images in the container to load
-  await waitForImages(pagesContainer);
+  // Wait for layout to settle
+  await new Promise((r) => setTimeout(r, 500));
 
   const pdf = new jsPDF({
     orientation: 'portrait',
@@ -52,9 +43,6 @@ export const generatePDF = async (
   for (let i = 0; i < pagesArray.length; i++) {
     const page = pagesArray[i] as HTMLElement;
     
-    // Wait for images in this specific page
-    await waitForImages(page);
-    
     const canvas = await html2canvas(page, {
       scale: 2,
       useCORS: true,
@@ -63,6 +51,39 @@ export const generatePDF = async (
       width: page.offsetWidth,
       height: page.offsetHeight,
       logging: false,
+      onclone: async (clonedDoc: Document) => {
+        // Copy all image sources to cloned document explicitly
+        const originalImages = page.querySelectorAll('img');
+        const clonedImages = clonedDoc.querySelectorAll('img');
+        
+        clonedImages.forEach((clonedImg, idx) => {
+          const originalImg = originalImages[idx];
+          if (originalImg) {
+            // For data URLs and blob URLs, draw to canvas and use that
+            if (originalImg.src.startsWith('data:') || originalImg.src.startsWith('blob:')) {
+              try {
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = originalImg.naturalWidth || originalImg.width || 400;
+                tempCanvas.height = originalImg.naturalHeight || originalImg.height || 300;
+                const ctx = tempCanvas.getContext('2d');
+                if (ctx && originalImg.naturalWidth > 0) {
+                  ctx.drawImage(originalImg, 0, 0);
+                  clonedImg.src = tempCanvas.toDataURL('image/png');
+                }
+              } catch (e) {
+                // Fallback: keep original src
+                clonedImg.src = originalImg.src;
+              }
+            } else {
+              clonedImg.src = originalImg.src;
+              clonedImg.crossOrigin = 'anonymous';
+            }
+          }
+        });
+        
+        // Wait for cloned images to load
+        await ensureImagesLoaded(clonedDoc);
+      },
     });
 
     const imgData = canvas.toDataURL('image/jpeg', 0.95);
