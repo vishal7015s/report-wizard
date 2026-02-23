@@ -29,7 +29,7 @@ I would like to acknowledge all my friends & family members for the moral suppor
           left: '15mm',
           right: '15mm',
           bottom: '15mm',
-          border: '2px solid #1e3a5f',
+          border: '3px solid #000',
           pointerEvents: 'none'
         }}
       />

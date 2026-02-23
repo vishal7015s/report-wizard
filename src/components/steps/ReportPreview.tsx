@@ -38,10 +38,10 @@ const ReportPreview = () => {
   const [downloadType, setDownloadType] = useState<'pdf' | 'docx' | null>(null);
   const [isGeneratingFull, setIsGeneratingFull] = useState(false);
 
-  const { 
+  const {
     isProcessing,
     isPaid,
-    initiatePayment, 
+    initiatePayment,
   } = useRazorpayPayment();
 
   const isAIGenerated = contentMode === 'ai';
@@ -51,7 +51,7 @@ const ReportPreview = () => {
   // After payment, generate remaining chapters
   const generateRemainingChapters = useCallback(async () => {
     if (!aiPrompt) return;
-    
+
     setIsGeneratingFull(true);
     toast.info('Generating full report with all 7 chapters...');
 
@@ -103,7 +103,7 @@ const ReportPreview = () => {
     try {
       const projectTitle = activeData.projectDetails.projectTitle || 'project-report';
       const filename = `${projectTitle.replace(/\s+/g, '-').toLowerCase()}.pdf`;
-      
+
       await generatePDF(pdfContainerRef.current, filename);
       toast.success('PDF downloaded successfully!');
     } catch (error) {
@@ -123,7 +123,7 @@ const ReportPreview = () => {
     try {
       const projectTitle = activeData.projectDetails.projectTitle || 'project-report';
       const filename = `${projectTitle.replace(/\s+/g, '-').toLowerCase()}.docx`;
-      
+
       await generateDOCX(activeData, filename);
       toast.success('Word document downloaded successfully! You can open it in Google Docs.');
     } catch (error) {
@@ -141,16 +141,16 @@ const ReportPreview = () => {
 
   // Generate Roman numerals for preliminary pages
   const romanNumerals = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
-  
+
   // Split sections into pages - smart content management with proper page breaks
   const splitSectionsIntoPages = (sections: ChapterSection[]): ChapterSection[][] => {
     // Page capacity settings - strict limits to enforce fixed A4 page size
-    const MAX_CHARS_PER_PAGE = 1500; // Strict limit to prevent any overflow
-    const MIN_CHARS_FOR_NEW_PAGE = 300;
-    const MAX_SECTIONS_PER_PAGE = 2; // Fewer sections per page to prevent overflow
-    const IMAGE_COST = 1800; // Each image takes nearly a full page worth of space
+    const MAX_CHARS_PER_PAGE = 3500; // Increased limit to fill an A4 page
+    const MIN_CHARS_FOR_NEW_PAGE = 600;
+    const MAX_SECTIONS_PER_PAGE = 5; // Allow more sections per page
+    const IMAGE_COST = 1500; // Adjusted cost per image
     const HEADING_COST = 250;
-    
+
     const pages: ChapterSection[][] = [];
     let currentPage: ChapterSection[] = [];
     let currentPageCost = 0;
@@ -172,12 +172,12 @@ const ReportPreview = () => {
     // Find natural break points in content - prioritize keeping lists and paragraphs together
     const findNaturalBreakPoint = (content: string, maxLength: number): number => {
       if (content.length <= maxLength) return content.length;
-      
+
       // Look for break points in order of preference:
       // 1. Double newline (paragraph break) - best break point
       const paragraphBreak = content.lastIndexOf('\n\n', maxLength);
       if (paragraphBreak > maxLength * 0.5) return paragraphBreak;
-      
+
       // 2. End of a bullet point list (newline not followed by bullet)
       const lines = content.slice(0, maxLength).split('\n');
       let charCount = 0;
@@ -185,26 +185,26 @@ const ReportPreview = () => {
         charCount += lines[i].length + 1; // +1 for newline
         const currentLine = lines[i].trim();
         const nextLine = lines[i + 1]?.trim() || '';
-        
+
         // Break after a list item if next line starts a new paragraph (not a bullet)
-        if ((currentLine.match(/^[•\-\*○]/) || currentLine.match(/^\d+[.)]/)) && 
-            !nextLine.match(/^[•\-\*○]/) && !nextLine.match(/^\d+[.)]/)) {
+        if ((currentLine.match(/^[•\-\*○]/) || currentLine.match(/^\d+[.)]/)) &&
+          !nextLine.match(/^[•\-\*○]/) && !nextLine.match(/^\d+[.)]/)) {
           if (charCount > maxLength * 0.5) return charCount;
         }
       }
-      
+
       // 3. Single newline (line break)
       const lineBreak = content.lastIndexOf('\n', maxLength);
       if (lineBreak > maxLength * 0.4) return lineBreak;
-      
+
       // 4. End of sentence (period followed by space or newline)
       const sentenceEnd = content.lastIndexOf('. ', maxLength);
       if (sentenceEnd > maxLength * 0.4) return sentenceEnd + 1;
-      
+
       // 5. Any period
       const period = content.lastIndexOf('.', maxLength);
       if (period > maxLength * 0.3) return period + 1;
-      
+
       // 6. Hard cut as last resort
       return maxLength;
     };
@@ -213,13 +213,13 @@ const ReportPreview = () => {
     const splitLongContent = (content: string, maxLength: number): string[] => {
       const chunks: string[] = [];
       let remaining = content;
-      
+
       while (remaining.length > maxLength) {
         const breakPoint = findNaturalBreakPoint(remaining, maxLength);
         chunks.push(remaining.slice(0, breakPoint).trim());
         remaining = remaining.slice(breakPoint).trim();
       }
-      
+
       if (remaining) chunks.push(remaining);
       return chunks;
     };
@@ -228,20 +228,20 @@ const ReportPreview = () => {
     const shouldKeepTogether = (section: ChapterSection): boolean => {
       const cost = calculateCost(section);
       const content = section.content || '';
-      
+
       // If section has images, only keep together if text is very short
       if (section.images && section.images.length > 0) {
         const textOnly = (content.length) + HEADING_COST;
         return textOnly + (section.images.length * IMAGE_COST) <= MAX_CHARS_PER_PAGE;
       }
-      
+
       if (cost <= MAX_CHARS_PER_PAGE) return true;
-      
+
       // Check if mostly bullet points - try to keep together
       const bulletLines = (content.match(/^[•\-\*○]\s/gm) || []).length;
       const totalLines = content.split('\n').filter(l => l.trim()).length;
       if (bulletLines > totalLines * 0.5 && cost <= MAX_CHARS_PER_PAGE * 1.3) return true;
-      
+
       return false;
     };
 
@@ -250,17 +250,46 @@ const ReportPreview = () => {
       const sectionCost = calculateCost(section);
       const hasImages = section.images && section.images.length > 0;
       const textLength = (section.content || '').length;
-      
-      // If section has images AND significant text, split text and images onto separate pages
-      if (hasImages && textLength > 600) {
-        // Flush current page
+
+      // Calculate how much text footprint alone would be
+      const remainingSpace = MAX_CHARS_PER_PAGE - currentPageCost;
+      const textCost = textLength + HEADING_COST;
+
+      // If text fits perfectly on the current page, but images make it overflow
+      if (hasImages && sectionCost > remainingSpace && textCost <= remainingSpace && currentPage.length < MAX_SECTIONS_PER_PAGE) {
+        // 1. Add text to the current page and immediately flush it
+        currentPage.push({
+          ...section,
+          id: `${section.id}-text`,
+          images: [],
+        });
+        flushPage();
+
+        // 2. Add images to subsequent new pages
+        const images = section.images!;
+        for (let i = 0; i < images.length; i += 2) {
+          const pageImages = images.slice(i, i + 2);
+          pages.push([{
+            ...section,
+            id: `${section.id}-img-${i}`,
+            heading: `${section.heading} - Figures`,
+            content: '',
+            images: pageImages,
+          }]);
+        }
+        return; // Skip the rest, we fully processed this section
+      }
+
+      // Otherwise, if the section is massively huge, do a hard flush and split
+      if (hasImages && textLength > 600 && sectionCost > remainingSpace) {
+        // Flush current page to give this massive section a fresh canvas
         if (currentPage.length > 0) {
           flushPage();
         }
-        
+
         const content = section.content || '';
         const availableForContent = MAX_CHARS_PER_PAGE - HEADING_COST - 200;
-        
+
         if (content.length > availableForContent) {
           // Split text across pages, images on last page
           const chunks = splitLongContent(content, availableForContent);
@@ -283,7 +312,7 @@ const ReportPreview = () => {
             images: [],
           }]);
         }
-        
+
         // Images get their own dedicated page(s) - one page per image for large display
         const images = section.images!;
         // Group max 2 images per page
@@ -304,15 +333,15 @@ const ReportPreview = () => {
         if (currentPage.length > 0) {
           flushPage();
         }
-        
+
         const content = section.content || '';
         const availableForContent = MAX_CHARS_PER_PAGE - HEADING_COST - 200;
         const chunks = splitLongContent(content, availableForContent);
-        
+
         chunks.forEach((chunk, idx) => {
           const isFirst = idx === 0;
           const isLast = idx === chunks.length - 1;
-          
+
           pages.push([{
             ...section,
             id: `${section.id}-part-${idx + 1}`,
@@ -326,7 +355,7 @@ const ReportPreview = () => {
         const remainingSpace = MAX_CHARS_PER_PAGE - currentPageCost;
         const wouldExceed = sectionCost > remainingSpace;
         const tooManySections = currentPage.length >= MAX_SECTIONS_PER_PAGE;
-        
+
         if (wouldExceed || tooManySections) {
           // Start new page only if current page has enough content
           if (currentPageCost >= MIN_CHARS_FOR_NEW_PAGE) {
@@ -339,7 +368,7 @@ const ReportPreview = () => {
             }
           }
         }
-        
+
         currentPage.push(section);
         currentPageCost += sectionCost;
       }
@@ -352,27 +381,27 @@ const ReportPreview = () => {
   // Generate TOC entries with calculated page numbers
   const tocEntries = useMemo(() => {
     const entries: { title: string; pageNumber: string; isChapter?: boolean; isSection?: boolean }[] = [
-      { title: 'Certificate', pageNumber: 'III' },
-      { title: 'Candidate Declaration', pageNumber: 'IV' },
-      { title: 'Project Approval Certificate', pageNumber: 'V' },
-      { title: 'Acknowledgement', pageNumber: 'VI' },
-      { title: 'Abstract', pageNumber: 'VII' },
-      { title: 'List of Figures', pageNumber: 'VIII' },
-      { title: 'List of Tables', pageNumber: 'IX' },
-      { title: 'Table of Content', pageNumber: 'X' },
+      { title: 'Certificate', pageNumber: 'iii' },
+      { title: 'Candidate Declaration', pageNumber: 'iv' },
+      { title: 'Project Approval Certificate', pageNumber: 'v' },
+      { title: 'Acknowledgement', pageNumber: 'vi' },
+      { title: 'Abstract', pageNumber: 'vii' },
+      { title: 'List of Figures', pageNumber: 'viii' },
+      { title: 'List of Tables', pageNumber: 'ix' },
+      { title: 'Table of Content', pageNumber: 'x' },
     ];
 
     let currentPage = 1;
     activeData.chapters.forEach((chapter) => {
       const sectionPages = splitSectionsIntoPages(chapter.sections);
-      
+
       // Add chapter title
       entries.push({
         title: `Chapter ${chapter.number} ${chapter.title}`,
         pageNumber: currentPage.toString(),
         isChapter: true,
       });
-      
+
       // Add section entries
       let sectionPage = currentPage + 1;
       chapter.sections.forEach((section, sectionIdx) => {
@@ -385,7 +414,7 @@ const ReportPreview = () => {
         const sectionCost = (section.content?.length || 0) + (section.images?.length || 0) * 500;
         if (sectionCost > 700) sectionPage++;
       });
-      
+
       currentPage += 1 + sectionPages.length; // Title page + content pages
     });
 
@@ -445,34 +474,34 @@ const ReportPreview = () => {
               <div className="transform scale-[0.5] origin-top">
                 <PDFCoverPage data={activeData} pageNumber="I" />
               </div>
-              
+
               <div className="transform scale-[0.5] origin-top -mt-[400px]">
                 <PDFCoverPageWithSVCE data={activeData} pageNumber="II" />
               </div>
-              
+
               <div className="transform scale-[0.5] origin-top -mt-[400px]">
-                <PDFCertificate data={activeData} pageNumber="i" />
+                <PDFCertificate data={activeData} pageNumber="iii" />
               </div>
-              
+
               <div className="transform scale-[0.5] origin-top -mt-[400px]">
-                <PDFDeclaration data={activeData} pageNumber="ii" />
+                <PDFDeclaration data={activeData} pageNumber="iv" />
               </div>
-              
+
               <div className="transform scale-[0.5] origin-top -mt-[400px]">
-                <PDFApproval data={activeData} pageNumber="iii" />
+                <PDFApproval data={activeData} pageNumber="v" />
               </div>
-              
+
               <div className="transform scale-[0.5] origin-top -mt-[400px]">
-                <PDFAcknowledgement data={activeData} pageNumber="iv" />
+                <PDFAcknowledgement data={activeData} pageNumber="vi" />
               </div>
-              
+
               <div className="transform scale-[0.5] origin-top -mt-[400px]">
-                <PDFAbstract data={activeData} pageNumber="v" />
+                <PDFAbstract data={activeData} pageNumber="vii" />
               </div>
 
               {/* List of Figures */}
               <div className="transform scale-[0.5] origin-top -mt-[400px]">
-                <PDFListOfFigures 
+                <PDFListOfFigures
                   figures={figureEntries}
                   projectDetails={{
                     projectTitle: activeData.projectDetails.projectTitle,
@@ -483,7 +512,7 @@ const ReportPreview = () => {
 
               {/* Table of Contents */}
               <div className="transform scale-[0.5] origin-top -mt-[400px]">
-                <PDFTableOfContents 
+                <PDFTableOfContents
                   entries={tocEntries}
                   projectDetails={{
                     projectTitle: activeData.projectDetails.projectTitle,
@@ -496,28 +525,28 @@ const ReportPreview = () => {
               {activeData.chapters.map((chapter) => {
                 const sectionPages = splitSectionsIntoPages(chapter.sections);
                 const titlePageNum = pageCounter++;
-                
+
                 return (
                   <div key={chapter.id}>
                     {/* Chapter Title Page */}
                     <div className="transform scale-[0.5] origin-top -mt-[400px]">
-                      <PDFChapterTitle 
+                      <PDFChapterTitle
                         chapterNumber={chapter.number}
                         chapterTitle={chapter.title}
-                        data={activeData} 
-                        pageNumber={titlePageNum.toString()} 
+                        data={activeData}
+                        pageNumber={titlePageNum.toString()}
                       />
                     </div>
-                    
+
                     {/* Chapter Content Pages */}
                     {sectionPages.map((sections, pageIdx) => {
                       const contentPageNum = pageCounter++;
                       return (
                         <div key={`${chapter.id}-page-${pageIdx}`} className="transform scale-[0.5] origin-top -mt-[400px]">
-                          <PDFChapterContent 
+                          <PDFChapterContent
                             sections={sections}
-                            data={activeData} 
-                            pageNumber={contentPageNum.toString()} 
+                            data={activeData}
+                            pageNumber={contentPageNum.toString()}
                           />
                         </div>
                       );
@@ -529,26 +558,26 @@ const ReportPreview = () => {
           </div>
 
           {/* Hidden Full-Size PDF Container for Generation */}
-          <div 
+          <div
             ref={pdfContainerRef}
             className="absolute left-[-9999px] top-0"
             style={{ width: '210mm' }}
           >
-            <PDFCoverPage data={activeData} pageNumber="I" />
-            <PDFCoverPageWithSVCE data={activeData} pageNumber="II" />
-            <PDFCertificate data={activeData} pageNumber="i" />
-            <PDFDeclaration data={activeData} pageNumber="ii" />
-            <PDFApproval data={activeData} pageNumber="iii" />
-            <PDFAcknowledgement data={activeData} pageNumber="iv" />
-            <PDFAbstract data={activeData} pageNumber="v" />
-            <PDFListOfFigures 
+            <PDFCoverPage data={activeData} pageNumber="i" />
+            <PDFCoverPageWithSVCE data={activeData} pageNumber="ii" />
+            <PDFCertificate data={activeData} pageNumber="iii" />
+            <PDFDeclaration data={activeData} pageNumber="iv" />
+            <PDFApproval data={activeData} pageNumber="v" />
+            <PDFAcknowledgement data={activeData} pageNumber="vi" />
+            <PDFAbstract data={activeData} pageNumber="vii" />
+            <PDFListOfFigures
               figures={figureEntries}
               projectDetails={{
                 projectTitle: activeData.projectDetails.projectTitle,
                 department: activeData.projectDetails.department,
               }}
             />
-            <PDFTableOfContents 
+            <PDFTableOfContents
               entries={tocEntries}
               projectDetails={{
                 projectTitle: activeData.projectDetails.projectTitle,
@@ -560,23 +589,23 @@ const ReportPreview = () => {
               return activeData.chapters.map((chapter) => {
                 const sectionPages = splitSectionsIntoPages(chapter.sections);
                 const titlePageNum = hiddenPageCounter++;
-                
+
                 return (
                   <div key={`hidden-${chapter.id}`}>
-                    <PDFChapterTitle 
+                    <PDFChapterTitle
                       chapterNumber={chapter.number}
                       chapterTitle={chapter.title}
-                      data={activeData} 
-                      pageNumber={titlePageNum.toString()} 
+                      data={activeData}
+                      pageNumber={titlePageNum.toString()}
                     />
                     {sectionPages.map((sections, pageIdx) => {
                       const contentPageNum = hiddenPageCounter++;
                       return (
-                        <PDFChapterContent 
+                        <PDFChapterContent
                           key={`hidden-${chapter.id}-page-${pageIdx}`}
                           sections={sections}
-                          data={activeData} 
-                          pageNumber={contentPageNum.toString()} 
+                          data={activeData}
+                          pageNumber={contentPageNum.toString()}
                         />
                       );
                     })}
@@ -594,7 +623,7 @@ const ReportPreview = () => {
               <Download className="w-5 h-5" />
               Download Report
             </h3>
-            
+
             <div className="space-y-3 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Project</span>
@@ -637,8 +666,8 @@ const ReportPreview = () => {
                       <CheckCircle className="w-4 h-4" />
                       <span>Payment verified - Full report ready!</span>
                     </div>
-                    <Button 
-                      className="w-full gap-2 bg-primary hover:bg-primary/90" 
+                    <Button
+                      className="w-full gap-2 bg-primary hover:bg-primary/90"
                       size="lg"
                       onClick={handleDownloadPDF}
                       disabled={isGenerating}
@@ -655,9 +684,9 @@ const ReportPreview = () => {
                         </>
                       )}
                     </Button>
-                    
-                    <Button 
-                      className="w-full gap-2 bg-secondary hover:bg-secondary/80 text-secondary-foreground" 
+
+                    <Button
+                      className="w-full gap-2 bg-secondary hover:bg-secondary/80 text-secondary-foreground"
                       size="lg"
                       onClick={handleDownloadDOCX}
                       disabled={isGenerating}
@@ -693,8 +722,8 @@ const ReportPreview = () => {
                         <span>Preview: 3 chapters shown. Pay to unlock all 7 chapters.</span>
                       </div>
                     )}
-                    <Button 
-                      className="w-full gap-2 bg-primary hover:bg-primary/90" 
+                    <Button
+                      className="w-full gap-2 bg-primary hover:bg-primary/90"
                       size="lg"
                       onClick={handlePaymentAndGenerate}
                       disabled={isProcessing}
@@ -715,8 +744,8 @@ const ReportPreview = () => {
                 )
               ) : (
                 <div className="space-y-2">
-                  <Button 
-                    className="w-full gap-2 bg-primary hover:bg-primary/90" 
+                  <Button
+                    className="w-full gap-2 bg-primary hover:bg-primary/90"
                     size="lg"
                     onClick={handleDownloadPDF}
                     disabled={isGenerating}
@@ -733,9 +762,9 @@ const ReportPreview = () => {
                       </>
                     )}
                   </Button>
-                  
-                  <Button 
-                    className="w-full gap-2 bg-secondary hover:bg-secondary/80 text-secondary-foreground" 
+
+                  <Button
+                    className="w-full gap-2 bg-secondary hover:bg-secondary/80 text-secondary-foreground"
                     size="lg"
                     onClick={handleDownloadDOCX}
                     disabled={isGenerating}
@@ -776,7 +805,7 @@ const ReportPreview = () => {
               Preview Note
             </h4>
             <p className="text-muted-foreground">
-              The preview shows scaled versions of actual A4 pages. 
+              The preview shows scaled versions of actual A4 pages.
               The downloaded PDF will be full-size and print-ready.
             </p>
           </div>

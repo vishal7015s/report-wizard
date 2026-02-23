@@ -8,27 +8,27 @@ interface PDFChapterContentProps {
 
 const PDFChapterContent = ({ sections, data, pageNumber }: PDFChapterContentProps) => {
   const { projectDetails } = data;
-  
+
   return (
     <div className="pdf-page" style={{ width: '210mm', height: '297mm', maxHeight: '297mm', position: 'relative', backgroundColor: '#ffffff', fontFamily: 'Times New Roman, serif', overflow: 'hidden' }}>
       {/* Border */}
-      <div 
+      <div
         style={{
           position: 'absolute',
           top: '15mm',
           left: '15mm',
           right: '15mm',
           bottom: '15mm',
-          border: '2px solid #1e3a5f',
+          border: '3px solid #000',
           pointerEvents: 'none'
         }}
       />
-      
+
       {/* Header - above border */}
       <div
         className="absolute"
         style={{
-          top: '6mm',
+          top: '8mm',
           left: '15mm',
           right: '15mm',
           fontSize: '12px',
@@ -39,61 +39,62 @@ const PDFChapterContent = ({ sections, data, pageNumber }: PDFChapterContentProp
       >
         {projectDetails.projectTitle || 'Project Title'}
       </div>
-      
+
       {/* Content Area - Fixed font size 14px throughout */}
-      <div style={{ paddingTop: '20mm', paddingLeft: '20mm', paddingRight: '20mm', paddingBottom: '28mm', fontSize: '14px', fontFamily: 'Times New Roman, serif', maxHeight: 'calc(297mm - 48mm)', overflow: 'hidden' }}>
+      <div style={{ paddingTop: '5mm', paddingLeft: '10mm', paddingRight: '10mm', paddingBottom: '10mm', fontSize: '14px', fontFamily: 'Times New Roman, serif', maxHeight: 'calc(297mm - 48mm)', overflow: 'hidden' }}>
         {sections.map((section) => (
           <div key={section.id} style={{ marginBottom: '6mm' }}>
             {/* Section Heading */}
-            <h2 
-              style={{ 
-                color: '#1e90ff', 
-                fontSize: '14px', 
+            <h2
+              style={{
+                color: '#000000',
+                fontSize: '20px',
                 fontWeight: 'bold',
-                marginBottom: '4mm'
+                marginBottom: '4mm',
+                letterSpacing: '0.8px'
               }}
             >
               {section.number} {section.heading}
             </h2>
-            
+
             {/* Section Content - consistent 14px font */}
-            <div 
-              style={{ 
-                fontSize: '14px', 
-                lineHeight: '1.8', 
+            <div
+              style={{
+                fontSize: '14px',
+                lineHeight: '1.8',
                 color: '#000000',
                 textAlign: 'justify'
               }}
-              dangerouslySetInnerHTML={{ 
-                __html: formatContent(section.content || 'Content not provided.') 
+              dangerouslySetInnerHTML={{
+                __html: formatContent(section.content || 'Content not provided.')
               }}
             />
-            
+
             {/* Section Images */}
             {section.images && section.images.length > 0 && (
               <div style={{ marginTop: '8mm' }}>
                 {section.images.map((image, imgIndex) => (
                   <div key={image.id} style={{ textAlign: 'center', marginBottom: '8mm' }}>
-                    <div style={{ 
+                    <div style={{
                       display: 'inline-block',
                       border: '1px solid #d0d0d0',
                       padding: '3mm',
                       backgroundColor: '#fafafa',
                     }}>
-                      <img 
-                        src={image.url} 
+                      <img
+                        src={image.url}
                         alt={image.caption || `Figure ${section.number}.${imgIndex + 1}`}
-                        style={{ 
-                          maxWidth: '140mm', 
-                          maxHeight: '180mm', 
-                          objectFit: 'contain', 
+                        style={{
+                          maxWidth: '140mm',
+                          maxHeight: '180mm',
+                          objectFit: 'contain',
                           display: 'block',
                         }}
                       />
                     </div>
-                    <p style={{ 
-                      fontSize: '12px', 
-                      marginTop: '3mm', 
+                    <p style={{
+                      fontSize: '12px',
+                      marginTop: '3mm',
                       color: '#000000',
                       fontWeight: 'bold',
                     }}>
@@ -106,12 +107,12 @@ const PDFChapterContent = ({ sections, data, pageNumber }: PDFChapterContentProp
           </div>
         ))}
       </div>
-      
+
       {/* Footer - below border */}
       <div
         className="absolute flex justify-between items-center"
         style={{
-          bottom: '6mm',
+          bottom: '8mm',
           left: '15mm',
           right: '15mm',
           fontSize: '11px',
@@ -129,9 +130,9 @@ const PDFChapterContent = ({ sections, data, pageNumber }: PDFChapterContentProp
 // Helper function to highlight important terms
 const highlightKeyTerms = (text: string): string => {
   // Bold text wrapped in **text** or __text__
-  let processed = text.replace(/\*\*(.+?)\*\*/g, '<strong style="font-weight: 600; color: #1e3a5f;">$1</strong>');
-  processed = processed.replace(/__(.+?)__/g, '<strong style="font-weight: 600; color: #1e3a5f;">$1</strong>');
-  
+  let processed = text.replace(/\*\*(.+?)\*\*/g, '<strong style="font-weight: 600; color: #000000;">$1</strong>');
+  processed = processed.replace(/__(.+?)__/g, '<strong style="font-weight: 600; color: #000000;">$1</strong>');
+
   // Highlight common technical terms and keywords
   const keyTerms = [
     'objective', 'objectives', 'scope', 'methodology', 'conclusion', 'result', 'results',
@@ -140,12 +141,12 @@ const highlightKeyTerms = (text: string): string => {
     'frontend', 'backend', 'API', 'user', 'admin', 'security', 'performance',
     'feature', 'features', 'function', 'functions', 'process', 'workflow'
   ];
-  
+
   keyTerms.forEach(term => {
     const regex = new RegExp(`\\b(${term}s?)\\b`, 'gi');
     processed = processed.replace(regex, '<strong style="font-weight: 600;">$1</strong>');
   });
-  
+
   return processed;
 };
 
@@ -209,8 +210,8 @@ const formatContent = (content: string): string => {
 
       formattedHtml += `
         <div style="display:flex; align-items:flex-start; margin-left:${indent}; margin-bottom: 2mm;">
-          <span style="width: 6mm; text-align:left; line-height: 1.6; font-size: 14px;">${bulletChar}</span>
-          <span style="flex:1; text-align:justify; line-height: 1.6; font-size: 14px;">${text}</span>
+          <span style="width: 6mm; text-align:left; line-height: 1.8; font-size: 14px; letter-spacing: 0.8px;">${bulletChar}</span>
+          <span style="flex:1; text-align:justify; line-height: 1.8; font-size: 14px; letter-spacing: 0.8px;">${text}</span>
         </div>
       `;
       return;
@@ -230,8 +231,8 @@ const formatContent = (content: string): string => {
 
       formattedHtml += `
         <div style="display:flex; align-items:flex-start; margin-left: 6mm; margin-bottom: 2mm;">
-          <span style="width: 8mm; text-align:right; padding-right: 2mm; line-height: 1.6; font-size: 14px;">${num}.</span>
-          <span style="flex:1; text-align:justify; line-height: 1.6; font-size: 14px;">${text}</span>
+          <span style="width: 8mm; text-align:right; padding-right: 2mm; line-height: 1.8; font-size: 14px; letter-spacing: 0.8px;">${num}.</span>
+          <span style="flex:1; text-align:justify; line-height: 1.8; font-size: 14px; letter-spacing: 0.8px;">${text}</span>
         </div>
       `;
       return;
@@ -241,7 +242,7 @@ const formatContent = (content: string): string => {
     closeLists();
     if (trimmed) {
       const highlightedText = highlightKeyTerms(trimmed);
-      formattedHtml += `<p style="margin-bottom: 4mm; text-align: justify; line-height: 1.8; font-size: 14px;">${highlightedText}</p>`;
+      formattedHtml += `<p style="margin-bottom: 4mm; text-align: justify; line-height: 1.8; font-size: 14px; letter-spacing: 0.8px;">${highlightedText}</p>`;
     }
   });
 

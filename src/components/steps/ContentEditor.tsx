@@ -9,11 +9,11 @@ import { handlePasteFormat, formatOnChange } from '@/lib/formatContent';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useRazorpayPayment } from '@/hooks/useRazorpayPayment';
-import { 
-  Sparkles, 
-  PenLine, 
-  Plus, 
-  Trash2, 
+import {
+  Sparkles,
+  PenLine,
+  Plus,
+  Trash2,
   ArrowRight,
   Upload,
   Image as ImageIcon,
@@ -27,10 +27,10 @@ import {
 } from 'lucide-react';
 
 const ContentEditor = () => {
-  const { 
-    contentMode, 
-    setContentMode, 
-    reportData, 
+  const {
+    contentMode,
+    setContentMode,
+    reportData,
     aiReportContent,
     isAIGenerated,
     setIsAIGenerated,
@@ -52,11 +52,11 @@ const ContentEditor = () => {
     setCurrentStep,
     setChapters
   } = useReportStore();
-  
+
   const [aiPromptText, setAiPromptText] = useState('');
   const [activeChapter, setActiveChapter] = useState(reportData.chapters[0]?.id || '');
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [currentSectionForImage, setCurrentSectionForImage] = useState<{chapterId: string, sectionId: string} | null>(null);
+  const [currentSectionForImage, setCurrentSectionForImage] = useState<{ chapterId: string, sectionId: string } | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isGeneratingDiagram, setIsGeneratingDiagram] = useState<string | null>(null);
   const { isPaid } = useRazorpayPayment();
@@ -149,7 +149,7 @@ const ContentEditor = () => {
       setAiPrompt(aiPromptText); // Save prompt for full generation after payment
 
       toast.success('Preview content generated! Pay to unlock full report with all 7 chapters.');
-      
+
     } catch (error) {
       console.error('Generation error:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to generate content');
@@ -195,7 +195,7 @@ const ContentEditor = () => {
       });
 
       toast.success(`Diagram generated! (${totalAIDiagrams + 1}/${MAX_AI_DIAGRAMS} used)`);
-      
+
     } catch (error) {
       console.error('Diagram generation error:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to generate diagram');
@@ -269,8 +269,8 @@ const ContentEditor = () => {
                 </span>
                 <span>(minimum 50 required)</span>
               </div>
-              <Button 
-                className="w-full gap-2 rounded-xl" 
+              <Button
+                className="w-full gap-2 rounded-xl"
                 onClick={handleGenerateContent}
                 disabled={isGenerating || aiPromptText.length < 50}
               >
@@ -373,7 +373,7 @@ const ContentEditor = () => {
                               ))}
                             </div>
                           )}
-                          
+
                           <div className="flex flex-wrap gap-2">
                             {/* Upload Image - always active */}
                             <Button
@@ -463,9 +463,9 @@ const ContentEditor = () => {
           <div className="bg-card rounded-xl border shadow-soft overflow-hidden">
             <div className="flex items-center justify-between p-4 border-b bg-muted/30">
               <h3 className="font-semibold text-foreground">Chapter-wise Editor</h3>
-              <Button 
-                variant="outline" 
-                size="sm" 
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={addChapter}
                 className="gap-2 rounded-xl"
               >
@@ -562,9 +562,9 @@ const ContentEditor = () => {
                           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
                             {section.images.map((img) => (
                               <div key={img.id} className="relative group">
-                                <img 
-                                  src={img.url} 
-                                  alt={img.caption} 
+                                <img
+                                  src={img.url}
+                                  alt={img.caption}
                                   className="w-full h-32 object-cover rounded border"
                                 />
                                 <Button
@@ -580,11 +580,11 @@ const ContentEditor = () => {
                             ))}
                           </div>
                         )}
-                        
+
                         <div className="flex flex-col items-center gap-3">
                           <ImageIcon className="w-10 h-10 text-muted-foreground" />
                           <span className="text-sm text-foreground">Add a diagram</span>
-                          
+
                           {/* Show AI diagram buttons only for AI-generated content */}
                           {isAIGenerated && section.content.length > 0 && (
                             <div className="w-full">
@@ -628,7 +628,7 @@ const ContentEditor = () => {
                               Upload your own diagrams or use AI Generate tab for auto-generated diagrams
                             </p>
                           )}
-                          
+
                           <Button
                             variant="outline"
                             size="sm"

@@ -41,7 +41,7 @@
     --rgpv-blue: 210 100% 35%;
     --college-blue: 213 60% 25%;
     --college-gold: 45 90% 50%;
-    
+
     /* PDF specific colors */
     --pdf-border: 213 60% 25%;
     --pdf-heading-red: 0 75% 48%;
@@ -120,17 +120,6 @@
     overflow: hidden;
   }
 
-  .pdf-page::before {
-    content: '';
-    position: absolute;
-    top: 15mm;
-    left: 15mm;
-    right: 15mm;
-    bottom: 15mm;
-    border: 2px solid hsl(var(--pdf-border));
-    pointer-events: none;
-  }
-
   .pdf-heading-red {
     color: hsl(var(--pdf-heading-red));
     font-weight: bold;
@@ -175,8 +164,15 @@
   }
 
   @keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-10px); }
+
+    0%,
+    100% {
+      transform: translateY(0px);
+    }
+
+    50% {
+      transform: translateY(-10px);
+    }
   }
 
   .animate-fade-in {
@@ -184,8 +180,15 @@
   }
 
   @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   .animate-slide-up {
@@ -193,8 +196,15 @@
   }
 
   @keyframes slideUp {
-    from { opacity: 0; transform: translateY(30px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   .animate-scale-in {
@@ -202,7 +212,14 @@
   }
 
   @keyframes scaleIn {
-    from { opacity: 0; transform: scale(0.95); }
-    to { opacity: 1; transform: scale(1); }
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
   }
 }

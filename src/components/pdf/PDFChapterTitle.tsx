@@ -9,27 +9,27 @@ interface PDFChapterTitleProps {
 
 const PDFChapterTitle = ({ chapterNumber, chapterTitle, data, pageNumber }: PDFChapterTitleProps) => {
   const { projectDetails } = data;
-  
+
   return (
     <div className="pdf-page" style={{ width: '210mm', height: '297mm', maxHeight: '297mm', position: 'relative', backgroundColor: '#ffffff', fontFamily: 'Times New Roman, serif', overflow: 'hidden' }}>
       {/* Border */}
-      <div 
+      <div
         style={{
           position: 'absolute',
           top: '15mm',
           left: '15mm',
           right: '15mm',
           bottom: '15mm',
-          border: '2px solid #1e3a5f',
+          border: '3px solid #000',
           pointerEvents: 'none'
         }}
       />
-      
+
       {/* Header - above border */}
       <div
         className="absolute"
         style={{
-          top: '6mm',
+          top: '8mm',
           left: '15mm',
           right: '15mm',
           fontSize: '12px',
@@ -41,26 +41,26 @@ const PDFChapterTitle = ({ chapterNumber, chapterTitle, data, pageNumber }: PDFC
         {projectDetails.projectTitle || 'Project Title'}
       </div>
       {/* Centered Chapter Info */}
-      <div className="flex flex-col items-center justify-center" style={{ height: '297mm' }}>
-        <h1 
+      <div className="absolute flex flex-col items-center justify-center" style={{ top: '15mm', bottom: '15mm', left: '15mm', right: '15mm' }}>
+        <h1
           className="font-bold text-center"
-          style={{ color: '#1e3a5f', fontSize: '36px', letterSpacing: '2px' }}
+          style={{ color: '#000000', fontSize: '64px', fontWeight: '900', letterSpacing: '4px', marginBottom: '40px' }}
         >
           CHAPTER {chapterNumber}
         </h1>
-        <h2 
-          className="font-bold text-center mt-6"
-          style={{ color: '#1e3a5f', fontSize: '28px', textDecoration: 'underline', textUnderlineOffset: '6px' }}
+        <h2
+          className="font-bold text-center"
+          style={{ color: '#000000', fontSize: '48px', fontWeight: '900', lineHeight: '1.4', letterSpacing: '2px' }}
         >
           {chapterTitle.toUpperCase()}
         </h2>
       </div>
-      
+
       {/* Footer - below border */}
       <div
         className="absolute flex justify-between items-center"
         style={{
-          bottom: '6mm',
+          bottom: '8mm',
           left: '15mm',
           right: '15mm',
           fontSize: '11px',

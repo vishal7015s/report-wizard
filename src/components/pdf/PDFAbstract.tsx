@@ -26,7 +26,7 @@ The results demonstrate that machine learning models can significantly enhance m
           left: '15mm',
           right: '15mm',
           bottom: '15mm',
-          border: '2px solid #1e3a5f',
+          border: '3px solid #000',
           pointerEvents: 'none'
         }}
       />

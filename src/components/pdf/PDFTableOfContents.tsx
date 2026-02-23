@@ -31,7 +31,7 @@ const PDFTableOfContents: React.FC<PDFTableOfContentsProps> = ({ entries, projec
       <div
         className="absolute"
         style={{
-          top: '6mm',
+          top: '8mm',
           left: '15mm',
           right: '15mm',
           fontSize: '12px',
@@ -47,11 +47,11 @@ const PDFTableOfContents: React.FC<PDFTableOfContentsProps> = ({ entries, projec
       <div
         className="absolute"
         style={{
-          top: '12mm',
-          left: '12mm',
-          right: '12mm',
-          bottom: '12mm',
-          border: '2px solid #000',
+          top: '15mm',
+          left: '15mm',
+          right: '15mm',
+          bottom: '15mm',
+          border: '3px solid #000',
         }}
       />
 
@@ -78,17 +78,20 @@ const PDFTableOfContents: React.FC<PDFTableOfContentsProps> = ({ entries, projec
         </h1>
 
         {/* TOC Table */}
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', border: '1px solid #000' }}>
           <tbody>
             {entries.map((entry, index) => (
-              <tr 
+              <tr
                 key={index}
-                style={{ 
+                style={{
                   borderBottom: '1px solid #000',
                 }}
               >
                 <td
                   style={{
+                    border: '1px solid #000',
+                    borderLeft: 'none',
+                    borderRight: '1px solid #000',
                     padding: '4px 5px',
                     fontWeight: entry.isChapter ? 'bold' : 'normal',
                     textTransform: entry.isChapter ? 'uppercase' : 'none',
@@ -98,9 +101,12 @@ const PDFTableOfContents: React.FC<PDFTableOfContentsProps> = ({ entries, projec
                 </td>
                 <td
                   style={{
-                    textAlign: 'right',
+                    border: '1px solid #000',
+                    borderLeft: 'none',
+                    borderRight: 'none',
+                    textAlign: 'center',
                     padding: '4px 5px',
-                    width: '40px',
+                    width: '60px',
                     fontWeight: entry.isChapter ? 'bold' : 'normal',
                   }}
                 >
@@ -116,7 +122,7 @@ const PDFTableOfContents: React.FC<PDFTableOfContentsProps> = ({ entries, projec
       <div
         className="absolute flex justify-between items-center"
         style={{
-          bottom: '6mm',
+          bottom: '8mm',
           left: '15mm',
           right: '15mm',
           fontSize: '11px',

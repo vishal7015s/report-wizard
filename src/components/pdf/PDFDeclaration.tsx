@@ -19,19 +19,19 @@ const PDFDeclaration = ({ data, pageNumber }: PDFPageProps) => {
           left: '15mm',
           right: '15mm',
           bottom: '15mm',
-          border: '2px solid #1e3a5f',
+          border: '3px solid #000',
           pointerEvents: 'none'
         }}
       />
       
       <div className="pt-12 px-12">
         {/* College Name */}
-        <p className="text-center font-bold text-xl" style={{ color: '#1e90ff' }}>
+        <p className="text-center font-bold text-xl" style={{ color: '#000000' }}>
           Swami Vivekanand College of Engineering, Indore
         </p>
         
         {/* Department */}
-        <p className="text-center mt-2 text-base" style={{ color: '#1e90ff' }}>
+        <p className="text-center mt-2 text-base" style={{ color: '#000000' }}>
           Department of {projectDetails.department}
         </p>
         
