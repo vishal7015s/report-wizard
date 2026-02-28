@@ -3,27 +3,28 @@ import { Link } from 'react-router-dom';
 
 const Footer = () => {
   return (
-    <footer className="bg-secondary/40 text-foreground border-t border-border/40">
-      <div className="container mx-auto px-4 py-16">
-        <div className="grid md:grid-cols-4 gap-10 mb-12">
+    <footer className="bg-card border-t border-border">
+      <div className="max-w-7xl mx-auto px-6 py-16">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
           {/* Brand */}
           <div>
             <div className="flex items-center gap-2.5 mb-4">
-              <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center">
+              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
                 <FileText className="w-4 h-4 text-primary-foreground" />
               </div>
-              <span className="font-bold text-lg text-foreground">ReportGen</span>
+              <span className="font-bold text-base text-foreground">FormatPro</span>
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Generate college-approved, faculty-ready project reports for RGPV engineering students.
+              AI-powered project report generator for RGPV engineering students. Faculty-ready reports in minutes.
             </p>
           </div>
 
           {/* Product */}
           <div>
-            <h3 className="font-bold text-sm mb-4 text-foreground">Product</h3>
+            <h4 className="text-sm font-semibold text-foreground mb-4">Product</h4>
             <ul className="space-y-2.5 text-sm">
               <li><Link to="/create" className="text-muted-foreground hover:text-foreground transition-colors">Create Report</Link></li>
+              <li><a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">Features</a></li>
               <li><a href="#pricing" className="text-muted-foreground hover:text-foreground transition-colors">Pricing</a></li>
               <li><a href="#faq" className="text-muted-foreground hover:text-foreground transition-colors">FAQ</a></li>
             </ul>
@@ -31,16 +32,16 @@ const Footer = () => {
 
           {/* Company */}
           <div>
-            <h3 className="font-bold text-sm mb-4 text-foreground">Company</h3>
+            <h4 className="text-sm font-semibold text-foreground mb-4">Company</h4>
             <ul className="space-y-2.5 text-sm">
               <li><Link to="/about-us" className="text-muted-foreground hover:text-foreground transition-colors">About Us</Link></li>
-              <li><Link to="/contact-us" className="text-muted-foreground hover:text-foreground transition-colors">Contact</Link></li>
+              <li><Link to="/contact-us" className="text-muted-foreground hover:text-foreground transition-colors">Contact Us</Link></li>
             </ul>
           </div>
 
           {/* Legal */}
           <div>
-            <h3 className="font-bold text-sm mb-4 text-foreground">Legal</h3>
+            <h4 className="text-sm font-semibold text-foreground mb-4">Legal</h4>
             <ul className="space-y-2.5 text-sm">
               <li><Link to="/privacy-policy" className="text-muted-foreground hover:text-foreground transition-colors">Privacy Policy</Link></li>
               <li><Link to="/terms-and-conditions" className="text-muted-foreground hover:text-foreground transition-colors">Terms & Conditions</Link></li>
@@ -49,15 +50,16 @@ const Footer = () => {
           </div>
         </div>
 
-        <div className="border-t border-border/40 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="border-t border-border pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-xs text-muted-foreground">
-            © {new Date().getFullYear()} ReportGen. Made for Engineering Students.
+            © {new Date().getFullYear()} FormatPro. Made for engineering students.
           </p>
           <p className="text-xs text-muted-foreground">
             <a href="mailto:developer.vishalshivhare123@gmail.com" className="hover:text-foreground transition-colors">
               developer.vishalshivhare123@gmail.com
             </a>
-            {' '} • +91 8839801203
+            {' · '}
+            +91 8839801203
           </p>
         </div>
       </div>

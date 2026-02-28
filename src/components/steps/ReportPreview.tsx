@@ -248,16 +248,65 @@ const ReportPreview = () => {
     // Process each section
     sections.forEach((section) => {
       const sectionCost = calculateCost(section);
+      const hasImages = section.images && section.images.length > 0;
+      const textLength = (section.content || '').length;
       
+      // If section has images AND significant text, split text and images onto separate pages
+      if (hasImages && textLength > 600) {
+        // Flush current page
+        if (currentPage.length > 0) {
+          flushPage();
+        }
+        
+        const content = section.content || '';
+        const availableForContent = MAX_CHARS_PER_PAGE - HEADING_COST - 200;
+        
+        if (content.length > availableForContent) {
+          // Split text across pages, images on last page
+          const chunks = splitLongContent(content, availableForContent);
+          chunks.forEach((chunk, idx) => {
+            const isFirst = idx === 0;
+            pages.push([{
+              ...section,
+              id: `${section.id}-part-${idx + 1}`,
+              heading: isFirst ? section.heading : `${section.heading} (Continued)`,
+              content: chunk,
+              images: [],
+            }]);
+          });
+        } else {
+          // Text fits on one page
+          pages.push([{
+            ...section,
+            id: `${section.id}-text`,
+            content: content,
+            images: [],
+          }]);
+        }
+        
+        // Images get their own dedicated page(s) - one page per image for large display
+        const images = section.images!;
+        // Group max 2 images per page
+        for (let i = 0; i < images.length; i += 2) {
+          const pageImages = images.slice(i, i + 2);
+          pages.push([{
+            ...section,
+            id: `${section.id}-img-${i}`,
+            heading: `${section.heading} - Figures`,
+            content: '',
+            images: pageImages,
+          }]);
+        }
+      }
       // If section is too large and shouldn't be kept together, split it
-      if (sectionCost > MAX_CHARS_PER_PAGE && !shouldKeepTogether(section)) {
+      else if (sectionCost > MAX_CHARS_PER_PAGE && !shouldKeepTogether(section)) {
         // Flush current page first
         if (currentPage.length > 0) {
           flushPage();
         }
         
         const content = section.content || '';
-        const availableForContent = MAX_CHARS_PER_PAGE - HEADING_COST - 200; // Reserve space for heading + margin
+        const availableForContent = MAX_CHARS_PER_PAGE - HEADING_COST - 200;
         const chunks = splitLongContent(content, availableForContent);
         
         chunks.forEach((chunk, idx) => {
@@ -269,7 +318,7 @@ const ReportPreview = () => {
             id: `${section.id}-part-${idx + 1}`,
             heading: isFirst ? section.heading : `${section.heading} (Continued)`,
             content: chunk,
-            images: isLast ? section.images : [], // Only show images on last chunk
+            images: isLast ? section.images : [],
           }]);
         });
       } else {
@@ -379,18 +428,18 @@ const ReportPreview = () => {
   let pageCounter = 1;
 
   return (
-    <div className="animate-fade-in">
-      <div className="text-center mb-8">
-        <h2 className="text-2xl font-bold text-[#1a365d] mb-2">Preview Your Report</h2>
+    <div className="animate-fade-in lg:h-[calc(100vh-140px)] lg:flex lg:flex-col lg:overflow-hidden">
+      <div className="mb-4 flex-shrink-0">
+        <h2 className="text-2xl font-bold text-foreground mb-1">Preview Your Report</h2>
         <p className="text-muted-foreground">
           Review the formatted pages before downloading
         </p>
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-8">
+      <div className="flex flex-col lg:grid lg:grid-cols-3 gap-6 lg:gap-8 lg:flex-1 lg:min-h-0">
         {/* Preview Area */}
-        <div className="lg:col-span-2 space-y-8">
-          <div className="bg-muted/50 p-8 rounded-xl overflow-auto max-h-[800px]">
+        <div className="lg:col-span-2 lg:min-h-0 order-2 lg:order-1">
+          <div className="bg-muted/50 p-4 sm:p-8 rounded-xl overflow-auto max-h-[60vh] lg:max-h-none lg:h-full">
             <div className="space-y-8 flex flex-col items-center">
               {/* Preliminary Pages */}
               <div className="transform scale-[0.5] origin-top">
@@ -539,9 +588,9 @@ const ReportPreview = () => {
         </div>
 
         {/* Sidebar */}
-        <div className="space-y-6">
-          <div className="bg-card rounded-xl p-6 shadow-lg border">
-            <h3 className="text-lg font-semibold text-[#1a365d] mb-4 flex items-center gap-2">
+        <div className="space-y-6 order-1 lg:order-2">
+          <div className="bg-card rounded-2xl p-6 shadow-lg border">
+            <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
               <Download className="w-5 h-5" />
               Download Report
             </h3>
@@ -576,7 +625,7 @@ const ReportPreview = () => {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <span className="font-semibold">Total</span>
-                <span className={`text-2xl font-bold ${isAIGenerated ? 'text-[#1a365d]' : 'text-green-600'}`}>
+                <span className={`text-2xl font-bold ${isAIGenerated ? 'text-primary' : 'text-green-600 dark:text-green-400'}`}>
                   {price}
                 </span>
               </div>

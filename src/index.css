@@ -6,62 +6,93 @@
 
 @layer base {
   :root {
-    --background: 222 47% 7%;
-    --foreground: 210 40% 98%;
+    --background: 0 0% 100%;
+    --foreground: 224 71% 4%;
 
-    --card: 222 41% 10%;
-    --card-foreground: 210 40% 98%;
+    --card: 0 0% 100%;
+    --card-foreground: 224 71% 4%;
 
-    --popover: 222 41% 10%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 224 71% 4%;
 
     --primary: 239 84% 67%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 217 33% 14%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 224 71% 4%;
 
-    --muted: 217 33% 14%;
-    --muted-foreground: 218 11% 65%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
 
     --accent: 239 84% 67%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 63% 50%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 215 20% 16%;
-    --input: 215 20% 16%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
     --ring: 239 84% 67%;
 
     --radius: 0.75rem;
 
-    /* Custom colors */
+    /* Custom colors for the app */
     --rgpv-red: 0 75% 48%;
     --rgpv-blue: 210 100% 35%;
-    --college-blue: 239 84% 67%;
+    --college-blue: 213 60% 25%;
     --college-gold: 45 90% 50%;
-
-    /* Indigo palette */
-    --indigo-50: 226 100% 97%;
-    --indigo-100: 226 100% 94%;
-    --indigo-500: 239 84% 67%;
-    --indigo-600: 239 76% 59%;
-    --indigo-700: 239 69% 51%;
-    --indigo-900: 239 47% 27%;
-
+    
     /* PDF specific colors */
-    --pdf-border: 239 84% 67%;
+    --pdf-border: 213 60% 25%;
     --pdf-heading-red: 0 75% 48%;
     --pdf-text-blue: 210 100% 35%;
 
-    --sidebar-background: 222 47% 7%;
-    --sidebar-foreground: 210 40% 98%;
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 239 84% 67%;
+  }
+
+  .dark {
+    --background: 222 38% 7%;
+    --foreground: 210 20% 98%;
+
+    --card: 221 39% 11%;
+    --card-foreground: 210 20% 98%;
+
+    --popover: 222 47% 11%;
+    --popover-foreground: 210 20% 98%;
+
+    --primary: 239 84% 67%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 222 47% 14%;
+    --secondary-foreground: 210 20% 98%;
+
+    --muted: 222 47% 14%;
+    --muted-foreground: 220 9% 64%;
+
+    --accent: 239 84% 67%;
+    --accent-foreground: 210 20% 98%;
+
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 10% 18%;
+    --input: 220 10% 18%;
+    --ring: 239 84% 67%;
+
+    --sidebar-background: 222 38% 7%;
+    --sidebar-foreground: 210 20% 98%;
     --sidebar-primary: 239 84% 67%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 217 33% 14%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 215 20% 16%;
+    --sidebar-accent: 222 47% 14%;
+    --sidebar-accent-foreground: 210 20% 98%;
+    --sidebar-border: 220 10% 18%;
     --sidebar-ring: 239 84% 67%;
   }
 }
@@ -72,11 +103,11 @@
   }
 
   body {
-    @apply bg-background text-foreground antialiased;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Inter', sans-serif;
   }
 
-  /* PDF Preview styling */
+  /* PDF Preview styling - uses Times New Roman for academic look */
   .pdf-page {
     font-family: 'Times New Roman', Times, serif;
     background: white;
@@ -116,15 +147,15 @@
 
 @layer utilities {
   .gradient-hero {
-    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(239 76% 59%) 100%);
+    background: linear-gradient(135deg, hsl(239 84% 67%) 0%, hsl(260 80% 60%) 50%, hsl(280 70% 55%) 100%);
   }
 
   .gradient-accent {
-    background: linear-gradient(135deg, hsl(var(--accent)) 0%, hsl(0 60% 40%) 100%);
+    background: linear-gradient(135deg, hsl(var(--accent)) 0%, hsl(260 80% 60%) 100%);
   }
 
   .text-gradient {
-    background: linear-gradient(135deg, hsl(239 84% 72%) 0%, hsl(280 70% 68%) 100%);
+    background: linear-gradient(135deg, hsl(239 84% 67%) 0%, hsl(280 70% 55%) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -136,7 +167,7 @@
 
   .card-hover:hover {
     @apply -translate-y-1;
-    box-shadow: 0 20px 40px -12px hsl(239 84% 67% / 0.12);
+    box-shadow: 0 20px 40px -12px rgba(99, 102, 241, 0.2);
   }
 
   .animate-float {
@@ -166,13 +197,12 @@
     to { opacity: 1; transform: translateY(0); }
   }
 
-  .hero-glow {
-    background: radial-gradient(ellipse 80% 60% at 50% 40%, hsl(239 84% 67% / 0.08) 0%, transparent 70%);
+  .animate-scale-in {
+    animation: scaleIn 0.5s ease-out forwards;
   }
 
-  .glass-card {
-    background: hsl(222 41% 10% / 0.6);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+  @keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
   }
 }

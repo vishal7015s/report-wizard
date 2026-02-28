@@ -1,52 +1,48 @@
-import { FileText, Pencil, Download } from 'lucide-react';
-
-const steps = [
-  {
-    icon: <FileText className="w-6 h-6" />,
-    step: '01',
-    title: 'Select Your College',
-    description: 'Choose your college and branch. We auto-apply the exact formatting guidelines.',
-  },
-  {
-    icon: <Pencil className="w-6 h-6" />,
-    step: '02',
-    title: 'Add Your Content',
-    description: 'Write manually for free or use AI to generate chapter-wise content instantly.',
-  },
-  {
-    icon: <Download className="w-6 h-6" />,
-    step: '03',
-    title: 'Download Report',
-    description: 'Get a pixel-perfect PDF with cover page, certificates, chapters — everything included.',
-  },
-];
+import { School, Edit3, Download } from 'lucide-react';
 
 const HowItWorks = () => {
+  const steps = [
+    {
+      step: '01',
+      icon: <School className="w-6 h-6" />,
+      title: 'Select your college',
+      description: 'Choose your RGPV-affiliated college and branch. We auto-apply the correct format.',
+    },
+    {
+      step: '02',
+      icon: <Edit3 className="w-6 h-6" />,
+      title: 'Add your content',
+      description: 'Write manually for free or use AI to generate all 7 chapters instantly.',
+    },
+    {
+      step: '03',
+      icon: <Download className="w-6 h-6" />,
+      title: 'Download your report',
+      description: 'Get a pixel-perfect PDF with cover page, certificates, and all pages formatted.',
+    },
+  ];
+
   return (
     <section className="py-24">
-      <div className="container mx-auto px-4">
+      <div className="max-w-7xl mx-auto px-6">
         <div className="text-center mb-16">
-          <p className="text-sm font-semibold text-primary tracking-wide uppercase mb-3">How It Works</p>
-          <h2 className="text-3xl md:text-4xl font-extrabold text-foreground tracking-tight">
+          <p className="text-sm font-semibold text-primary uppercase tracking-widest mb-3">How it works</p>
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-foreground tracking-tight">
             Three steps to your perfect report
           </h2>
         </div>
 
         <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
           {steps.map((item, index) => (
-            <div
-              key={index}
-              className="relative text-center group animate-slide-up"
-              style={{ animationDelay: `${index * 150}ms` }}
-            >
+            <div key={index} className="relative group">
               {index < steps.length - 1 && (
-                <div className="hidden md:block absolute top-12 left-[60%] w-[80%] h-px bg-border" />
+                <div className="hidden md:block absolute top-12 left-full w-full h-px bg-border -translate-x-1/2 z-0" />
               )}
-              <div className="relative z-10">
-                <div className="w-16 h-16 rounded-2xl bg-primary/8 border border-primary/15 text-primary flex items-center justify-center mx-auto mb-5 group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300">
+              <div className="relative bg-card rounded-2xl border border-border p-8 card-hover z-10">
+                <span className="text-5xl font-black text-primary/10 absolute top-4 right-6">{item.step}</span>
+                <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-5">
                   {item.icon}
                 </div>
-                <p className="text-xs font-bold text-primary tracking-widest uppercase mb-2">{item.step}</p>
                 <h3 className="text-lg font-bold text-foreground mb-2">{item.title}</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">{item.description}</p>
               </div>

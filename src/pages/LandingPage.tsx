@@ -1,28 +1,30 @@
 import Navbar from '@/components/landing/Navbar';
-import Hero from '@/components/landing/Hero';
+import HeroSection from '@/components/landing/HeroSection';
 import TrustLogos from '@/components/landing/TrustLogos';
 import HowItWorks from '@/components/landing/HowItWorks';
-import Features from '@/components/landing/Features';
+import FeaturesGrid from '@/components/landing/FeaturesGrid';
 import ComparisonTable from '@/components/landing/ComparisonTable';
-import Pricing from '@/components/landing/Pricing';
+import SamplesPreview from '@/components/landing/SamplesPreview';
+import PricingSection from '@/components/landing/PricingSection';
 import Testimonials from '@/components/landing/Testimonials';
-import FAQ from '@/components/landing/FAQ';
-import Security from '@/components/landing/Security';
+import FAQSection from '@/components/landing/FAQSection';
+import SecuritySection from '@/components/landing/SecuritySection';
 import Footer from '@/components/landing/Footer';
 
 const LandingPage = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <Hero />
+      <HeroSection />
       <TrustLogos />
       <HowItWorks />
-      <Features />
+      <FeaturesGrid />
       <ComparisonTable />
-      <Pricing />
+      <SamplesPreview />
+      <PricingSection />
       <Testimonials />
-      <FAQ />
-      <Security />
+      <FAQSection />
+      <SecuritySection />
       <Footer />
     </div>
   );
