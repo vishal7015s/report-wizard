@@ -61,8 +61,10 @@ const ContentEditor = () => {
   const [isGeneratingDiagram, setIsGeneratingDiagram] = useState<string | null>(null);
   const { isPaid } = useRazorpayPayment();
   const [selectedDiagramChapter, setSelectedDiagramChapter] = useState<string | null>(null);
+  // Use appropriate chapters based on content mode
   const activeChapters = contentMode === 'ai' ? aiReportContent.chapters : reportData.chapters;
 
+  // Count total AI-generated diagrams across AI chapters
   const totalAIDiagrams = aiReportContent.chapters.reduce((total, chapter) => {
     return total + chapter.sections.reduce((sectionTotal, section) => {
       return sectionTotal + (section.images?.filter(img => img.id.startsWith('ai-diagram-')).length || 0);
@@ -107,6 +109,7 @@ const ContentEditor = () => {
       toast.error('Please enter a project description');
       return;
     }
+
     if (aiPromptText.trim().length < 50) {
       toast.error('Please provide a more detailed description (at least 50 characters)');
       return;
@@ -128,17 +131,25 @@ const ContentEditor = () => {
         }
       });
 
-      if (error) throw new Error(error.message || 'Failed to generate content');
-      if (data.error) throw new Error(data.error);
+      if (error) {
+        console.error('Function error:', error);
+        throw new Error(error.message || 'Failed to generate content');
+      }
 
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      // Update AI report content (separate from manual)
       setAiAbstract(data.abstract);
       setAiAcknowledgement(data.acknowledgement);
       setAiChapters(data.chapters);
       setActiveChapter(data.chapters[0]?.id || '');
       setIsAIGenerated(true);
-      setAiPrompt(aiPromptText);
+      setAiPrompt(aiPromptText); // Save prompt for full generation after payment
 
       toast.success('Preview content generated! Pay to unlock full report with all 7 chapters.');
+      
     } catch (error) {
       console.error('Generation error:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to generate content');
@@ -148,6 +159,7 @@ const ContentEditor = () => {
   };
 
   const handleGenerateDiagram = async (chapterId: string, sectionId: string, diagramType: string) => {
+    // Check if limit reached
     if (totalAIDiagrams >= MAX_AI_DIAGRAMS) {
       toast.error(`Maximum ${MAX_AI_DIAGRAMS} AI-generated diagrams allowed per report`);
       return;
@@ -157,7 +169,7 @@ const ContentEditor = () => {
     if (!section) return;
 
     setIsGeneratingDiagram(`${chapterId}-${sectionId}-${diagramType}`);
-    toast.info(`Generating ${diagramType.replace(/-/g, ' ')} diagram...`);
+    toast.info(`Generating ${diagramType.replace(/-/g, ' ')} diagram... (${totalAIDiagrams + 1}/${MAX_AI_DIAGRAMS})`);
 
     try {
       const { data, error } = await supabase.functions.invoke('generate-diagram', {
@@ -167,8 +179,14 @@ const ContentEditor = () => {
         }
       });
 
-      if (error) throw new Error(error.message || 'Failed to generate diagram');
-      if (data.error) throw new Error(data.error);
+      if (error) {
+        console.error('Diagram error:', error);
+        throw new Error(error.message || 'Failed to generate diagram');
+      }
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
 
       addImageToSection(chapterId, sectionId, {
         id: `ai-diagram-${Date.now()}`,
@@ -176,7 +194,8 @@ const ContentEditor = () => {
         caption: data.caption
       });
 
-      toast.success(`Diagram generated!`);
+      toast.success(`Diagram generated! (${totalAIDiagrams + 1}/${MAX_AI_DIAGRAMS} used)`);
+      
     } catch (error) {
       console.error('Diagram generation error:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to generate diagram');
@@ -209,49 +228,49 @@ const ContentEditor = () => {
         className="hidden"
       />
 
-      <div className="mb-10">
-        <h2 className="text-2xl font-extrabold text-foreground tracking-tight mb-2">Add Content</h2>
-        <p className="text-sm text-muted-foreground">
+      <div className="text-center mb-8">
+        <h2 className="text-2xl font-bold text-[#1a365d] mb-2">Add Content</h2>
+        <p className="text-muted-foreground">
           Choose how you want to add content to your report
         </p>
       </div>
 
       <Tabs value={contentMode} onValueChange={(v) => setContentMode(v as 'ai' | 'manual')}>
-        <TabsList className="grid w-full grid-cols-2 mb-6 rounded-xl h-12 p-1 bg-secondary">
-          <TabsTrigger value="ai" className="gap-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm font-medium">
+        <TabsList className="grid w-full grid-cols-2 mb-6">
+          <TabsTrigger value="ai" className="gap-2">
             <Sparkles className="w-4 h-4" />
-            AI Generate (Free Preview)
+            AI Generate (Free)
           </TabsTrigger>
-          <TabsTrigger value="manual" className="gap-2 rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm font-medium">
+          <TabsTrigger value="manual" className="gap-2">
             <PenLine className="w-4 h-4" />
             Manual Editor
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="ai" className="space-y-6">
-          <div className="bg-card rounded-2xl border border-border/50 p-6 shadow-card">
+          <div className="bg-card rounded-xl border p-6 shadow-soft">
             <div className="space-y-4">
               <div>
-                <Label className="text-sm font-bold text-foreground">Describe Your Project</Label>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Enter a detailed description. AI will generate content for all chapters.
+                <Label className="text-base font-semibold text-[#1a365d]">Describe Your Project</Label>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Enter a detailed description of your project. AI will generate content for all chapters including abstract, acknowledgement, and technical details.
                 </p>
               </div>
               <Textarea
-                placeholder="Example: My project is about predicting multiple diseases using machine learning..."
-                className="min-h-[200px] font-serif rounded-xl"
+                placeholder="Example: My project is about predicting multiple diseases using machine learning. The system uses patient health parameters like blood pressure, glucose levels, cholesterol, BMI, and age to predict the likelihood of heart disease and diabetes. We implemented Logistic Regression, SVM, Random Forest, and KNN algorithms. The frontend is built with React and backend uses Python Flask with MySQL database..."
+                className="min-h-[200px] font-serif"
                 value={aiPromptText}
                 onChange={(e) => setAiPromptText(e.target.value)}
                 disabled={isGenerating}
               />
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span className={aiPromptText.length < 50 ? 'text-destructive' : 'text-primary'}>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span className={aiPromptText.length < 50 ? 'text-destructive' : 'text-green-600'}>
                   {aiPromptText.length} characters
                 </span>
                 <span>(minimum 50 required)</span>
               </div>
               <Button 
-                className="w-full gap-2 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground py-5 font-semibold" 
+                className="w-full gap-2 bg-[#1a365d] hover:bg-[#2d4a7c]" 
                 onClick={handleGenerateContent}
                 disabled={isGenerating || aiPromptText.length < 50}
               >
@@ -268,15 +287,15 @@ const ContentEditor = () => {
                 )}
               </Button>
               <p className="text-xs text-center text-muted-foreground">
-                AI generates a preview with Abstract, Acknowledgement, and 3 Chapters. Full 7-chapter report unlocks after payment (₹50).
+                AI will generate a preview with Abstract, Acknowledgement, and 3 Chapters. Full 7-chapter report unlocks after payment (₹50).
               </p>
             </div>
           </div>
 
-          {/* Tips */}
-          <div className="bg-secondary/30 rounded-2xl border border-border/30 p-5">
-            <h4 className="font-bold text-foreground text-sm mb-3">💡 Tips for Better Results</h4>
-            <ul className="text-xs text-muted-foreground space-y-1.5">
+          {/* Tips for better generation */}
+          <div className="bg-muted/50 rounded-xl border p-4">
+            <h4 className="font-semibold text-[#1a365d] mb-2">Tips for Better Results</h4>
+            <ul className="text-sm text-muted-foreground space-y-1">
               <li>• Include the technologies you're using (React, Python, MySQL, etc.)</li>
               <li>• Mention the problem your project solves</li>
               <li>• Describe key features and modules</li>
@@ -285,24 +304,25 @@ const ContentEditor = () => {
             </ul>
           </div>
 
-          {/* AI Diagram Generation */}
+          {/* AI Diagram Generation - Only shown after content is generated */}
           {aiReportContent.chapters.some(c => c.sections.some(s => s.content.length > 0)) && (
-            <div className="bg-card rounded-2xl border border-border/50 p-6 shadow-card">
+            <div className="bg-card rounded-xl border p-6 shadow-soft">
               <div className="space-y-4">
                 <div>
-                  <Label className="text-sm font-bold text-foreground">Add Diagrams / Images</Label>
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <Label className="text-base font-semibold text-[#1a365d]">Add Diagrams / Images</Label>
+                  <p className="text-sm text-muted-foreground mt-1">
                     Upload images or generate AI diagrams (max {MAX_AI_DIAGRAMS} AI diagrams)
                   </p>
                 </div>
 
+                {/* Chapter selector tabs */}
                 <div className="flex flex-wrap gap-2">
                   {aiReportContent.chapters.map((chapter) => (
                     <Button
                       key={chapter.id}
                       variant={selectedDiagramChapter === chapter.id ? 'default' : 'outline'}
                       size="sm"
-                      className={`text-xs rounded-lg ${selectedDiagramChapter === chapter.id ? 'bg-primary text-primary-foreground' : ''}`}
+                      className={`text-xs ${selectedDiagramChapter === chapter.id ? 'bg-[#1a365d] text-white' : 'border-[#1a365d] text-[#1a365d]'}`}
                       onClick={() => setSelectedDiagramChapter(selectedDiagramChapter === chapter.id ? null : chapter.id)}
                     >
                       Chapter {chapter.number}
@@ -310,18 +330,19 @@ const ContentEditor = () => {
                   ))}
                 </div>
 
+                {/* Show sections of selected chapter */}
                 {selectedDiagramChapter && (() => {
                   const chapter = aiReportContent.chapters.find(c => c.id === selectedDiagramChapter);
                   if (!chapter) return null;
                   return (
                     <div className="space-y-2">
-                      <h4 className="font-semibold text-xs text-foreground bg-secondary/50 px-3 py-2 rounded-lg">
+                      <h4 className="font-semibold text-sm text-[#1a365d] bg-muted/40 px-3 py-2 rounded-md">
                         Chapter {chapter.number}: {chapter.title}
                       </h4>
                       {chapter.sections.map((section) => (
-                        <div key={section.id} className="p-4 border border-border/30 rounded-xl bg-secondary/20 ml-2">
+                        <div key={section.id} className="p-4 border rounded-lg bg-muted/20 ml-2">
                           <div className="flex items-center justify-between mb-3">
-                            <span className="font-medium text-xs text-foreground">
+                            <span className="font-medium text-sm text-[#1a365d]">
                               {section.number} {section.heading}
                             </span>
                             <span className="text-xs text-muted-foreground">
@@ -329,15 +350,20 @@ const ContentEditor = () => {
                             </span>
                           </div>
 
+                          {/* Uploaded image thumbnails */}
                           {section.images && section.images.length > 0 && (
                             <div className="grid grid-cols-3 gap-2 mb-3">
                               {section.images.map((img) => (
                                 <div key={img.id} className="relative group">
-                                  <img src={img.url} alt={img.caption} className="w-full h-20 object-cover rounded-lg border border-border/30" />
+                                  <img
+                                    src={img.url}
+                                    alt={img.caption}
+                                    className="w-full h-20 object-cover rounded border"
+                                  />
                                   <Button
                                     variant="destructive"
                                     size="icon"
-                                    className="absolute top-1 right-1 w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg"
+                                    className="absolute top-1 right-1 w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity"
                                     onClick={() => removeImageFromAiSection(chapter.id, section.id, img.id)}
                                   >
                                     <X className="w-3 h-3" />
@@ -349,16 +375,24 @@ const ContentEditor = () => {
                           )}
                           
                           <div className="flex flex-wrap gap-2">
-                            <Button variant="outline" size="sm" className="gap-1 text-xs rounded-lg" onClick={() => triggerImageUpload(chapter.id, section.id)}>
+                            {/* Upload Image - always active */}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="gap-1 text-xs"
+                              onClick={() => triggerImageUpload(chapter.id, section.id)}
+                            >
                               <Upload className="w-3 h-3" />
                               Upload Image
                             </Button>
+
+                            {/* AI Diagram buttons - locked until payment */}
                             {diagramOptions.map(opt => (
                               <Button
                                 key={opt.type}
                                 variant="outline"
                                 size="sm"
-                                className={`gap-1 text-xs rounded-lg ${!isPaid ? 'opacity-50' : ''}`}
+                                className={`gap-1 text-xs ${!isPaid ? 'opacity-50' : ''}`}
                                 onClick={() => handleGenerateDiagram(chapter.id, section.id, opt.type)}
                                 disabled={!isPaid || isGeneratingDiagram === `${chapter.id}-${section.id}-${opt.type}` || totalAIDiagrams >= MAX_AI_DIAGRAMS}
                               >
@@ -390,14 +424,14 @@ const ContentEditor = () => {
 
         <TabsContent value="manual" className="space-y-6">
           {/* Abstract */}
-          <div className="bg-card rounded-2xl border border-border/50 p-6 shadow-card">
-            <Label className="text-sm font-bold text-foreground">Abstract</Label>
-            <p className="text-xs text-muted-foreground mt-1 mb-3">
+          <div className="bg-card rounded-xl border p-6 shadow-soft">
+            <Label className="text-base font-semibold text-[#1a365d]">Abstract</Label>
+            <p className="text-sm text-muted-foreground mt-1 mb-3">
               A brief summary of your project (150-300 words)
             </p>
             <Textarea
               placeholder="Write your project abstract here... (Paste from ChatGPT - auto-formatted!)"
-              className="min-h-[150px] font-serif rounded-xl"
+              className="min-h-[150px] font-serif"
               value={reportData.abstract}
               onChange={(e) => {
                 const { newValue } = formatOnChange(e.target.value, reportData.abstract, e.target.selectionStart);
@@ -408,14 +442,14 @@ const ContentEditor = () => {
           </div>
 
           {/* Acknowledgement */}
-          <div className="bg-card rounded-2xl border border-border/50 p-6 shadow-card">
-            <Label className="text-sm font-bold text-foreground">Acknowledgement</Label>
-            <p className="text-xs text-muted-foreground mt-1 mb-3">
+          <div className="bg-card rounded-xl border p-6 shadow-soft">
+            <Label className="text-base font-semibold text-[#1a365d]">Acknowledgement</Label>
+            <p className="text-sm text-muted-foreground mt-1 mb-3">
               Thank your guides, HOD, principal, and others
             </p>
             <Textarea
               placeholder="Write your acknowledgement here... (Paste from ChatGPT - auto-formatted!)"
-              className="min-h-[150px] font-serif rounded-xl"
+              className="min-h-[150px] font-serif"
               value={reportData.acknowledgement}
               onChange={(e) => {
                 const { newValue } = formatOnChange(e.target.value, reportData.acknowledgement, e.target.selectionStart);
@@ -426,22 +460,22 @@ const ContentEditor = () => {
           </div>
 
           {/* Chapter-wise Editor */}
-          <div className="bg-card rounded-2xl border border-border/50 shadow-card overflow-hidden">
-            <div className="flex items-center justify-between p-5 border-b border-border/30 bg-secondary/20">
-              <h3 className="font-bold text-foreground text-sm">Chapter-wise Editor</h3>
+          <div className="bg-card rounded-xl border shadow-soft overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b bg-muted/30">
+              <h3 className="font-semibold text-[#1a365d]">Chapter-wise Editor</h3>
               <Button 
                 variant="outline" 
                 size="sm" 
                 onClick={addChapter}
-                className="gap-1.5 rounded-lg text-xs"
+                className="gap-2 border-[#1a365d] text-[#1a365d] hover:bg-[#1a365d] hover:text-white"
               >
-                <Plus className="w-3.5 h-3.5" />
+                <Plus className="w-4 h-4" />
                 Add Chapter
               </Button>
             </div>
 
             {/* Chapter Tabs */}
-            <div className="p-4 border-b border-border/20 bg-secondary/10">
+            <div className="p-4 border-b bg-muted/20">
               <div className="flex flex-wrap gap-2 justify-center">
                 {reportData.chapters.map((chapter) => (
                   <Button
@@ -449,7 +483,10 @@ const ContentEditor = () => {
                     variant={activeChapter === chapter.id ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => setActiveChapter(chapter.id)}
-                    className={`rounded-lg text-xs ${activeChapter === chapter.id ? 'bg-primary text-primary-foreground' : ''}`}
+                    className={activeChapter === chapter.id 
+                      ? 'bg-[#1a365d] hover:bg-[#2d4a7c]' 
+                      : 'border-[#1a365d] text-[#1a365d]'
+                    }
                   >
                     Chapter {chapter.number}
                   </Button>
@@ -461,7 +498,7 @@ const ContentEditor = () => {
             {currentChapter && (
               <div className="p-6 space-y-6">
                 {/* Chapter Title */}
-                <div className="bg-primary text-primary-foreground py-3 px-4 rounded-xl text-center">
+                <div className="bg-[#1a365d] text-white py-3 px-4 rounded-lg text-center">
                   <Input
                     value={currentChapter.title}
                     onChange={(e) => {
@@ -470,30 +507,35 @@ const ContentEditor = () => {
                       );
                       useReportStore.getState().setChapters(updatedChapters);
                     }}
-                    className="bg-transparent border-none text-center text-primary-foreground font-bold uppercase tracking-wide focus-visible:ring-0 placeholder:text-primary-foreground/50"
+                    className="bg-transparent border-none text-center text-white font-bold uppercase tracking-wide focus-visible:ring-0"
                   />
                 </div>
 
                 {/* Sections */}
                 {currentChapter.sections.map((section) => (
-                  <div key={section.id} className="border border-border/30 rounded-xl p-5 space-y-4 bg-secondary/10">
+                  <div key={section.id} className="border rounded-lg p-4 space-y-4 bg-muted/10">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <span className="w-12 h-9 flex items-center justify-center bg-secondary rounded-lg text-xs font-semibold text-foreground">
-                          {section.number}
-                        </span>
-                        <Input
-                          value={section.heading}
-                          onChange={(e) => updateSection(currentChapter.id, section.id, { heading: e.target.value })}
-                          className="w-64 h-9 rounded-lg text-sm"
-                          placeholder="Section heading"
-                        />
+                        <div className="flex items-center gap-2">
+                          <Label className="text-sm text-muted-foreground">Section</Label>
+                          <span className="w-12 h-9 flex items-center justify-center bg-muted rounded text-sm font-medium">
+                            {section.number}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Label className="text-sm text-muted-foreground">Heading</Label>
+                          <Input
+                            value={section.heading}
+                            onChange={(e) => updateSection(currentChapter.id, section.id, { heading: e.target.value })}
+                            className="w-64 h-9"
+                          />
+                        </div>
                       </div>
                       {currentChapter.sections.length > 1 && (
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="text-destructive hover:bg-destructive/10 rounded-lg"
+                          className="text-destructive hover:bg-destructive/10"
                           onClick={() => removeSection(currentChapter.id, section.id)}
                         >
                           <Trash2 className="w-4 h-4" />
@@ -501,97 +543,127 @@ const ContentEditor = () => {
                       )}
                     </div>
 
-                    <Textarea
-                      placeholder="Enter content for this section. Paste from ChatGPT - bullet points auto-formatted!"
-                      className="min-h-[120px] font-serif rounded-xl"
-                      value={section.content}
-                      onChange={(e) => {
-                        const { newValue } = formatOnChange(e.target.value, section.content, e.target.selectionStart);
-                        updateSection(currentChapter.id, section.id, { content: newValue });
-                      }}
-                      onPaste={(e) => handlePasteFormat(e, section.content, (value) => updateSection(currentChapter.id, section.id, { content: value }))}
-                    />
+                    <div>
+                      <Label className="text-sm text-muted-foreground mb-2 block">Content</Label>
+                      <Textarea
+                        placeholder="Enter content for this section. Paste from ChatGPT - bullet points auto-formatted!"
+                        className="min-h-[120px] font-serif"
+                        value={section.content}
+                        onChange={(e) => {
+                          const { newValue } = formatOnChange(e.target.value, section.content, e.target.selectionStart);
+                          updateSection(currentChapter.id, section.id, { content: newValue });
+                        }}
+                        onPaste={(e) => handlePasteFormat(e, section.content, (value) => updateSection(currentChapter.id, section.id, { content: value }))}
+                      />
+                    </div>
 
                     {/* Diagrams/Figures */}
-                    <div className="border border-dashed border-border/50 rounded-xl p-4 bg-secondary/5">
-                      {section.images.length > 0 && (
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
-                          {section.images.map((img) => (
-                            <div key={img.id} className="relative group">
-                              <img src={img.url} alt={img.caption} className="w-full h-32 object-cover rounded-xl border border-border/30" />
-                              <Button
-                                variant="destructive"
-                                size="icon"
-                                className="absolute top-1.5 right-1.5 w-6 h-6 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg"
-                                onClick={() => removeImageFromSection(currentChapter.id, section.id, img.id)}
-                              >
-                                <X className="w-3 h-3" />
-                              </Button>
-                              <p className="text-xs text-center mt-1 truncate text-muted-foreground">{img.caption}</p>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      
-                      <div className="flex flex-col items-center gap-3">
-                        <ImageIcon className="w-8 h-8 text-muted-foreground/40" />
-                        <span className="text-xs text-muted-foreground">Add a diagram or image</span>
-                        
-                        {isAIGenerated && section.content.length > 0 && (
-                          <div className="w-full">
-                            <div className="flex flex-wrap gap-2 justify-center">
-                              {diagramOptions.map(opt => (
+                    <div>
+                      <Label className="text-sm text-muted-foreground mb-2 block">Diagrams / Figures</Label>
+                      <div className="border-2 border-dashed rounded-lg p-4 bg-muted/5">
+                        {section.images.length > 0 && (
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+                            {section.images.map((img) => (
+                              <div key={img.id} className="relative group">
+                                <img 
+                                  src={img.url} 
+                                  alt={img.caption} 
+                                  className="w-full h-32 object-cover rounded border"
+                                />
                                 <Button
-                                  key={opt.type}
-                                  variant="outline"
-                                  size="sm"
-                                  className="gap-1 text-xs rounded-lg"
-                                  onClick={() => handleGenerateDiagram(currentChapter.id, section.id, opt.type)}
-                                  disabled={isGeneratingDiagram === `${currentChapter.id}-${section.id}-${opt.type}` || totalAIDiagrams >= MAX_AI_DIAGRAMS}
+                                  variant="destructive"
+                                  size="icon"
+                                  className="absolute top-1 right-1 w-6 h-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                                  onClick={() => removeImageFromSection(currentChapter.id, section.id, img.id)}
                                 >
-                                  {isGeneratingDiagram === `${currentChapter.id}-${section.id}-${opt.type}` ? (
-                                    <Loader2 className="w-3 h-3 animate-spin" />
-                                  ) : (
-                                    <Wand2 className="w-3 h-3" />
-                                  )}
-                                  {opt.label}
+                                  <X className="w-3 h-3" />
                                 </Button>
-                              ))}
-                            </div>
-                            <div className="my-3 flex items-center gap-2">
-                              <div className="flex-1 h-px bg-border" />
-                              <span className="text-xs text-muted-foreground">or</span>
-                              <div className="flex-1 h-px bg-border" />
-                            </div>
+                                <p className="text-xs text-center mt-1 truncate">{img.caption}</p>
+                              </div>
+                            ))}
                           </div>
                         )}
-
-                        {!isAIGenerated && (
-                          <p className="text-xs text-muted-foreground text-center">
-                            Upload your own diagrams or use AI Generate tab for auto-generated diagrams
-                          </p>
-                        )}
                         
-                        <Button variant="outline" size="sm" className="gap-2 rounded-lg" onClick={() => triggerImageUpload(currentChapter.id, section.id)}>
-                          <Upload className="w-4 h-4" />
-                          Upload Image
-                        </Button>
+                        <div className="flex flex-col items-center gap-3">
+                          <ImageIcon className="w-10 h-10 text-muted-foreground" />
+                          <span className="text-sm text-[#1a365d]">Add a diagram</span>
+                          
+                          {/* Show AI diagram buttons only for AI-generated content */}
+                          {isAIGenerated && section.content.length > 0 && (
+                            <div className="w-full">
+                              <div className="flex items-center justify-between mb-2">
+                                <p className="text-xs text-muted-foreground">
+                                  Generate AI diagrams ({totalAIDiagrams}/{MAX_AI_DIAGRAMS})
+                                </p>
+                                <span className={`text-xs font-medium ${totalAIDiagrams >= MAX_AI_DIAGRAMS ? 'text-destructive' : 'text-green-600'}`}>
+                                  {MAX_AI_DIAGRAMS - totalAIDiagrams} left
+                                </span>
+                              </div>
+                              <div className="flex flex-wrap gap-2 justify-center">
+                                {diagramOptions.map(opt => (
+                                  <Button
+                                    key={opt.type}
+                                    variant="outline"
+                                    size="sm"
+                                    className="gap-1 text-xs"
+                                    onClick={() => handleGenerateDiagram(currentChapter.id, section.id, opt.type)}
+                                    disabled={isGeneratingDiagram === `${currentChapter.id}-${section.id}-${opt.type}` || totalAIDiagrams >= MAX_AI_DIAGRAMS}
+                                  >
+                                    {isGeneratingDiagram === `${currentChapter.id}-${section.id}-${opt.type}` ? (
+                                      <Loader2 className="w-3 h-3 animate-spin" />
+                                    ) : (
+                                      <Wand2 className="w-3 h-3" />
+                                    )}
+                                    {opt.label}
+                                  </Button>
+                                ))}
+                              </div>
+                              <div className="my-3 flex items-center gap-2">
+                                <div className="flex-1 h-px bg-border"></div>
+                                <span className="text-xs text-muted-foreground">or</span>
+                                <div className="flex-1 h-px bg-border"></div>
+                              </div>
+                            </div>
+                          )}
+
+                          {!isAIGenerated && (
+                            <p className="text-xs text-muted-foreground text-center">
+                              Upload your own diagrams or use AI Generate tab for auto-generated diagrams
+                            </p>
+                          )}
+                          
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="gap-2"
+                            onClick={() => triggerImageUpload(currentChapter.id, section.id)}
+                          >
+                            <Upload className="w-4 h-4" />
+                            Upload Image
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </div>
                 ))}
 
-                <Button variant="outline" className="w-full gap-2 border-dashed rounded-xl" onClick={() => addSection(currentChapter.id)}>
+                {/* Add Section Button */}
+                <Button
+                  variant="outline"
+                  className="w-full gap-2 border-dashed"
+                  onClick={() => addSection(currentChapter.id)}
+                >
                   <Plus className="w-4 h-4" />
                   Add Section
                 </Button>
 
+                {/* Delete Chapter Button */}
                 {reportData.chapters.length > 1 && (
                   <div className="flex justify-end">
                     <Button
                       variant="destructive"
                       size="sm"
-                      className="gap-2 rounded-lg"
+                      className="gap-2"
                       onClick={() => {
                         removeChapter(currentChapter.id);
                         setActiveChapter(reportData.chapters[0]?.id || '');
@@ -609,8 +681,8 @@ const ContentEditor = () => {
       </Tabs>
 
       {/* Navigation */}
-      <div className="flex justify-end mt-8">
-        <Button onClick={handleNext} className="gap-2 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground px-6 py-5 font-semibold">
+      <div className="flex justify-end mt-6">
+        <Button onClick={handleNext} className="gap-2 bg-[#1a365d] hover:bg-[#2d4a7c]">
           Preview Report
           <ArrowRight className="w-4 h-4" />
         </Button>
