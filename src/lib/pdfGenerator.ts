@@ -5,6 +5,23 @@ export const generatePDF = async (
   pagesContainer: HTMLElement,
   filename: string = 'project-report.pdf'
 ): Promise<void> => {
+  // Temporarily move container on-screen so html2canvas can render images
+  const originalStyle = pagesContainer.style.cssText;
+  pagesContainer.style.cssText = 'position: fixed; left: 0; top: 0; z-index: -9999; opacity: 0; pointer-events: none; width: 210mm;';
+  
+  // Wait for images to load
+  const images = pagesContainer.querySelectorAll('img');
+  await Promise.all(
+    Array.from(images).map(
+      (img) =>
+        new Promise<void>((resolve) => {
+          if (img.complete) return resolve();
+          img.onload = () => resolve();
+          img.onerror = () => resolve();
+        })
+    )
+  );
+
   const pdf = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
@@ -37,6 +54,9 @@ export const generatePDF = async (
 
     pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
   }
+
+  // Restore original position
+  pagesContainer.style.cssText = originalStyle;
 
   pdf.save(filename);
 };
