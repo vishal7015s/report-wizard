@@ -249,21 +249,39 @@ const ReportPreview = () => {
     sections.forEach((section) => {
       const sectionCost = calculateCost(section);
       const hasImages = section.images && section.images.length > 0;
-      const textLength = (section.content || '').length;
-      
-      // If section has images AND significant text, split text and images onto separate pages
-      if (hasImages && textLength > 600) {
-        // Flush current page
-        if (currentPage.length > 0) {
-          flushPage();
+      const cleanContent = (section.content || '').trim();
+      const textLength = cleanContent.length;
+
+      const pushImagePages = (heading: string, baseId: string, images: NonNullable<ChapterSection['images']>) => {
+        for (let i = 0; i < images.length; i += 2) {
+          const pageImages = images.slice(i, i + 2);
+          pages.push([{
+            ...section,
+            id: `${baseId}-img-${i}`,
+            heading: `${heading} - Figures`,
+            content: '',
+            images: pageImages,
+          }]);
         }
-        
-        const content = section.content || '';
-        const availableForContent = MAX_CHARS_PER_PAGE - HEADING_COST - 200;
-        
-        if (content.length > availableForContent) {
-          // Split text across pages, images on last page
-          const chunks = splitLongContent(content, availableForContent);
+      };
+
+      // If section has images but no text, render dedicated image page(s)
+      if (hasImages && textLength === 0) {
+        if (currentPage.length > 0) flushPage();
+        pushImagePages(section.heading, section.id, section.images!);
+        return;
+      }
+
+      // If section has images, always separate text pages and image pages when overflow is likely
+      if (hasImages && (textLength > 600 || sectionCost > MAX_CHARS_PER_PAGE)) {
+        if (currentPage.length > 0) flushPage();
+
+        if (textLength > 0) {
+          const availableForContent = MAX_CHARS_PER_PAGE - HEADING_COST - 200;
+          const chunks = textLength > availableForContent
+            ? splitLongContent(cleanContent, availableForContent)
+            : [cleanContent];
+
           chunks.forEach((chunk, idx) => {
             const isFirst = idx === 0;
             pages.push([{
@@ -274,51 +292,32 @@ const ReportPreview = () => {
               images: [],
             }]);
           });
-        } else {
-          // Text fits on one page
-          pages.push([{
-            ...section,
-            id: `${section.id}-text`,
-            content: content,
-            images: [],
-          }]);
         }
-        
-        // Images get their own dedicated page(s) - one page per image for large display
-        const images = section.images!;
-        // Group max 2 images per page
-        for (let i = 0; i < images.length; i += 2) {
-          const pageImages = images.slice(i, i + 2);
-          pages.push([{
-            ...section,
-            id: `${section.id}-img-${i}`,
-            heading: `${section.heading} - Figures`,
-            content: '',
-            images: pageImages,
-          }]);
-        }
+
+        pushImagePages(section.heading, section.id, section.images!);
+        return;
       }
+
       // If section is too large and shouldn't be kept together, split it
       else if (sectionCost > MAX_CHARS_PER_PAGE && !shouldKeepTogether(section)) {
         // Flush current page first
         if (currentPage.length > 0) {
           flushPage();
         }
-        
+
         const content = section.content || '';
         const availableForContent = MAX_CHARS_PER_PAGE - HEADING_COST - 200;
         const chunks = splitLongContent(content, availableForContent);
-        
+
         chunks.forEach((chunk, idx) => {
           const isFirst = idx === 0;
-          const isLast = idx === chunks.length - 1;
-          
+
           pages.push([{
             ...section,
             id: `${section.id}-part-${idx + 1}`,
             heading: isFirst ? section.heading : `${section.heading} (Continued)`,
             content: chunk,
-            images: isLast ? section.images : [],
+            images: [],
           }]);
         });
       } else {
@@ -326,7 +325,7 @@ const ReportPreview = () => {
         const remainingSpace = MAX_CHARS_PER_PAGE - currentPageCost;
         const wouldExceed = sectionCost > remainingSpace;
         const tooManySections = currentPage.length >= MAX_SECTIONS_PER_PAGE;
-        
+
         if (wouldExceed || tooManySections) {
           // Start new page only if current page has enough content
           if (currentPageCost >= MIN_CHARS_FOR_NEW_PAGE) {
@@ -339,7 +338,7 @@ const ReportPreview = () => {
             }
           }
         }
-        
+
         currentPage.push(section);
         currentPageCost += sectionCost;
       }
