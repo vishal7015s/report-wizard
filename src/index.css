@@ -6,63 +6,6 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 224 71% 4%;
-
-    --card: 0 0% 100%;
-    --card-foreground: 224 71% 4%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 224 71% 4%;
-
-    --primary: 239 84% 67%;
-    --primary-foreground: 0 0% 100%;
-
-    --secondary: 220 14% 96%;
-    --secondary-foreground: 224 71% 4%;
-
-    --muted: 220 14% 96%;
-    --muted-foreground: 220 9% 46%;
-
-    --accent: 239 84% 67%;
-    --accent-foreground: 0 0% 100%;
-
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
-
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 239 84% 67%;
-
-    --radius: 0.75rem;
-
-    --rgpv-red: 0 75% 48%;
-    --rgpv-blue: 210 100% 35%;
-    --college-blue: 239 84% 67%;
-    --college-gold: 45 90% 50%;
-
-    --indigo-50: 226 100% 97%;
-    --indigo-100: 226 100% 94%;
-    --indigo-500: 239 84% 67%;
-    --indigo-600: 239 76% 59%;
-    --indigo-700: 239 69% 51%;
-    --indigo-900: 239 47% 27%;
-
-    --pdf-border: 239 84% 67%;
-    --pdf-heading-red: 0 75% 48%;
-    --pdf-text-blue: 210 100% 35%;
-
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 239 84% 67%;
-  }
-
-  .dark {
     --background: 222 47% 7%;
     --foreground: 210 40% 98%;
 
@@ -82,7 +25,7 @@
     --muted-foreground: 218 11% 65%;
 
     --accent: 239 84% 67%;
-    --accent-foreground: 210 40% 98%;
+    --accent-foreground: 0 0% 100%;
 
     --destructive: 0 63% 50%;
     --destructive-foreground: 0 0% 100%;
@@ -90,6 +33,27 @@
     --border: 215 20% 16%;
     --input: 215 20% 16%;
     --ring: 239 84% 67%;
+
+    --radius: 0.75rem;
+
+    /* Custom colors */
+    --rgpv-red: 0 75% 48%;
+    --rgpv-blue: 210 100% 35%;
+    --college-blue: 239 84% 67%;
+    --college-gold: 45 90% 50%;
+
+    /* Indigo palette */
+    --indigo-50: 226 100% 97%;
+    --indigo-100: 226 100% 94%;
+    --indigo-500: 239 84% 67%;
+    --indigo-600: 239 76% 59%;
+    --indigo-700: 239 69% 51%;
+    --indigo-900: 239 47% 27%;
+
+    /* PDF specific colors */
+    --pdf-border: 239 84% 67%;
+    --pdf-heading-red: 0 75% 48%;
+    --pdf-text-blue: 210 100% 35%;
 
     --sidebar-background: 222 47% 7%;
     --sidebar-foreground: 210 40% 98%;
@@ -112,6 +76,7 @@
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
 
+  /* PDF Preview styling */
   .pdf-page {
     font-family: 'Times New Roman', Times, serif;
     background: white;
@@ -171,7 +136,7 @@
 
   .card-hover:hover {
     @apply -translate-y-1;
-    box-shadow: 0 20px 40px -12px hsl(239 84% 67% / 0.15);
+    box-shadow: 0 20px 40px -12px hsl(239 84% 67% / 0.12);
   }
 
   .animate-float {
@@ -202,11 +167,11 @@
   }
 
   .hero-glow {
-    background: radial-gradient(ellipse 80% 60% at 50% 40%, hsl(239 84% 67% / 0.1) 0%, transparent 70%);
+    background: radial-gradient(ellipse 80% 60% at 50% 40%, hsl(239 84% 67% / 0.08) 0%, transparent 70%);
   }
 
   .glass-card {
-    background: hsl(var(--card) / 0.6);
+    background: hsl(222 41% 10% / 0.6);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
   }
