@@ -331,25 +331,33 @@ Rules:
 - Chapter 1 is an Introduction but must be tailored to the exact domain of the project description.
 - Chapter 7 is Conclusion & Future Scope.
 - Chapters 2-6 MUST be highly creative, uniquely named, and deeply technical based entirely on the user's prompt (e.g., instead of "System Design", use "Microservices Architecture for Hospital Management" or "Data Flow Pipeline for Stock Prediction").
-- DO NOT use the exact same section titles that are typically generated. Be highly specific to the technologies, features, and methodologies mentioned in the Project Description.
+- DO NOT use the exact same section titles that are typically generated like "Literature Review", "Existing System", "System Architecture". Be highly specific to the technologies, features, and methodologies mentioned in the Project Description.
 - Each chapter must have 2 to 4 sections.
 - Ensure the numbering is sequential (e.g., Chapter 1 has sections 1.1, 1.2; Chapter 2 has 2.1, 2.2).
 
-Respond ONLY with this JSON format:
+Respond ONLY with this JSON format (this is just an example of the structure, INVENT your own titles based on the project!):
 [
   {
     "number": 1,
-    "title": "CUSTOM CHAPTER TITLE",
+    "title": "INTRODUCTION TO [DOMAIN]",
     "sections": [
-      { "number": "1.1", "heading": "Custom Section Heading" },
-      { "number": "1.2", "heading": "Custom Section Heading" }
+      { "number": "1.1", "heading": "Background of [Topic]" },
+      { "number": "1.2", "heading": "Problem Statement in [Context]" }
+    ]
+  },
+  {
+    "number": 2,
+    "title": "[INVENT UNIQUE CHAPTER 2 TITLE]",
+    "sections": [
+      { "number": "2.1", "heading": "[Invent unique section]" },
+      { "number": "2.2", "heading": "[Invent unique section]" }
     ]
   }
 ]`,
         },
       ],
       1500,
-      0.7,
+      1.0, // Increased temperature to max for maximum creativity
     );
 
     const allBlueprints = parseModelJson<ChapterBlueprint[]>(blueprintsRaw);
