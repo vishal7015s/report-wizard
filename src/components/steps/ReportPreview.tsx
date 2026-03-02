@@ -145,10 +145,10 @@ const ReportPreview = () => {
   // Split sections into pages - smart content management with proper page breaks
   const splitSectionsIntoPages = (sections: ChapterSection[]): ChapterSection[][] => {
     // Page capacity settings - strict limits to enforce fixed A4 page size
-    const MAX_CHARS_PER_PAGE = 3500; // Increased limit to fill an A4 page
+    const MAX_CHARS_PER_PAGE = 3500; // Original text density limit
     const MIN_CHARS_FOR_NEW_PAGE = 600;
-    const MAX_SECTIONS_PER_PAGE = 5; // Allow more sections per page
-    const IMAGE_COST = 1500; // Adjusted cost per image
+    const MAX_SECTIONS_PER_PAGE = 5;
+    const IMAGE_COST = 1400; // Cost of a single image. Two will usually force a break.
     const HEADING_COST = 250;
 
     const pages: ChapterSection[][] = [];
@@ -164,7 +164,15 @@ const ReportPreview = () => {
     };
 
     const calculateCost = (section: ChapterSection): number => {
-      const textCost = (section.content || '').length;
+      const content = section.content || '';
+      let textCost = content.length;
+
+      const newlines = (content.match(/\n/g) || []).length;
+      const bullets = (content.match(/^[•\-\*○]\s/gm) || []).length;
+
+      textCost += newlines * 80;
+      textCost += bullets * 120;
+
       const imageCost = (section.images?.length || 0) * IMAGE_COST;
       return textCost + imageCost + HEADING_COST;
     };
@@ -251,47 +259,27 @@ const ReportPreview = () => {
       const hasImages = section.images && section.images.length > 0;
       const textLength = (section.content || '').length;
 
-      // Calculate how much text footprint alone would be
+      // Calculate how much space is left on current page
       const remainingSpace = MAX_CHARS_PER_PAGE - currentPageCost;
       const textCost = textLength + HEADING_COST;
 
-      // If text fits perfectly on the current page, but images make it overflow
-      if (hasImages && sectionCost > remainingSpace && textCost <= remainingSpace && currentPage.length < MAX_SECTIONS_PER_PAGE) {
-        // 1. Add text to the current page and immediately flush it
-        currentPage.push({
-          ...section,
-          id: `${section.id}-text`,
-          images: [],
-        });
-        flushPage();
+      // Calculate real cost including invisible HTML structure (newlines, bullets)
+      const content = section.content || '';
+      let structuralTextCost = textLength + HEADING_COST;
+      structuralTextCost += (content.match(/\n/g) || []).length * 80;
+      structuralTextCost += (content.match(/^[•\-\*○]\s/gm) || []).length * 120;
 
-        // 2. Add images to subsequent new pages
-        const images = section.images!;
-        for (let i = 0; i < images.length; i += 2) {
-          const pageImages = images.slice(i, i + 2);
-          pages.push([{
-            ...section,
-            id: `${section.id}-img-${i}`,
-            heading: `${section.heading} - Figures`,
-            content: '',
-            images: pageImages,
-          }]);
-        }
-        return; // Skip the rest, we fully processed this section
-      }
-
-      // Otherwise, if the section is massively huge, do a hard flush and split
-      if (hasImages && textLength > 600 && sectionCost > remainingSpace) {
+      // If the section is massively huge text-wise, do a hard flush and split immediately
+      if (textLength > 600 && structuralTextCost > remainingSpace) {
         // Flush current page to give this massive section a fresh canvas
         if (currentPage.length > 0) {
           flushPage();
         }
 
-        const content = section.content || '';
         const availableForContent = MAX_CHARS_PER_PAGE - HEADING_COST - 200;
 
         if (content.length > availableForContent) {
-          // Split text across pages, images on last page
+          // Split text across pages
           const chunks = splitLongContent(content, availableForContent);
           chunks.forEach((chunk, idx) => {
             const isFirst = idx === 0;
@@ -300,41 +288,97 @@ const ReportPreview = () => {
               id: `${section.id}-part-${idx + 1}`,
               heading: isFirst ? section.heading : `${section.heading} (Continued)`,
               content: chunk,
-              images: [],
+              images: [], // Images handled below
             }]);
           });
         } else {
-          // Text fits on one page
+          // Text fits on one page (but earlier remainingSpace check failed)
           pages.push([{
             ...section,
             id: `${section.id}-text`,
             content: content,
-            images: [],
+            images: [], // Images handled below
           }]);
         }
 
-        // Images get their own dedicated page(s) - one page per image for large display
+        // Now handle images for this massive section smoothly
+        if (hasImages) {
+          const images = section.images!;
+          for (let i = 0; i < images.length; i++) {
+            const image = images[i];
+
+            // If the latest page has enough room for one image (rare for massive text blocks), append it.
+            // Otherwise, put the image on a brand new page.
+            if (pages.length > 0) {
+              const lastPage = pages[pages.length - 1];
+              // Calculate cost of last page elements roughly
+              const lastPageCost = lastPage.reduce((acc, curr) => acc + calculateCost(curr), 0);
+              if (lastPageCost + IMAGE_COST <= MAX_CHARS_PER_PAGE) {
+                // Append directly to the last page!
+                const targetSection = lastPage[lastPage.length - 1];
+                targetSection.images = [...(targetSection.images || []), image];
+                continue;
+              }
+            }
+
+            // New page dedicated just for this image (or up to 2 if they fit)
+            pages.push([{
+              ...section,
+              id: `${section.id}-img-${i}`,
+              heading: i === 0 ? `${section.heading} - Figures` : `${section.heading} (Continued)`,
+              content: '',
+              images: [image],
+            }]);
+          }
+        }
+      }
+      // If text fits perfectly on the current page, but images make it overflow
+      else if (hasImages && sectionCost > remainingSpace && structuralTextCost <= remainingSpace && currentPage.length < MAX_SECTIONS_PER_PAGE) {
+
+        let localRemainingSpace = remainingSpace - structuralTextCost;
         const images = section.images!;
-        // Group max 2 images per page
-        for (let i = 0; i < images.length; i += 2) {
-          const pageImages = images.slice(i, i + 2);
+        const fittingImages = [];
+        const overflowImages = [];
+
+        // Loop through images to see how many can squeeze onto the current page
+        for (const img of images) {
+          if (localRemainingSpace >= IMAGE_COST) {
+            fittingImages.push(img);
+            localRemainingSpace -= IMAGE_COST;
+          } else {
+            overflowImages.push(img);
+          }
+        }
+
+        // Push the text and whatever images fit into the current page
+        currentPage.push({
+          ...section,
+          id: `${section.id}-text-and-fitting-imgs`,
+          images: fittingImages,
+        });
+
+        flushPage();
+
+        // Distribute overflow images intelligently across new pages (using max capacity per page)
+        const IMAGES_PER_PAGE = Math.max(1, Math.floor(MAX_CHARS_PER_PAGE / IMAGE_COST));
+        for (let i = 0; i < overflowImages.length; i += IMAGES_PER_PAGE) {
+          const pageImages = overflowImages.slice(i, i + IMAGES_PER_PAGE);
           pages.push([{
             ...section,
-            id: `${section.id}-img-${i}`,
+            id: `${section.id}-img-overflow-${i}`,
             heading: `${section.heading} - Figures`,
             content: '',
             images: pageImages,
           }]);
         }
       }
-      // If section is too large and shouldn't be kept together, split it
+      // If section is generally too large and shouldn't be kept together
       else if (sectionCost > MAX_CHARS_PER_PAGE && !shouldKeepTogether(section)) {
         // Flush current page first
         if (currentPage.length > 0) {
           flushPage();
         }
 
-        const content = section.content || '';
         const availableForContent = MAX_CHARS_PER_PAGE - HEADING_COST - 200;
         const chunks = splitLongContent(content, availableForContent);
 
@@ -500,26 +544,42 @@ const ReportPreview = () => {
               </div>
 
               {/* List of Figures */}
-              <div className="transform scale-[0.5] origin-top -mt-[400px]">
-                <PDFListOfFigures
-                  figures={figureEntries}
-                  projectDetails={{
-                    projectTitle: activeData.projectDetails.projectTitle,
-                    department: activeData.projectDetails.department,
-                  }}
-                />
-              </div>
+              {Array.from({ length: Math.ceil(figureEntries.length / 38) || 1 }, (_, i) => {
+                const chunk = figureEntries.slice(i * 38, (i + 1) * 38);
+                const romanMap = ['i', 'ii', 'iii', 'iv', 'v', 'vi', 'vii', 'viii', 'ix', 'x', 'xi', 'xii', 'xiii', 'xiv', 'xv', 'xvi', 'xvii', 'xviii', 'xix', 'xx'];
+                return (
+                  <div key={`lof-${i}`} className="transform scale-[0.5] origin-top -mt-[400px]">
+                    <PDFListOfFigures
+                      figures={chunk}
+                      pageNumber={romanMap[7 + i] || 'viii'}
+                      projectDetails={{
+                        projectTitle: activeData.projectDetails.projectTitle,
+                        department: activeData.projectDetails.department,
+                      }}
+                    />
+                  </div>
+                );
+              })}
 
               {/* Table of Contents */}
-              <div className="transform scale-[0.5] origin-top -mt-[400px]">
-                <PDFTableOfContents
-                  entries={tocEntries}
-                  projectDetails={{
-                    projectTitle: activeData.projectDetails.projectTitle,
-                    department: activeData.projectDetails.department,
-                  }}
-                />
-              </div>
+              {Array.from({ length: Math.ceil(tocEntries.length / 38) || 1 }, (_, i) => {
+                const chunk = tocEntries.slice(i * 38, (i + 1) * 38);
+                const lofChunks = Math.ceil(figureEntries.length / 38) || 1;
+                const romanMap = ['i', 'ii', 'iii', 'iv', 'v', 'vi', 'vii', 'viii', 'ix', 'x', 'xi', 'xii', 'xiii', 'xiv', 'xv', 'xvi', 'xvii', 'xviii', 'xix', 'xx'];
+                return (
+                  <div key={`toc-${i}`} className="transform scale-[0.5] origin-top -mt-[400px]">
+                    <PDFTableOfContents
+                      entries={chunk}
+                      isContinued={i > 0}
+                      pageNumber={romanMap[7 + lofChunks + i] || 'x'}
+                      projectDetails={{
+                        projectTitle: activeData.projectDetails.projectTitle,
+                        department: activeData.projectDetails.department,
+                      }}
+                    />
+                  </div>
+                );
+              })}
 
               {/* Chapter Pages */}
               {activeData.chapters.map((chapter) => {
@@ -685,24 +745,7 @@ const ReportPreview = () => {
                       )}
                     </Button>
 
-                    <Button
-                      className="w-full gap-2 bg-secondary hover:bg-secondary/80 text-secondary-foreground"
-                      size="lg"
-                      onClick={handleDownloadDOCX}
-                      disabled={isGenerating}
-                    >
-                      {isGenerating && downloadType === 'docx' ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          Generating Word...
-                        </>
-                      ) : (
-                        <>
-                          <FileText className="w-4 h-4" />
-                          Download Word (Google Docs)
-                        </>
-                      )}
-                    </Button>
+
                   </div>
                 ) : isGeneratingFull ? (
                   <div className="space-y-3">
@@ -763,24 +806,7 @@ const ReportPreview = () => {
                     )}
                   </Button>
 
-                  <Button
-                    className="w-full gap-2 bg-secondary hover:bg-secondary/80 text-secondary-foreground"
-                    size="lg"
-                    onClick={handleDownloadDOCX}
-                    disabled={isGenerating}
-                  >
-                    {isGenerating && downloadType === 'docx' ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        Generating Word...
-                      </>
-                    ) : (
-                      <>
-                        <FileText className="w-4 h-4" />
-                        Download Word (Google Docs)
-                      </>
-                    )}
-                  </Button>
+
                 </div>
               )}
 

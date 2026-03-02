@@ -32,9 +32,9 @@ const PDFChapterTitle = ({ chapterNumber, chapterTitle, data, pageNumber }: PDFC
           top: '8mm',
           left: '15mm',
           right: '15mm',
-          fontSize: '12px',
+          fontSize: '14px',
           color: '#000000',
-          fontWeight: 'normal',
+          fontWeight: 'bold',
           textAlign: 'left',
         }}
       >
@@ -63,7 +63,8 @@ const PDFChapterTitle = ({ chapterNumber, chapterTitle, data, pageNumber }: PDFC
           bottom: '8mm',
           left: '15mm',
           right: '15mm',
-          fontSize: '11px',
+          fontSize: '13px',
+          fontWeight: 'bold',
         }}
       >
         <span style={{ color: '#000000' }}>

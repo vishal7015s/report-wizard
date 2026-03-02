@@ -13,9 +13,11 @@ interface PDFTableOfContentsProps {
     projectTitle: string;
     department: string;
   };
+  isContinued?: boolean;
+  pageNumber?: string;
 }
 
-const PDFTableOfContents: React.FC<PDFTableOfContentsProps> = ({ entries, projectDetails }) => {
+const PDFTableOfContents: React.FC<PDFTableOfContentsProps> = ({ entries, projectDetails, isContinued, pageNumber }) => {
   return (
     <div
       className="pdf-page bg-white relative"
@@ -34,9 +36,9 @@ const PDFTableOfContents: React.FC<PDFTableOfContentsProps> = ({ entries, projec
           top: '8mm',
           left: '15mm',
           right: '15mm',
-          fontSize: '12px',
+          fontSize: '14px',
           color: '#000000',
-          fontWeight: 'normal',
+          fontWeight: 'bold',
           textAlign: 'left',
         }}
       >
@@ -59,9 +61,9 @@ const PDFTableOfContents: React.FC<PDFTableOfContentsProps> = ({ entries, projec
       <div
         className="absolute"
         style={{
-          top: '18mm',
-          left: '18mm',
-          right: '18mm',
+          top: '25mm',
+          left: '25mm',
+          right: '25mm',
           bottom: '20mm',
         }}
       >
@@ -74,25 +76,18 @@ const PDFTableOfContents: React.FC<PDFTableOfContentsProps> = ({ entries, projec
             marginBottom: '15px',
           }}
         >
-          Table of Content
+          {isContinued ? 'Table of Content (Continued)' : 'Table of Content'}
         </h1>
 
         {/* TOC Table */}
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', border: '1px solid #000' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', border: '1px solid #000' }}>
           <tbody>
             {entries.map((entry, index) => (
-              <tr
-                key={index}
-                style={{
-                  borderBottom: '1px solid #000',
-                }}
-              >
+              <tr key={index}>
                 <td
                   style={{
                     border: '1px solid #000',
-                    borderLeft: 'none',
-                    borderRight: '1px solid #000',
-                    padding: '4px 5px',
+                    padding: '6px 8px',
                     fontWeight: entry.isChapter ? 'bold' : 'normal',
                     textTransform: entry.isChapter ? 'uppercase' : 'none',
                   }}
@@ -102,10 +97,8 @@ const PDFTableOfContents: React.FC<PDFTableOfContentsProps> = ({ entries, projec
                 <td
                   style={{
                     border: '1px solid #000',
-                    borderLeft: 'none',
-                    borderRight: 'none',
                     textAlign: 'center',
-                    padding: '4px 5px',
+                    padding: '6px 8px',
                     width: '60px',
                     fontWeight: entry.isChapter ? 'bold' : 'normal',
                   }}
@@ -125,13 +118,14 @@ const PDFTableOfContents: React.FC<PDFTableOfContentsProps> = ({ entries, projec
           bottom: '8mm',
           left: '15mm',
           right: '15mm',
-          fontSize: '11px',
+          fontSize: '13px',
+          fontWeight: 'bold',
         }}
       >
         <span style={{ color: '#000000' }}>
           Department of {projectDetails.department} & Engineering, SVCE, Indore
         </span>
-        <span style={{ color: '#000000' }}>vi</span>
+        <span style={{ color: '#000000' }}>{pageNumber || 'x'}</span>
       </div>
     </div>
   );

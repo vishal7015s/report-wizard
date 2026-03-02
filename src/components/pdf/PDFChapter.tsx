@@ -47,9 +47,10 @@ const PDFChapter = ({ chapter, data, pageNumber }: PDFChapterProps) => {
               <div
                 className="text-justify leading-relaxed"
                 style={{ fontSize: '14px', lineHeight: '1.5', color: '#000000' }}
-              >
-                {section.content || 'Content not provided.'}
-              </div>
+                dangerouslySetInnerHTML={{
+                  __html: section.content || ''
+                }}
+              ></div>
 
               {/* Section Images */}
               {section.images && section.images.length > 0 && (

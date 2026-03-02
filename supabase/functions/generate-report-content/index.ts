@@ -304,70 +304,46 @@ Respond ONLY with JSON:
       );
     }
 
-    // 2) Generate chapters one-by-one (prevents huge single JSON that gets truncated)
-    const allBlueprints: ChapterBlueprint[] = [
-      {
-        number: 1,
-        title: "INTRODUCTION",
-        sections: [
-          { number: "1.1", heading: "Introduction" },
-          { number: "1.2", heading: "Problem Statement" },
-          { number: "1.3", heading: "Objectives" },
-          { number: "1.4", heading: "Scope of Project" },
-        ],
-      },
-      {
-        number: 2,
-        title: "LITERATURE SURVEY",
-        sections: [
-          { number: "2.1", heading: "Literature Review" },
-          { number: "2.2", heading: "Existing System" },
-          { number: "2.3", heading: "Proposed System" },
-        ],
-      },
-      {
-        number: 3,
-        title: "SYSTEM ANALYSIS",
-        sections: [
-          { number: "3.1", heading: "Requirement Analysis" },
-          { number: "3.2", heading: "Feasibility Study" },
-        ],
-      },
-      {
-        number: 4,
-        title: "SYSTEM DESIGN & METHODOLOGY",
-        sections: [
-          { number: "4.1", heading: "System Architecture" },
-          { number: "4.2", heading: "Data Flow Diagram" },
-          { number: "4.3", heading: "ER Diagram" },
-          { number: "4.4", heading: "Database Design" },
-        ],
-      },
-      {
-        number: 5,
-        title: "IMPLEMENTATION",
-        sections: [
-          { number: "5.1", heading: "Technologies Used" },
-          { number: "5.2", heading: "Module Description" },
-        ],
-      },
-      {
-        number: 6,
-        title: "RESULTS & DISCUSSION",
-        sections: [
-          { number: "6.1", heading: "Testing" },
-          { number: "6.2", heading: "Results" },
-        ],
-      },
-      {
-        number: 7,
-        title: "CONCLUSION & FUTURE SCOPE",
-        sections: [
-          { number: "7.1", heading: "Conclusion" },
-          { number: "7.2", heading: "Future Scope" },
-        ],
-      },
-    ];
+    // 2) Generate custom chapter blueprints based on the project description
+    const blueprintsRaw = await callLovableChat(
+      [
+        { role: "system", content: baseSystemPrompt },
+        {
+          role: "user",
+          content: `${projectContext}
+
+Generate a custom 7-chapter structure specifically tailored to this project's requirements and domain.
+Do NOT just use a generic template. Provide specific chapter titles and section headings relevant to the technologies and problem statement mentioned.
+
+Rules:
+- MUST be exactly 7 chapters.
+- Chapter 1 is usually an Introduction.
+- Chapter 7 is usually Conclusion & Future Scope.
+- The middle chapters (2-6) should be uniquely named based on the project (e.g., "Machine Learning Models & Data Preprocessing" instead of generic "System Design", or "Frontend/Backend Architecture" instead of generic "Implementation").
+- Each chapter must have 2 to 4 sections.
+- Ensure the numbering is sequential (e.g., Chapter 1 has sections 1.1, 1.2; Chapter 2 has 2.1, 2.2).
+
+Respond ONLY with this JSON format:
+[
+  {
+    "number": 1,
+    "title": "CUSTOM CHAPTER TITLE",
+    "sections": [
+      { "number": "1.1", "heading": "Custom Section Heading" },
+      { "number": "1.2", "heading": "Custom Section Heading" }
+    ]
+  }
+]`,
+        },
+      ],
+      1500
+    );
+
+    const allBlueprints = parseModelJson<ChapterBlueprint[]>(blueprintsRaw);
+
+    if (!Array.isArray(allBlueprints) || allBlueprints.length === 0) {
+      throw new Error("Failed to generate valid custom blueprints array from AI.");
+    }
 
     // Filter blueprints based on mode
     let blueprints: ChapterBlueprint[];
@@ -399,8 +375,10 @@ Generate Chapter ${ch.number}: ${ch.title}
 Requirements:
 - Write each section 180-260 words.
 - Use formal academic tone.
-- Use bullet points with the character "•" when listing.
-- Keep JSON valid.
+- CRITICAL FORMATTING COMMAND: NEVER write a section as one single huge block of text. You MUST break every section into at least 2 or 3 distinct, short paragraphs by explicitly inserting the literal HTML tags <br><br> between them.
+- CRITICAL FORMATTING COMMAND: For the very first section (e.g. 1.1 Introduction), ensure it contains at least 3 distinct paragraphs separated by <br><br>, and include a bulleted list (using "• ") to visually fill the first page.
+- Liberally use bullet points (starting with "• ") when listing features, objectives, or key points.
+- Keep JSON valid exactly as requested.
 
 Use EXACTLY these sections:
 ${sectionList}

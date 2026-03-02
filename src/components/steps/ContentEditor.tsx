@@ -270,14 +270,19 @@ const ContentEditor = () => {
                 <span>(minimum 50 required)</span>
               </div>
               <Button
-                className="w-full gap-2 rounded-xl"
+                className={`w-full gap-2 rounded-xl transition-all duration-300 ${isAIGenerated ? 'bg-green-600 hover:bg-green-700' : ''}`}
                 onClick={handleGenerateContent}
-                disabled={isGenerating || aiPromptText.length < 50}
+                disabled={isGenerating || aiPromptText.length < 50 || isAIGenerated}
               >
                 {isGenerating ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
                     Generating Content...
+                  </>
+                ) : isAIGenerated ? (
+                  <>
+                    <Check className="w-4 h-4" />
+                    Content Generated Successfully
                   </>
                 ) : (
                   <>
@@ -495,17 +500,24 @@ const ContentEditor = () => {
             {currentChapter && (
               <div className="p-6 space-y-6">
                 {/* Chapter Title */}
-                <div className="bg-primary text-primary-foreground py-3 px-4 rounded-xl text-center">
-                  <Input
-                    value={currentChapter.title}
-                    onChange={(e) => {
-                      const updatedChapters = reportData.chapters.map(c =>
-                        c.id === currentChapter.id ? { ...c, title: e.target.value.toUpperCase() } : c
-                      );
-                      useReportStore.getState().setChapters(updatedChapters);
-                    }}
-                    className="bg-transparent border-none text-center text-white font-bold uppercase tracking-wide focus-visible:ring-0"
-                  />
+                <div className="bg-primary text-primary-foreground py-4 px-4 rounded-xl text-center relative group">
+                  <div className="flex items-center justify-center gap-2 max-w-xl mx-auto relative">
+                    <Input
+                      value={currentChapter.title}
+                      placeholder="ENTER CHAPTER TITLE HERE..."
+                      onChange={(e) => {
+                        const updatedChapters = reportData.chapters.map(c =>
+                          c.id === currentChapter.id ? { ...c, title: e.target.value.toUpperCase() } : c
+                        );
+                        useReportStore.getState().setChapters(updatedChapters);
+                      }}
+                      className="bg-primary-foreground/10 hover:bg-primary-foreground/20 transition-colors border border-dashed border-white/30 text-center text-white font-bold uppercase tracking-wide focus-visible:ring-2 focus-visible:ring-white placeholder:text-white/60 rounded-lg py-6"
+                    />
+                    <PenLine className="w-4 h-4 absolute right-3 opacity-50 pointer-events-none" />
+                  </div>
+                  {!currentChapter.title && (
+                    <p className="text-xs text-white/70 mt-2">Please enter a name for this chapter to appear in the PDF.</p>
+                  )}
                 </div>
 
                 {/* Sections */}

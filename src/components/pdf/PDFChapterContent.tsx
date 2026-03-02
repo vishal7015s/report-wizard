@@ -31,9 +31,9 @@ const PDFChapterContent = ({ sections, data, pageNumber }: PDFChapterContentProp
           top: '8mm',
           left: '15mm',
           right: '15mm',
-          fontSize: '12px',
+          fontSize: '14px',
           color: '#000000',
-          fontWeight: 'normal',
+          fontWeight: 'bold',
           textAlign: 'left',
         }}
       >
@@ -66,15 +66,23 @@ const PDFChapterContent = ({ sections, data, pageNumber }: PDFChapterContentProp
                 textAlign: 'justify'
               }}
               dangerouslySetInnerHTML={{
-                __html: formatContent(section.content || 'Content not provided.')
+                __html: formatContent(section.content || '')
               }}
             />
 
             {/* Section Images */}
             {section.images && section.images.length > 0 && (
-              <div style={{ marginTop: '8mm' }}>
+              <div style={{
+                marginTop: '8mm',
+                ...(!section.content && section.images.length > 1 ? {
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-around',
+                  minHeight: '220mm'
+                } : {})
+              }}>
                 {section.images.map((image, imgIndex) => (
-                  <div key={image.id} style={{ textAlign: 'center', marginBottom: '8mm' }}>
+                  <div key={image.id} style={{ textAlign: 'center', marginBottom: !section.content && section.images.length > 1 ? '0' : '8mm' }}>
                     <div style={{
                       display: 'inline-block',
                       border: '1px solid #d0d0d0',
@@ -115,7 +123,8 @@ const PDFChapterContent = ({ sections, data, pageNumber }: PDFChapterContentProp
           bottom: '8mm',
           left: '15mm',
           right: '15mm',
-          fontSize: '11px',
+          fontSize: '13px',
+          fontWeight: 'bold',
         }}
       >
         <span style={{ color: '#000000' }}>
@@ -152,7 +161,8 @@ const highlightKeyTerms = (text: string): string => {
 
 // Helper function to format content with bullet points and highlights
 const formatContent = (content: string): string => {
-  const lines = content.split('\n');
+  // Convert explicit HTML <br> tags used by AI into logical newlines for the parser
+  const lines = content.replace(/<br\s*\/?>/gi, '\n').split('\n');
 
   let formattedHtml = '';
   let inBullets = false;
@@ -243,6 +253,9 @@ const formatContent = (content: string): string => {
     if (trimmed) {
       const highlightedText = highlightKeyTerms(trimmed);
       formattedHtml += `<p style="margin-bottom: 4mm; text-align: justify; line-height: 1.8; font-size: 14px; letter-spacing: 0.8px;">${highlightedText}</p>`;
+    } else {
+      // Preserve explicit paragraph breaks output by the AI
+      formattedHtml += '<div style="height: 4mm;"></div>';
     }
   });
 
