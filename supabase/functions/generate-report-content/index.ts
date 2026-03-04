@@ -316,48 +316,62 @@ Respond ONLY with JSON:
     }
 
     // 2) Generate custom chapter blueprints based on the project description
+    // Generate a unique seed from the prompt to force variation across similar topics
+    const promptHash = prompt ? prompt.split("").reduce((a: number, c: string) => ((a << 5) - a + c.charCodeAt(0)) | 0, 0) : Date.now();
+    const variationSeed = Math.abs(promptHash % 1000);
+
     const blueprintsRaw = await callLovableChat(
       [
-        { role: "system", content: baseSystemPrompt },
+        { role: "system", content: `${baseSystemPrompt}
+
+IMPORTANT: You are a creative academic structure designer. You must NEVER produce generic or template-like chapter structures. Every output must be 100% unique based on the exact project description provided. Think of yourself as designing a custom textbook outline that could ONLY belong to this specific project.` },
         {
           role: "user",
           content: `${projectContext}
 
-CRITICAL: Generate a HIGHLY UNIQUE 7-chapter structure specifically tailored EXACTLY to the provided Project Description. 
-Do NOT use generic templates. Every time you generate a structure, it must strictly reflect the unique nuances of the prompt. If multiple students submit similar topics, emphasize different angles (architecture, unique algorithms, specific use-cases, advanced features) so no two reports are identical.
+Variation Seed: ${variationSeed} (use this to vary your creative approach — e.g., if seed is even, focus more on implementation details; if odd, focus more on theoretical foundations and algorithms)
+
+CRITICAL UNIQUENESS REQUIREMENT:
+Generate a 7-chapter structure that is COMPLETELY UNIQUE and SPECIFIC to the above Project Description. 
+
+BANNED GENERIC TITLES (NEVER use these or anything similar):
+- "Literature Review" / "Literature Survey"
+- "System Analysis" / "System Design"  
+- "Existing System" / "Proposed System"
+- "Implementation" / "Testing"
+- "Methodology" / "System Architecture"
+- "Requirements Analysis" / "Feasibility Study"
+
+Instead, derive chapter and section names DIRECTLY from the specific technologies, algorithms, features, and domain mentioned in the Project Description.
+
+For example:
+- If project is about "AI Chatbot for Healthcare" → chapters like "Natural Language Understanding Pipeline for Medical Queries", "Patient Symptom Classification Using Transformer Models"
+- If project is about "E-commerce Website" → chapters like "Product Recommendation Engine with Collaborative Filtering", "Secure Payment Gateway Integration & Transaction Flow"
+- If project is about "Smart Parking System" → chapters like "IoT Sensor Network Design for Slot Detection", "Real-Time Availability Dashboard with WebSocket Communication"
 
 Rules:
 - MUST be exactly 7 chapters.
-- Chapter 1 is an Introduction but must be tailored to the exact domain of the project description.
-- Chapter 7 is Conclusion & Future Scope.
-- Chapters 2-6 MUST be highly creative, uniquely named, and deeply technical based entirely on the user's prompt (e.g., instead of "System Design", use "Microservices Architecture for Hospital Management" or "Data Flow Pipeline for Stock Prediction").
-- DO NOT use the exact same section titles that are typically generated like "Literature Review", "Existing System", "System Architecture". Be highly specific to the technologies, features, and methodologies mentioned in the Project Description.
-- Each chapter must have 2 to 4 sections.
-- Ensure the numbering is sequential (e.g., Chapter 1 has sections 1.1, 1.2; Chapter 2 has 2.1, 2.2).
+- Chapter 1: Introduction — but titled specifically to the domain (e.g., "INTRODUCTION TO NEURAL MACHINE TRANSLATION" not just "INTRODUCTION").
+- Chapter 7: Must cover conclusion and future directions, titled specifically (e.g., "CONCLUSION AND FUTURE DIRECTIONS IN AUTONOMOUS NAVIGATION" not just "CONCLUSION").
+- Chapters 2-6: Each must reference specific technologies, methods, or features from the Project Description in their titles.
+- Each chapter: 2 to 4 sections, each section heading must also be specific (not generic).
+- Sequential numbering (1.1, 1.2... 2.1, 2.2... etc.).
 
-Respond ONLY with this JSON format (this is just an example of the structure, INVENT your own titles based on the project!):
+Respond ONLY with JSON array:
 [
   {
     "number": 1,
-    "title": "INTRODUCTION TO [DOMAIN]",
+    "title": "INTRODUCTION TO [SPECIFIC DOMAIN FROM PROMPT]",
     "sections": [
-      { "number": "1.1", "heading": "Background of [Topic]" },
-      { "number": "1.2", "heading": "Problem Statement in [Context]" }
-    ]
-  },
-  {
-    "number": 2,
-    "title": "[INVENT UNIQUE CHAPTER 2 TITLE]",
-    "sections": [
-      { "number": "2.1", "heading": "[Invent unique section]" },
-      { "number": "2.2", "heading": "[Invent unique section]" }
+      { "number": "1.1", "heading": "[Specific background heading]" },
+      { "number": "1.2", "heading": "[Specific problem heading]" }
     ]
   }
 ]`,
         },
       ],
       1500,
-      1.0, // Increased temperature to max for maximum creativity
+      1.2,
     );
 
     const allBlueprints = parseModelJson<ChapterBlueprint[]>(blueprintsRaw);
