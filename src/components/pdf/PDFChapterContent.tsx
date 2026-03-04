@@ -111,7 +111,7 @@ const PDFChapterContent = ({ sections, data, pageNumber }: PDFChapterContentProp
         /* Text content page — positioned absolutely inside the border box */
         <div style={{
           position: 'absolute',
-          top: '18mm',
+          top: '22mm',
           left: '18mm',
           right: '18mm',
           bottom: '18mm',
