@@ -142,209 +142,99 @@ const ReportPreview = () => {
   // Generate Roman numerals for preliminary pages
   const romanNumerals = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
   
-  // Split sections into pages - smart content management with proper page breaks
+  // Split sections into pages - each section starts on a new page
+  // If a section's content is too long, it splits across pages WITHOUT "(Continued)" headers
   const splitSectionsIntoPages = (sections: ChapterSection[]): ChapterSection[][] => {
-    // Page capacity settings - strict limits to enforce fixed A4 page size
-    const MAX_CHARS_PER_PAGE = 1500; // Strict limit to prevent any overflow
-    const MIN_CHARS_FOR_NEW_PAGE = 300;
-    const MAX_SECTIONS_PER_PAGE = 2; // Fewer sections per page to prevent overflow
-    const IMAGE_COST = 1800; // Each image takes nearly a full page worth of space
+    const MAX_CHARS_PER_PAGE = 1500;
     const HEADING_COST = 250;
+    const IMAGE_COST = 1800;
     
     const pages: ChapterSection[][] = [];
-    let currentPage: ChapterSection[] = [];
-    let currentPageCost = 0;
 
-    const flushPage = () => {
-      if (currentPage.length > 0) {
-        pages.push(currentPage);
-        currentPage = [];
-        currentPageCost = 0;
-      }
-    };
-
-    const calculateCost = (section: ChapterSection): number => {
-      const textCost = (section.content || '').length;
-      const imageCost = (section.images?.length || 0) * IMAGE_COST;
-      return textCost + imageCost + HEADING_COST;
-    };
-
-    // Find natural break points in content - prioritize keeping lists and paragraphs together
+    // Find natural break points in content
     const findNaturalBreakPoint = (content: string, maxLength: number): number => {
       if (content.length <= maxLength) return content.length;
       
-      // Look for break points in order of preference:
-      // 1. Double newline (paragraph break) - best break point
       const paragraphBreak = content.lastIndexOf('\n\n', maxLength);
       if (paragraphBreak > maxLength * 0.5) return paragraphBreak;
       
-      // 2. End of a bullet point list (newline not followed by bullet)
-      const lines = content.slice(0, maxLength).split('\n');
-      let charCount = 0;
-      for (let i = 0; i < lines.length - 1; i++) {
-        charCount += lines[i].length + 1; // +1 for newline
-        const currentLine = lines[i].trim();
-        const nextLine = lines[i + 1]?.trim() || '';
-        
-        // Break after a list item if next line starts a new paragraph (not a bullet)
-        if ((currentLine.match(/^[•\-\*○]/) || currentLine.match(/^\d+[.)]/)) && 
-            !nextLine.match(/^[•\-\*○]/) && !nextLine.match(/^\d+[.)]/)) {
-          if (charCount > maxLength * 0.5) return charCount;
-        }
-      }
-      
-      // 3. Single newline (line break)
       const lineBreak = content.lastIndexOf('\n', maxLength);
       if (lineBreak > maxLength * 0.4) return lineBreak;
       
-      // 4. End of sentence (period followed by space or newline)
       const sentenceEnd = content.lastIndexOf('. ', maxLength);
       if (sentenceEnd > maxLength * 0.4) return sentenceEnd + 1;
       
-      // 5. Any period
-      const period = content.lastIndexOf('.', maxLength);
-      if (period > maxLength * 0.3) return period + 1;
-      
-      // 6. Hard cut as last resort
       return maxLength;
     };
 
-    // Split long content at natural break points
     const splitLongContent = (content: string, maxLength: number): string[] => {
       const chunks: string[] = [];
       let remaining = content;
-      
       while (remaining.length > maxLength) {
         const breakPoint = findNaturalBreakPoint(remaining, maxLength);
         chunks.push(remaining.slice(0, breakPoint).trim());
         remaining = remaining.slice(breakPoint).trim();
       }
-      
       if (remaining) chunks.push(remaining);
       return chunks;
     };
 
-    // Check if section should stay together (small enough and has content that shouldn't be split)
-    const shouldKeepTogether = (section: ChapterSection): boolean => {
-      const cost = calculateCost(section);
-      const content = section.content || '';
-      
-      // If section has images, only keep together if text is very short
-      if (section.images && section.images.length > 0) {
-        const textOnly = (content.length) + HEADING_COST;
-        return textOnly + (section.images.length * IMAGE_COST) <= MAX_CHARS_PER_PAGE;
-      }
-      
-      if (cost <= MAX_CHARS_PER_PAGE) return true;
-      
-      // Check if mostly bullet points - try to keep together
-      const bulletLines = (content.match(/^[•\-\*○]\s/gm) || []).length;
-      const totalLines = content.split('\n').filter(l => l.trim()).length;
-      if (bulletLines > totalLines * 0.5 && cost <= MAX_CHARS_PER_PAGE * 1.3) return true;
-      
-      return false;
-    };
-
-    // Process each section
     sections.forEach((section) => {
-      const sectionCost = calculateCost(section);
-      const hasImages = section.images && section.images.length > 0;
       const cleanContent = (section.content || '').trim();
+      const hasImages = section.images && section.images.length > 0;
       const textLength = cleanContent.length;
 
-      const pushImagePages = (heading: string, baseId: string, images: NonNullable<ChapterSection['images']>) => {
+      // Helper: push dedicated image pages (max 2 images per page, space-evenly)
+      const pushImagePages = (images: NonNullable<ChapterSection['images']>) => {
         for (let i = 0; i < images.length; i += 2) {
           const pageImages = images.slice(i, i + 2);
           pages.push([{
             ...section,
-            id: `${baseId}-img-${i}`,
-            heading: `${heading} - Figures`,
+            id: `${section.id}-img-${i}`,
+            heading: `${section.number} ${section.heading} - Figures`,
             content: '',
             images: pageImages,
           }]);
         }
       };
 
-      // If section has images but no text, render dedicated image page(s)
+      // Case 1: Images only, no text
       if (hasImages && textLength === 0) {
-        if (currentPage.length > 0) flushPage();
-        pushImagePages(section.heading, section.id, section.images!);
+        pushImagePages(section.images!);
         return;
       }
 
-      // If section has images, always separate text pages and image pages when overflow is likely
-      if (hasImages && (textLength > 600 || sectionCost > MAX_CHARS_PER_PAGE)) {
-        if (currentPage.length > 0) flushPage();
-
-        if (textLength > 0) {
-          const availableForContent = MAX_CHARS_PER_PAGE - HEADING_COST - 200;
-          const chunks = textLength > availableForContent
-            ? splitLongContent(cleanContent, availableForContent)
-            : [cleanContent];
-
-          chunks.forEach((chunk, idx) => {
-            const isFirst = idx === 0;
-            pages.push([{
-              ...section,
-              id: `${section.id}-part-${idx + 1}`,
-              heading: isFirst ? section.heading : `${section.heading} (Continued)`,
-              content: chunk,
-              images: [],
-            }]);
-          });
-        }
-
-        pushImagePages(section.heading, section.id, section.images!);
-        return;
-      }
-
-      // If section is too large and shouldn't be kept together, split it
-      else if (sectionCost > MAX_CHARS_PER_PAGE && !shouldKeepTogether(section)) {
-        // Flush current page first
-        if (currentPage.length > 0) {
-          flushPage();
-        }
-
-        const content = section.content || '';
-        const availableForContent = MAX_CHARS_PER_PAGE - HEADING_COST - 200;
-        const chunks = splitLongContent(content, availableForContent);
-
+      // Case 2: Text content (with or without images)
+      const availableForContent = MAX_CHARS_PER_PAGE - HEADING_COST - 200;
+      
+      if (textLength > availableForContent) {
+        // Split into multiple pages - first page gets heading, rest get content only (no "Continued")
+        const chunks = splitLongContent(cleanContent, availableForContent);
         chunks.forEach((chunk, idx) => {
-          const isFirst = idx === 0;
-
           pages.push([{
             ...section,
-            id: `${section.id}-part-${idx + 1}`,
-            heading: isFirst ? section.heading : `${section.heading} (Continued)`,
+            id: idx === 0 ? section.id : `${section.id}-part-${idx + 1}`,
+            heading: idx === 0 ? `${section.number} ${section.heading}` : '', // No heading on continuation pages
             content: chunk,
             images: [],
           }]);
         });
       } else {
-        // Try to fit on current page
-        const remainingSpace = MAX_CHARS_PER_PAGE - currentPageCost;
-        const wouldExceed = sectionCost > remainingSpace;
-        const tooManySections = currentPage.length >= MAX_SECTIONS_PER_PAGE;
+        // Fits on one page
+        pages.push([{
+          ...section,
+          heading: `${section.number} ${section.heading}`,
+          content: cleanContent,
+          images: [],
+        }]);
+      }
 
-        if (wouldExceed || tooManySections) {
-          // Start new page only if current page has enough content
-          if (currentPageCost >= MIN_CHARS_FOR_NEW_PAGE) {
-            flushPage();
-          } else if (wouldExceed && currentPage.length > 0) {
-            // Current page has little content but new section is too big
-            // Check if combined they exceed reasonable limit
-            if (currentPageCost + sectionCost > MAX_CHARS_PER_PAGE * 1.1) {
-              flushPage();
-            }
-          }
-        }
-
-        currentPage.push(section);
-        currentPageCost += sectionCost;
+      // Images go on separate dedicated pages after text
+      if (hasImages) {
+        pushImagePages(section.images!);
       }
     });
 
-    flushPage();
     return pages.length ? pages : [[]];
   };
 

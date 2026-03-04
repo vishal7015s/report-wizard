@@ -9,6 +9,9 @@ interface PDFChapterContentProps {
 const PDFChapterContent = ({ sections, data, pageNumber }: PDFChapterContentProps) => {
   const { projectDetails } = data;
 
+  // Detect if this is an image-only page (no text content, only images)
+  const isImageOnlyPage = sections.every(s => !s.content?.trim() && s.images && s.images.length > 0);
+
   return (
     <div className="pdf-page" style={{ width: '210mm', height: '297mm', maxHeight: '297mm', position: 'relative', backgroundColor: '#ffffff', fontFamily: 'Times New Roman, serif', overflow: 'hidden' }}>
       {/* Border */}
@@ -40,78 +43,108 @@ const PDFChapterContent = ({ sections, data, pageNumber }: PDFChapterContentProp
         {projectDetails.projectTitle || 'Project Title'}
       </div>
 
-      {/* Content Area - Fixed font size 14px throughout */}
-      <div style={{ paddingTop: '5mm', paddingLeft: '10mm', paddingRight: '10mm', paddingBottom: '10mm', fontSize: '14px', fontFamily: 'Times New Roman, serif', maxHeight: 'calc(297mm - 48mm)', overflow: 'hidden' }}>
-        {sections.map((section) => (
-          <div key={section.id} style={{ marginBottom: '6mm' }}>
-            {/* Section Heading */}
-            <h2
-              style={{
-                color: '#000000',
-                fontSize: '20px',
-                fontWeight: 'bold',
-                marginBottom: '4mm',
-                letterSpacing: '0.8px'
-              }}
-            >
-              {section.number} {section.heading}
+      {/* Content Area */}
+      {isImageOnlyPage ? (
+        /* Image-only page: distribute images evenly across Y axis */
+        <div style={{
+          position: 'absolute',
+          top: '18mm',
+          bottom: '18mm',
+          left: '18mm',
+          right: '18mm',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-evenly',
+          alignItems: 'center',
+        }}>
+          {/* Section heading for image pages */}
+          {sections[0]?.heading && (
+            <h2 style={{
+              color: '#000000',
+              fontSize: '20px',
+              fontWeight: 'bold',
+              letterSpacing: '0.8px',
+              textAlign: 'left',
+              width: '100%',
+              flexShrink: 0,
+            }}>
+              {sections[0].heading}
             </h2>
-
-            {/* Section Content - consistent 14px font */}
-            <div
-              style={{
-                fontSize: '14px',
-                lineHeight: '1.8',
-                color: '#000000',
-                textAlign: 'justify'
-              }}
-              dangerouslySetInnerHTML={{
-                __html: section.content ? formatContent(section.content) : ''
-              }}
-            />
-
-            {/* Section Images */}
-            {section.images && section.images.length > 0 && (
-              <div style={{ marginTop: '8mm' }}>
-                {section.images.map((image, imgIndex) => (
-                  <div key={image.id} style={{ textAlign: 'center', marginBottom: '8mm' }}>
-                    <div style={{
-                      display: 'block',
-                      margin: '0 auto',
-                      width: 'fit-content',
-                      maxWidth: '85%',
-                      border: '1px solid #d0d0d0',
-                      padding: '12px',
-                      backgroundColor: '#fafafa',
-                    }}>
-                      <img
-                        src={image.url}
-                        alt={image.caption || `Figure ${section.number}.${imgIndex + 1}`}
-                        style={{
-                          maxWidth: '100%',
-                          maxHeight: '600px',
-                          display: 'block',
-                          margin: '0 auto',
-                          width: 'auto',
-                          height: 'auto',
-                        }}
-                      />
-                    </div>
-                    <p style={{
-                      fontSize: '12px',
-                      marginTop: '3mm',
-                      color: '#000000',
-                      fontWeight: 'bold',
-                    }}>
-                      Figure {section.number}.{imgIndex + 1}: {image.caption || 'Diagram'}
-                    </p>
-                  </div>
-                ))}
+          )}
+          {sections.flatMap(s => s.images || []).map((image, imgIndex) => (
+            <div key={image.id} style={{ textAlign: 'center', flexShrink: 0 }}>
+              <div style={{
+                display: 'block',
+                margin: '0 auto',
+                width: 'fit-content',
+                maxWidth: '85%',
+                border: '1px solid #d0d0d0',
+                padding: '12px',
+                backgroundColor: '#fafafa',
+              }}>
+                <img
+                  src={image.url}
+                  alt={image.caption || `Figure ${imgIndex + 1}`}
+                  style={{
+                    maxWidth: '140mm',
+                    maxHeight: '100mm',
+                    display: 'block',
+                    margin: '0 auto',
+                    width: 'auto',
+                    height: 'auto',
+                    objectFit: 'contain',
+                  }}
+                />
               </div>
-            )}
-          </div>
-        ))}
-      </div>
+              <p style={{
+                fontSize: '12px',
+                marginTop: '3mm',
+                color: '#000000',
+                fontWeight: 'bold',
+              }}>
+                Figure {sections[0]?.number || '1'}.{imgIndex + 1}: {image.caption || 'Diagram'}
+              </p>
+            </div>
+          ))}
+        </div>
+      ) : (
+        /* Text content page */
+        <div style={{ paddingTop: '5mm', paddingLeft: '10mm', paddingRight: '10mm', paddingBottom: '10mm', fontSize: '14px', fontFamily: 'Times New Roman, serif', maxHeight: 'calc(297mm - 48mm)', overflow: 'hidden' }}>
+          {sections.map((section) => (
+            <div key={section.id} style={{ marginBottom: '6mm' }}>
+              {/* Section Heading - only show if not empty (continuation pages have empty heading) */}
+              {section.heading && section.heading.trim() !== '' && (
+                <h2
+                  style={{
+                    color: '#000000',
+                    fontSize: '20px',
+                    fontWeight: 'bold',
+                    marginBottom: '4mm',
+                    letterSpacing: '0.8px'
+                  }}
+                >
+                  {section.heading}
+                </h2>
+              )}
+
+              {/* Section Content */}
+              {section.content && (
+                <div
+                  style={{
+                    fontSize: '14px',
+                    lineHeight: '1.8',
+                    color: '#000000',
+                    textAlign: 'justify'
+                  }}
+                  dangerouslySetInnerHTML={{
+                    __html: formatContent(section.content)
+                  }}
+                />
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Footer - below border */}
       <div
@@ -134,11 +167,9 @@ const PDFChapterContent = ({ sections, data, pageNumber }: PDFChapterContentProp
 
 // Helper function to highlight important terms
 const highlightKeyTerms = (text: string): string => {
-  // Bold text wrapped in **text** or __text__
   let processed = text.replace(/\*\*(.+?)\*\*/g, '<strong style="font-weight: 600; color: #000000;">$1</strong>');
   processed = processed.replace(/__(.+?)__/g, '<strong style="font-weight: 600; color: #000000;">$1</strong>');
 
-  // Highlight common technical terms and keywords
   const keyTerms = [
     'objective', 'objectives', 'scope', 'methodology', 'conclusion', 'result', 'results',
     'analysis', 'design', 'implementation', 'testing', 'requirement', 'requirements',
@@ -158,92 +189,61 @@ const highlightKeyTerms = (text: string): string => {
 // Helper function to format content with bullet points and highlights
 const formatContent = (content: string): string => {
   const lines = content.split('\n');
-
   let formattedHtml = '';
   let inBullets = false;
   let inNumbers = false;
 
   const closeLists = () => {
-    if (inBullets) {
-      formattedHtml += '</div>';
-      inBullets = false;
-    }
-    if (inNumbers) {
-      formattedHtml += '</div>';
-      inNumbers = false;
-    }
+    if (inBullets) { formattedHtml += '</div>'; inBullets = false; }
+    if (inNumbers) { formattedHtml += '</div>'; inNumbers = false; }
   };
 
   const openBullets = () => {
-    if (!inBullets) {
-      formattedHtml += '<div style="margin: 10px 0;">';
-      inBullets = true;
-    }
+    if (!inBullets) { formattedHtml += '<div style="margin: 10px 0;">'; inBullets = true; }
   };
 
   const openNumbers = () => {
-    if (!inNumbers) {
-      formattedHtml += '<div style="margin: 10px 0;">';
-      inNumbers = true;
-    }
+    if (!inNumbers) { formattedHtml += '<div style="margin: 10px 0;">'; inNumbers = true; }
   };
 
   lines.forEach((rawLine) => {
     const line = rawLine.replace(/\r/g, '');
     const trimmed = line.trim();
 
-    // Bullets: supports "•", "○", "-", "*" with or without space after marker
     const bulletMatch = trimmed.match(/^[•\-\*]\s*(.+)$/);
     const subBulletMatch = line.match(/^\s{2,}(?:[○\-\*•])\s*(.+)$/);
-
-    // Numbered: supports "1.", "1)" "1:" "(1)" "[1]"
     const numberedMatch = trimmed.match(/^\(?\[?(\d+)\]?\)?[.):]\s*(.+)$/) || trimmed.match(/^(\d+)\.\s*(.+)$/);
 
     if (subBulletMatch || bulletMatch) {
-      if (inNumbers) {
-        formattedHtml += '</div>';
-        inNumbers = false;
-      }
-
+      if (inNumbers) { formattedHtml += '</div>'; inNumbers = false; }
       openBullets();
-
       const isSub = Boolean(subBulletMatch);
       const rawText = (subBulletMatch ? subBulletMatch[1] : bulletMatch![1]) || '';
       const text = highlightKeyTerms(rawText);
       const bulletChar = isSub ? '○' : '•';
       const indent = isSub ? '12.5mm' : '6mm';
-
       formattedHtml += `
         <div style="display:flex; align-items:flex-start; margin-left:${indent}; margin-bottom: 2mm;">
           <span style="width: 6mm; text-align:left; line-height: 1.8; font-size: 14px; letter-spacing: 0.8px;">${bulletChar}</span>
           <span style="flex:1; text-align:justify; line-height: 1.8; font-size: 14px; letter-spacing: 0.8px;">${text}</span>
-        </div>
-      `;
+        </div>`;
       return;
     }
 
     if (numberedMatch) {
-      if (inBullets) {
-        formattedHtml += '</div>';
-        inBullets = false;
-      }
-
+      if (inBullets) { formattedHtml += '</div>'; inBullets = false; }
       openNumbers();
-
       const num = numberedMatch[1];
       const rawText = numberedMatch[2] || '';
       const text = highlightKeyTerms(rawText);
-
       formattedHtml += `
         <div style="display:flex; align-items:flex-start; margin-left: 6mm; margin-bottom: 2mm;">
           <span style="width: 8mm; text-align:right; padding-right: 2mm; line-height: 1.8; font-size: 14px; letter-spacing: 0.8px;">${num}.</span>
           <span style="flex:1; text-align:justify; line-height: 1.8; font-size: 14px; letter-spacing: 0.8px;">${text}</span>
-        </div>
-      `;
+        </div>`;
       return;
     }
 
-    // Normal paragraph - no indentation, flush left
     closeLists();
     if (trimmed) {
       const highlightedText = highlightKeyTerms(trimmed);
@@ -251,9 +251,7 @@ const formatContent = (content: string): string => {
     }
   });
 
-  // Close any open list containers
   closeLists();
-
   return formattedHtml || content;
 };
 
