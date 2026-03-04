@@ -334,54 +334,55 @@ Respond ONLY with JSON:
       [
         { role: "system", content: `${baseSystemPrompt}
 
-IMPORTANT: You are a creative academic structure designer. You must NEVER produce generic or template-like chapter structures. Every output must be 100% unique based on the exact project description provided. Think of yourself as designing a custom textbook outline that could ONLY belong to this specific project.` },
+You generate realistic Indian engineering college project report chapter structures. Titles must be SHORT (2-5 words max), practical, and similar to what real students write in actual submitted reports.` },
         {
           role: "user",
           content: `${projectContext}
 
-Variation Seed: ${variationSeed} (use this to vary your creative approach — e.g., if seed is even, focus more on implementation details; if odd, focus more on theoretical foundations and algorithms)
+Variation Seed: ${variationSeed}
 
-CRITICAL UNIQUENESS REQUIREMENT:
-Generate a 7-chapter structure that is COMPLETELY UNIQUE and SPECIFIC to the above Project Description. 
+Generate a 7-chapter structure for this project report. 
 
-BANNED GENERIC TITLES (NEVER use these or anything similar):
-- "Literature Review" / "Literature Survey"
-- "System Analysis" / "System Design"  
-- "Existing System" / "Proposed System"
-- "Implementation" / "Testing"
-- "Methodology" / "System Architecture"
-- "Requirements Analysis" / "Feasibility Study"
+CRITICAL RULES FOR TITLES:
+- Chapter and section titles must be SHORT (2-5 words). No long sentences.
+- Titles must sound like REAL Indian engineering college reports, not AI-generated.
+- Use practical, standard academic phrasing that actual students use.
 
-Instead, derive chapter and section names DIRECTLY from the specific technologies, algorithms, features, and domain mentioned in the Project Description.
+GOOD examples of chapter titles:
+"Introduction", "Problem Statement & Objectives", "Technology Stack", "System Design", "Implementation", "Testing & Results", "Conclusion & Future Scope"
 
-For example:
-- If project is about "AI Chatbot for Healthcare" → chapters like "Natural Language Understanding Pipeline for Medical Queries", "Patient Symptom Classification Using Transformer Models"
-- If project is about "E-commerce Website" → chapters like "Product Recommendation Engine with Collaborative Filtering", "Secure Payment Gateway Integration & Transaction Flow"
-- If project is about "Smart Parking System" → chapters like "IoT Sensor Network Design for Slot Detection", "Real-Time Availability Dashboard with WebSocket Communication"
+GOOD examples of section titles:
+"Background", "Problem Definition", "Objectives", "Scope of Project", "Frontend Development", "Backend Architecture", "Database Design", "Unit Testing", "Performance Analysis", "Future Enhancements"
+
+BAD examples (TOO LONG - NEVER do this):
+"Natural Language Understanding Pipeline for Medical Queries" ❌
+"Secure Payment Gateway Integration & Transaction Flow" ❌
+"Real-Time Availability Dashboard with WebSocket Communication" ❌
 
 Rules:
-- MUST be exactly 7 chapters.
-- Chapter 1: Introduction — but titled specifically to the domain (e.g., "INTRODUCTION TO NEURAL MACHINE TRANSLATION" not just "INTRODUCTION").
-- Chapter 7: Must cover conclusion and future directions, titled specifically (e.g., "CONCLUSION AND FUTURE DIRECTIONS IN AUTONOMOUS NAVIGATION" not just "CONCLUSION").
-- Chapters 2-6: Each must reference specific technologies, methods, or features from the Project Description in their titles.
-- Each chapter: 2 to 4 sections, each section heading must also be specific (not generic).
-- Sequential numbering (1.1, 1.2... 2.1, 2.2... etc.).
+- Exactly 7 chapters.
+- Chapter 1: Introduction (can add domain context, e.g. "Introduction to ${projectTitle}" but keep it short).
+- Chapter 7: Conclusion & Future Scope.
+- Chapters 2-6: Cover problem statement, tech stack, design, implementation, testing etc. relevant to the project.
+- Each chapter: 2 to 4 sections with short headings.
+- Section numbering: 1.1, 1.2... 2.1, 2.2... etc.
+- Make chapter names SPECIFIC to this project but still SHORT.
 
 Respond ONLY with JSON array:
 [
   {
     "number": 1,
-    "title": "INTRODUCTION TO [SPECIFIC DOMAIN FROM PROMPT]",
+    "title": "INTRODUCTION",
     "sections": [
-      { "number": "1.1", "heading": "[Specific background heading]" },
-      { "number": "1.2", "heading": "[Specific problem heading]" }
+      { "number": "1.1", "heading": "Background" },
+      { "number": "1.2", "heading": "Problem Statement" }
     ]
   }
 ]`,
         },
       ],
       2500,
-      1.0,
+      0.7,
     );
 
     const allBlueprints = parseModelJson<ChapterBlueprint[]>(blueprintsRaw);
