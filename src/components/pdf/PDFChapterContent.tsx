@@ -116,6 +116,8 @@ const PDFChapterContent = ({ sections, data, pageNumber }: PDFChapterContentProp
           right: '18mm',
           bottom: '18mm',
           paddingTop: '7mm',
+          paddingLeft: '5mm',
+          paddingRight: '5mm',
           boxSizing: 'border-box',
           fontSize: '14px',
           fontFamily: 'Times New Roman, serif',
