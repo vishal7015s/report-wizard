@@ -173,12 +173,12 @@ const ReportPreview = () => {
   // - Never repeats section heading on continuation fragments
   const splitSectionsIntoPages = (sections: ChapterSection[]): ChapterSection[][] => {
     const MAX_PAGE_UNITS = 2500;
-    const PAGE_SAFETY_BUFFER = 180; // keep reserve so rendered text never gets cut
+    const PAGE_SAFETY_BUFFER = 100; // less conservative so page fills better
     const USABLE_PAGE_UNITS = MAX_PAGE_UNITS - PAGE_SAFETY_BUFFER;
     const IMAGE_UNITS = 700;
-    const HEADING_UNITS = 140;
-    const MIN_TEXT_CHUNK_UNITS = 220;
-    const TEXT_THRESHOLD_FOR_IMAGE = 1550;
+    const HEADING_UNITS = 100;
+    const MIN_TEXT_CHUNK_UNITS = 160;
+    const TEXT_THRESHOLD_FOR_IMAGE = 1700;
 
     const pages: ChapterSection[][] = [];
     let currentPage: ChapterSection[] = [];
@@ -206,10 +206,10 @@ const ReportPreview = () => {
 
       return (
         chars +
-        lineBreaks * 20 +
-        paragraphBreaks * 60 +
-        bulletLines * 120 +
-        numberedLines * 90
+        lineBreaks * 12 +
+        paragraphBreaks * 35 +
+        bulletLines * 75 +
+        numberedLines * 55
       );
     };
 
@@ -238,20 +238,20 @@ const ReportPreview = () => {
         return { chunk: trimmed, rest: '', units: estimateTextUnits(trimmed) };
       }
 
-      let candidateLength = Math.max(120, Math.min(content.length, Math.floor(maxUnits * 0.92)));
+      let candidateLength = Math.max(100, Math.min(content.length, Math.floor(maxUnits * 0.97)));
       let breakPoint = findBreakPoint(content, candidateLength);
       let chunk = content.slice(0, breakPoint).trim();
       let units = estimateTextUnits(chunk);
 
-      while (chunk && units > maxUnits && candidateLength > 120) {
-        candidateLength = Math.max(120, Math.floor(candidateLength * 0.85));
+      while (chunk && units > maxUnits && candidateLength > 100) {
+        candidateLength = Math.max(100, Math.floor(candidateLength * 0.9));
         breakPoint = findBreakPoint(content, candidateLength);
         chunk = content.slice(0, breakPoint).trim();
         units = estimateTextUnits(chunk);
       }
 
       if (!chunk) {
-        const fallbackPoint = Math.min(content.length, 120);
+        const fallbackPoint = Math.min(content.length, 100);
         const fallbackChunk = content.slice(0, fallbackPoint).trim();
         return {
           chunk: fallbackChunk,
@@ -331,7 +331,7 @@ const ReportPreview = () => {
         currentPageTextUnits += chunkUnits;
         fragmentIdx++;
 
-        if (remainingBudget() < MIN_TEXT_CHUNK_UNITS) {
+        if (remainingBudget() < 110) {
           flushPage();
         }
       }
