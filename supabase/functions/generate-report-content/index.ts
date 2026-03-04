@@ -41,7 +41,10 @@ class AIHttpError extends Error {
 }
 
 const cleanModelText = (text: string) =>
-  text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+  text
+    .replace(/```json\n?/g, "")
+    .replace(/```\n?/g, "")
+    .trim();
 
 // Escapes ASCII control chars that can break JSON parsing when the model outputs them inside strings.
 const escapeControlChars = (str: string): string => {
@@ -170,7 +173,7 @@ const extractJsonObject = (text: string): string | null => {
   return m?.[0] ?? null;
 };
 
-const parseModelJson = <T>(raw: string): T => {
+const parseModelJson = <T,>(raw: string): T => {
   const candidate = extractJsonObject(raw);
   if (!candidate) {
     throw new Error("Failed to extract JSON from AI response");
@@ -205,9 +208,7 @@ const parseModelJson = <T>(raw: string): T => {
     }
   }
 
-  throw new Error(
-    "Failed to parse AI response as JSON. The AI response was truncated or malformed."
-  );
+  throw new Error("Failed to parse AI response as JSON. The AI response was truncated or malformed.");
 };
 
 serve(async (req) => {
@@ -216,8 +217,16 @@ serve(async (req) => {
   }
 
   try {
-    const { prompt, projectTitle, guideName, students, branch, projectType, mode = "full", existingChapters = [] } =
-      await req.json();
+    const {
+      prompt,
+      projectTitle,
+      guideName,
+      students,
+      branch,
+      projectType,
+      mode = "full",
+      existingChapters = [],
+    } = await req.json();
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
@@ -226,7 +235,11 @@ serve(async (req) => {
 
     console.log("Generating report content for:", projectTitle, "mode:", mode);
 
-    const callLovableChat = async (messages: Array<{ role: string; content: string }>, maxTokens: number) => {
+    const callLovableChat = async (
+      messages: Array<{ role: string; content: string }>,
+      maxTokens: number,
+      temperature: number = 0.3,
+    ) => {
       const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -235,7 +248,7 @@ serve(async (req) => {
         },
         body: JSON.stringify({
           model: "google/gemini-2.5-flash",
-          temperature: 0.3,
+          temperature,
           max_tokens: maxTokens,
           messages,
         }),
@@ -296,12 +309,10 @@ Respond ONLY with JSON:
 }`,
           },
         ],
-        2200
+        2200,
       );
 
-      abstractAck = parseModelJson<{ abstract: string; acknowledgement: string }>(
-        abstractAckRaw
-      );
+      abstractAck = parseModelJson<{ abstract: string; acknowledgement: string }>(abstractAckRaw);
     }
 
     // 2) Generate custom chapter blueprints based on the project description
@@ -312,31 +323,41 @@ Respond ONLY with JSON:
           role: "user",
           content: `${projectContext}
 
-Generate a custom 7-chapter structure specifically tailored to this project's requirements and domain.
-Do NOT just use a generic template. Provide specific chapter titles and section headings relevant to the technologies and problem statement mentioned.
+CRITICAL: Generate a HIGHLY UNIQUE 7-chapter structure specifically tailored EXACTLY to the provided Project Description. 
+Do NOT use generic templates. Every time you generate a structure, it must strictly reflect the unique nuances of the prompt. If multiple students submit similar topics, emphasize different angles (architecture, unique algorithms, specific use-cases, advanced features) so no two reports are identical.
 
 Rules:
 - MUST be exactly 7 chapters.
-- Chapter 1 is usually an Introduction.
-- Chapter 7 is usually Conclusion & Future Scope.
-- The middle chapters (2-6) should be uniquely named based on the project (e.g., "Machine Learning Models & Data Preprocessing" instead of generic "System Design", or "Frontend/Backend Architecture" instead of generic "Implementation").
+- Chapter 1 is an Introduction but must be tailored to the exact domain of the project description.
+- Chapter 7 is Conclusion & Future Scope.
+- Chapters 2-6 MUST be highly creative, uniquely named, and deeply technical based entirely on the user's prompt (e.g., instead of "System Design", use "Microservices Architecture for Hospital Management" or "Data Flow Pipeline for Stock Prediction").
+- DO NOT use the exact same section titles that are typically generated like "Literature Review", "Existing System", "System Architecture". Be highly specific to the technologies, features, and methodologies mentioned in the Project Description.
 - Each chapter must have 2 to 4 sections.
 - Ensure the numbering is sequential (e.g., Chapter 1 has sections 1.1, 1.2; Chapter 2 has 2.1, 2.2).
 
-Respond ONLY with this JSON format:
+Respond ONLY with this JSON format (this is just an example of the structure, INVENT your own titles based on the project!):
 [
   {
     "number": 1,
-    "title": "CUSTOM CHAPTER TITLE",
+    "title": "INTRODUCTION TO [DOMAIN]",
     "sections": [
-      { "number": "1.1", "heading": "Custom Section Heading" },
-      { "number": "1.2", "heading": "Custom Section Heading" }
+      { "number": "1.1", "heading": "Background of [Topic]" },
+      { "number": "1.2", "heading": "Problem Statement in [Context]" }
+    ]
+  },
+  {
+    "number": 2,
+    "title": "[INVENT UNIQUE CHAPTER 2 TITLE]",
+    "sections": [
+      { "number": "2.1", "heading": "[Invent unique section]" },
+      { "number": "2.2", "heading": "[Invent unique section]" }
     ]
   }
 ]`,
         },
       ],
-      1500
+      1500,
+      1.0, // Increased temperature to max for maximum creativity
     );
 
     const allBlueprints = parseModelJson<ChapterBlueprint[]>(blueprintsRaw);
@@ -348,9 +369,9 @@ Respond ONLY with this JSON format:
     // Filter blueprints based on mode
     let blueprints: ChapterBlueprint[];
     if (mode === "preview") {
-      blueprints = allBlueprints.filter(ch => ch.number <= 3);
+      blueprints = allBlueprints.filter((ch) => ch.number <= 3);
     } else if (mode === "remaining") {
-      blueprints = allBlueprints.filter(ch => ch.number >= 4);
+      blueprints = allBlueprints.filter((ch) => ch.number >= 4);
     } else {
       blueprints = allBlueprints;
     }
@@ -364,9 +385,7 @@ Respond ONLY with this JSON format:
     for (const ch of blueprints) {
       console.log(`Generating chapter ${ch.number}: ${ch.title}`);
 
-      const sectionList = ch.sections
-        .map((s) => `- ${s.number} ${s.heading}`)
-        .join("\n");
+      const sectionList = ch.sections.map((s) => `- ${s.number} ${s.heading}`).join("\n");
 
       const promptForChapter = `${projectContext}
 
@@ -397,7 +416,7 @@ Respond ONLY with JSON:
           { role: "system", content: baseSystemPrompt },
           { role: "user", content: promptForChapter },
         ],
-        4200
+        4200,
       );
 
       try {
@@ -408,14 +427,11 @@ Respond ONLY with JSON:
         }>(raw);
         chapterResults.push(parsed);
       } catch (e) {
-        console.warn(
-          `Chapter ${ch.number} parse failed; retrying with shorter output...`,
-          e
-        );
+        console.warn(`Chapter ${ch.number} parse failed; retrying with shorter output...`, e);
 
         const retryPrompt = promptForChapter.replace(
           "- Write each section 180-260 words.",
-          "- Write each section 120-160 words."
+          "- Write each section 120-160 words.",
         );
 
         const retryRaw = await callLovableChat(
@@ -423,7 +439,7 @@ Respond ONLY with JSON:
             { role: "system", content: baseSystemPrompt },
             { role: "user", content: retryPrompt },
           ],
-          3200
+          3200,
         );
 
         const parsedRetry = parseModelJson<{
@@ -457,11 +473,7 @@ Respond ONLY with JSON:
       chapters: processedChapters,
     };
 
-    console.log(
-      "Successfully generated content with",
-      processedChapters.length,
-      "chapters"
-    );
+    console.log("Successfully generated content with", processedChapters.length, "chapters");
 
     return new Response(JSON.stringify(responsePayload), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -478,7 +490,7 @@ Respond ONLY with JSON:
           {
             status: 429,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
+          },
         );
       }
 
@@ -490,7 +502,7 @@ Respond ONLY with JSON:
           {
             status: 402,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
+          },
         );
       }
 
@@ -501,7 +513,7 @@ Respond ONLY with JSON:
         {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
+        },
       );
     }
 
@@ -509,7 +521,7 @@ Respond ONLY with JSON:
       JSON.stringify({
         error: error instanceof Error ? error.message : "Unknown error occurred",
       }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
 });
