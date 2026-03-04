@@ -31,9 +31,9 @@ const PDFChapterContent = ({ sections, data, pageNumber }: PDFChapterContentProp
           top: '8mm',
           left: '15mm',
           right: '15mm',
-          fontSize: '14px',
+          fontSize: '12px',
           color: '#000000',
-          fontWeight: 'bold',
+          fontWeight: 'normal',
           textAlign: 'left',
         }}
       >
@@ -66,37 +66,34 @@ const PDFChapterContent = ({ sections, data, pageNumber }: PDFChapterContentProp
                 textAlign: 'justify'
               }}
               dangerouslySetInnerHTML={{
-                __html: formatContent(section.content || '')
+                __html: formatContent(section.content || 'Content not provided.')
               }}
             />
 
             {/* Section Images */}
             {section.images && section.images.length > 0 && (
-              <div style={{
-                marginTop: '8mm',
-                ...(!section.content && section.images.length > 1 ? {
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-around',
-                  minHeight: '220mm'
-                } : {})
-              }}>
+              <div style={{ marginTop: '8mm' }}>
                 {section.images.map((image, imgIndex) => (
-                  <div key={image.id} style={{ textAlign: 'center', marginBottom: !section.content && section.images.length > 1 ? '0' : '8mm' }}>
+                  <div key={image.id} style={{ textAlign: 'center', marginBottom: '8mm' }}>
                     <div style={{
-                      display: 'inline-block',
+                      display: 'block',
+                      margin: '0 auto',
+                      width: 'fit-content',
+                      maxWidth: '85%',
                       border: '1px solid #d0d0d0',
-                      padding: '3mm',
+                      padding: '12px',
                       backgroundColor: '#fafafa',
                     }}>
                       <img
                         src={image.url}
                         alt={image.caption || `Figure ${section.number}.${imgIndex + 1}`}
                         style={{
-                          maxWidth: '140mm',
-                          maxHeight: '180mm',
-                          objectFit: 'contain',
+                          maxWidth: '100%',
+                          maxHeight: '600px',
                           display: 'block',
+                          margin: '0 auto',
+                          width: 'auto',
+                          height: 'auto',
                         }}
                       />
                     </div>
@@ -123,8 +120,7 @@ const PDFChapterContent = ({ sections, data, pageNumber }: PDFChapterContentProp
           bottom: '8mm',
           left: '15mm',
           right: '15mm',
-          fontSize: '13px',
-          fontWeight: 'bold',
+          fontSize: '11px',
         }}
       >
         <span style={{ color: '#000000' }}>
@@ -161,8 +157,7 @@ const highlightKeyTerms = (text: string): string => {
 
 // Helper function to format content with bullet points and highlights
 const formatContent = (content: string): string => {
-  // Convert explicit HTML <br> tags used by AI into logical newlines for the parser
-  const lines = content.replace(/<br\s*\/?>/gi, '\n').split('\n');
+  const lines = content.split('\n');
 
   let formattedHtml = '';
   let inBullets = false;
@@ -253,9 +248,6 @@ const formatContent = (content: string): string => {
     if (trimmed) {
       const highlightedText = highlightKeyTerms(trimmed);
       formattedHtml += `<p style="margin-bottom: 4mm; text-align: justify; line-height: 1.8; font-size: 14px; letter-spacing: 0.8px;">${highlightedText}</p>`;
-    } else {
-      // Preserve explicit paragraph breaks output by the AI
-      formattedHtml += '<div style="height: 4mm;"></div>';
     }
   });
 
