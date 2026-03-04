@@ -272,9 +272,101 @@ serve(async (req) => {
 
       const data = await res.json();
       const text = data.choices?.[0]?.message?.content || "";
-      console.log("Raw AI response length:", text.length);
+      const finishReason = data.choices?.[0]?.finish_reason;
+      console.log("Raw AI response length:", text.length, "finish_reason:", finishReason);
       return text;
     };
+
+    const parseWithRepair = async <T,>(raw: string, schemaHint: string): Promise<T> => {
+      try {
+        return parseModelJson<T>(raw);
+      } catch (firstError) {
+        console.warn("Primary JSON parse failed. Attempting AI JSON repair...");
+
+        const repairedRaw = await callLovableChat(
+          [
+            {
+              role: "system",
+              content:
+                "You are a strict JSON repair assistant. Return ONLY valid JSON. No markdown, no commentary.",
+            },
+            {
+              role: "user",
+              content: `Convert this malformed/truncated JSON-like content into valid JSON matching this schema:\n${schemaHint}\n\nInput:\n${raw}`,
+            },
+          ],
+          2600,
+          0.1,
+        );
+
+        return parseModelJson<T>(repairedRaw);
+      }
+    };
+
+    const fallbackBlueprints = (): ChapterBlueprint[] => [
+      {
+        number: 1,
+        title: "Introduction",
+        sections: [
+          { number: "1.1", heading: "Project Overview" },
+          { number: "1.2", heading: "Problem Statement" },
+          { number: "1.3", heading: "Objectives" },
+        ],
+      },
+      {
+        number: 2,
+        title: "Existing System",
+        sections: [
+          { number: "2.1", heading: "Current Workflow" },
+          { number: "2.2", heading: "Limitations" },
+          { number: "2.3", heading: "Need of Solution" },
+        ],
+      },
+      {
+        number: 3,
+        title: "Proposed System",
+        sections: [
+          { number: "3.1", heading: "Solution Overview" },
+          { number: "3.2", heading: "Key Features" },
+          { number: "3.3", heading: "Advantages" },
+        ],
+      },
+      {
+        number: 4,
+        title: "Technology Stack",
+        sections: [
+          { number: "4.1", heading: "Frontend Tools" },
+          { number: "4.2", heading: "Backend Tools" },
+          { number: "4.3", heading: "Database and APIs" },
+        ],
+      },
+      {
+        number: 5,
+        title: "System Design",
+        sections: [
+          { number: "5.1", heading: "Architecture" },
+          { number: "5.2", heading: "Module Design" },
+          { number: "5.3", heading: "Data Flow" },
+        ],
+      },
+      {
+        number: 6,
+        title: "Implementation and Testing",
+        sections: [
+          { number: "6.1", heading: "Implementation Steps" },
+          { number: "6.2", heading: "Test Cases" },
+          { number: "6.3", heading: "Results" },
+        ],
+      },
+      {
+        number: 7,
+        title: "Conclusion and Future Scope",
+        sections: [
+          { number: "7.1", heading: "Conclusion" },
+          { number: "7.2", heading: "Future Scope" },
+        ],
+      },
+    ];
 
     const baseSystemPrompt = `You are an expert academic report writer for engineering college projects in India.
 
@@ -322,7 +414,20 @@ Respond ONLY with JSON:
         2200,
       );
 
-      abstractAck = parseModelJson<{ abstract: string; acknowledgement: string }>(abstractAckRaw);
+      try {
+        abstractAck = await parseWithRepair<{ abstract: string; acknowledgement: string }>(
+          abstractAckRaw,
+          `{"abstract":"string","acknowledgement":"string"}`,
+        );
+      } catch (e) {
+        console.warn("Abstract/Acknowledgement parse failed, using fallback text.", e);
+        abstractAck = {
+          abstract:
+            "This project report presents the problem definition, proposed solution, design approach, implementation details, testing outcomes, and future scope in a structured academic format. The work focuses on practical feasibility, reliability, and performance while following standard engineering documentation practices.",
+          acknowledgement:
+            "We sincerely express our gratitude to our project guide, Head of Department, Principal, faculty members, and parents for their constant guidance, encouragement, and support throughout the completion of this project.",
+        };
+      }
     }
 
     // 2) Generate custom chapter blueprints based on the project description
@@ -381,14 +486,23 @@ Respond ONLY with JSON array:
 ]`,
         },
       ],
-      2500,
+      3500,
       0.7,
     );
 
-    const allBlueprints = parseModelJson<ChapterBlueprint[]>(blueprintsRaw);
+    let allBlueprints: ChapterBlueprint[];
+    try {
+      allBlueprints = await parseWithRepair<ChapterBlueprint[]>(
+        blueprintsRaw,
+        `[{"number":1,"title":"string","sections":[{"number":"1.1","heading":"string"}]}]`,
+      );
+    } catch (e) {
+      console.warn("Blueprint parse failed, using fallback blueprint structure.", e);
+      allBlueprints = fallbackBlueprints();
+    }
 
     if (!Array.isArray(allBlueprints) || allBlueprints.length === 0) {
-      throw new Error("Failed to generate valid custom blueprints array from AI.");
+      allBlueprints = fallbackBlueprints();
     }
 
     // Filter blueprints based on mode
@@ -442,15 +556,18 @@ Respond ONLY with JSON:
           { role: "system", content: baseSystemPrompt },
           { role: "user", content: promptForChapter },
         ],
-        4200,
+        5200,
       );
 
       try {
-        const parsed = parseModelJson<{
+        const parsed = await parseWithRepair<{
           number: number;
           title: string;
           sections: Array<{ number: string; heading: string; content: string }>;
-        }>(raw);
+        }>(
+          raw,
+          `{"number":${ch.number},"title":"${ch.title}","sections":[{"number":"${ch.sections[0]?.number || `${ch.number}.1`}","heading":"string","content":"string"}]}`,
+        );
         chapterResults.push(parsed);
       } catch (e) {
         console.warn(`Chapter ${ch.number} parse failed; retrying with shorter output...`, e);
@@ -460,21 +577,44 @@ Respond ONLY with JSON:
           "- Write each section 120-160 words.",
         );
 
-        const retryRaw = await callLovableChat(
-          [
-            { role: "system", content: baseSystemPrompt },
-            { role: "user", content: retryPrompt },
-          ],
-          3200,
-        );
+        try {
+          const retryRaw = await callLovableChat(
+            [
+              { role: "system", content: baseSystemPrompt },
+              { role: "user", content: retryPrompt },
+            ],
+            3800,
+          );
 
-        const parsedRetry = parseModelJson<{
-          number: number;
-          title: string;
-          sections: Array<{ number: string; heading: string; content: string }>;
-        }>(retryRaw);
+          const parsedRetry = await parseWithRepair<{
+            number: number;
+            title: string;
+            sections: Array<{ number: string; heading: string; content: string }>;
+          }>(
+            retryRaw,
+            `{"number":${ch.number},"title":"${ch.title}","sections":[{"number":"${ch.sections[0]?.number || `${ch.number}.1`}","heading":"string","content":"string"}]}`,
+          );
 
-        chapterResults.push(parsedRetry);
+          chapterResults.push(parsedRetry);
+        } catch (retryError) {
+          console.warn(`Chapter ${ch.number} retry also failed. Using deterministic fallback chapter content.`, retryError);
+
+          chapterResults.push({
+            number: ch.number,
+            title: ch.title,
+            sections: ch.sections.map((s) => ({
+              number: s.number,
+              heading: s.heading,
+              content:
+                `This section presents the core discussion for ${s.heading} in the context of ${projectTitle}.\n\n` +
+                `• Problem context and requirement analysis\n` +
+                `• Solution approach and design decisions\n` +
+                `• Tools, technologies, and implementation choices\n` +
+                `• Testing observations and key outcomes\n\n` +
+                `Overall, the section highlights practical execution details and academic justification for the proposed work.`,
+            })),
+          });
+        }
       }
     }
 
