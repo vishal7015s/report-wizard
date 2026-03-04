@@ -161,7 +161,17 @@ const repairJSON = (jsonStr: string): string => {
 const extractJsonObject = (text: string): string | null => {
   const cleaned = escapeControlChars(cleanModelText(text));
 
-  // Prefer a JSON object wrapped in {...}. If the model printed extra text, try to isolate it.
+  // Try to find a JSON array first [...]
+  const firstBracket = cleaned.indexOf("[");
+  const lastBracket = cleaned.lastIndexOf("]");
+  if (firstBracket !== -1 && lastBracket !== -1 && lastBracket > firstBracket) {
+    const firstBrace = cleaned.indexOf("{");
+    if (firstBrace === -1 || firstBracket < firstBrace) {
+      return cleaned.slice(firstBracket, lastBracket + 1);
+    }
+  }
+
+  // Then try JSON object {...}
   const first = cleaned.indexOf("{");
   const last = cleaned.lastIndexOf("}");
   if (first !== -1 && last !== -1 && last > first) {
@@ -169,7 +179,7 @@ const extractJsonObject = (text: string): string | null => {
   }
 
   // Fallback: regex extraction.
-  const m = cleaned.match(/\{[\s\S]*\}/);
+  const m = cleaned.match(/[\[{][\s\S]*[\]}]/);
   return m?.[0] ?? null;
 };
 
@@ -370,8 +380,8 @@ Respond ONLY with JSON array:
 ]`,
         },
       ],
-      1500,
-      1.2,
+      2500,
+      1.0,
     );
 
     const allBlueprints = parseModelJson<ChapterBlueprint[]>(blueprintsRaw);
