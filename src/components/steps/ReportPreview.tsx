@@ -173,21 +173,16 @@ const ReportPreview = () => {
   // - Never repeats section heading on continuation fragments
   const splitSectionsIntoPages = (sections: ChapterSection[]): ChapterSection[][] => {
     const MAX_CHARS_PER_PAGE = 2500;
-    const IMAGE_COST = 500;
+    const IMAGE_COST = 700; // increased — images take ~28% of A4 height
     const HEADING_COST = 120;
     const MIN_TEXT_CHUNK = 200;
+    // If text already used this many chars, don't try to squeeze an image on the same page
+    const TEXT_THRESHOLD_FOR_IMAGE = 1600;
 
     const pages: ChapterSection[][] = [];
     let currentPage: ChapterSection[] = [];
     let usedBudget = 0;
 
-    const flushPage = () => {
-      if (currentPage.length > 0) {
-        pages.push(currentPage);
-        currentPage = [];
-        usedBudget = 0;
-      }
-    };
 
     const remainingBudget = () => MAX_CHARS_PER_PAGE - usedBudget;
 
@@ -204,6 +199,18 @@ const ReportPreview = () => {
 
     // Track which section IDs have already shown their heading
     const shownHeadings = new Set<string>();
+
+    // Calculate total text units on current page (excluding image costs)
+    let currentPageTextChars = 0;
+
+    const flushPageFull = () => {
+      if (currentPage.length > 0) {
+        pages.push(currentPage);
+        currentPage = [];
+        usedBudget = 0;
+        currentPageTextChars = 0;
+      }
+    };
 
     sections.forEach((section) => {
       let text = (section.content || '').trim();
@@ -225,7 +232,7 @@ const ReportPreview = () => {
 
         // If not enough room for even a small chunk, flush
         if (available < MIN_TEXT_CHUNK && currentPage.length > 0) {
-          flushPage();
+          flushPageFull();
           continue;
         }
 
@@ -234,17 +241,21 @@ const ReportPreview = () => {
         const chunk = text.slice(0, breakAt).trim();
         text = text.slice(breakAt).trim();
 
-        // After text chunk, try to fit images in remaining space
+        // After text chunk, try to fit images — but ONLY if page isn't already text-heavy
         const budgetAfterText = usedBudget + headingCost + chunk.length;
+        const totalTextAfter = currentPageTextChars + chunk.length;
         let imgCount = 0;
-        while (
-          imgCount < images.length &&
-          budgetAfterText + (imgCount + 1) * IMAGE_COST <= MAX_CHARS_PER_PAGE
-        ) {
-          imgCount++;
+
+        // Only attempt to place images if the page has room AND text hasn't filled most of the page
+        if (totalTextAfter <= TEXT_THRESHOLD_FOR_IMAGE) {
+          while (
+            imgCount < images.length &&
+            budgetAfterText + (imgCount + 1) * IMAGE_COST <= MAX_CHARS_PER_PAGE
+          ) {
+            imgCount++;
+          }
         }
 
-        // If image would overflow (cut off), don't place it here — push to next page
         const placedImages = images.slice(0, imgCount);
         images = images.slice(imgCount);
 
@@ -259,17 +270,23 @@ const ReportPreview = () => {
         });
 
         usedBudget += headingCost + chunk.length + placedImages.length * IMAGE_COST;
+        currentPageTextChars += chunk.length;
         fragmentIdx++;
 
         // If page is nearly full, flush
         if (remainingBudget() < MIN_TEXT_CHUNK) {
-          flushPage();
+          flushPageFull();
         }
       }
 
-      // Place remaining images (no text left)
+      // Place remaining images (no text left for this section)
       while (images.length > 0) {
-        // How many images fit on current page?
+        // If page already has text, flush first so images get a fresh page
+        if (currentPageTextChars > TEXT_THRESHOLD_FOR_IMAGE && currentPage.length > 0) {
+          flushPageFull();
+          continue;
+        }
+
         let imgCount = 0;
         while (
           imgCount < images.length &&
@@ -278,13 +295,11 @@ const ReportPreview = () => {
           imgCount++;
         }
 
-        // If no images fit and page has content, flush
         if (imgCount === 0 && currentPage.length > 0) {
-          flushPage();
+          flushPageFull();
           continue;
         }
 
-        // Force at least 1 image on empty page
         if (imgCount === 0) imgCount = 1;
 
         const showHeading = isFirstFragment && fragmentIdx === 0 && !shownHeadings.has(section.id);
@@ -305,12 +320,12 @@ const ReportPreview = () => {
         fragmentIdx++;
 
         if (remainingBudget() < IMAGE_COST) {
-          flushPage();
+          flushPageFull();
         }
       }
     });
 
-    flushPage();
+    flushPageFull();
     return pages.length ? pages : [[]];
   };
 
