@@ -111,10 +111,12 @@ const PDFChapterContent = ({ sections, data, pageNumber }: PDFChapterContentProp
         /* Text content page — positioned absolutely inside the border box */
         <div style={{
           position: 'absolute',
-          top: '28mm',
+          top: '18mm',
           left: '18mm',
           right: '18mm',
           bottom: '18mm',
+          paddingTop: '7mm',
+          boxSizing: 'border-box',
           fontSize: '14px',
           fontFamily: 'Times New Roman, serif',
           overflow: 'hidden',
@@ -128,6 +130,7 @@ const PDFChapterContent = ({ sections, data, pageNumber }: PDFChapterContentProp
                     color: '#000000',
                     fontSize: '20px',
                     fontWeight: 'bold',
+                    marginTop: '0',
                     marginBottom: '4mm',
                     letterSpacing: '0.8px'
                   }}
