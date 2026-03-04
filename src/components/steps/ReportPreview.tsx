@@ -141,123 +141,161 @@ const ReportPreview = () => {
 
   // Generate Roman numerals for preliminary pages
   const romanNumerals = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
-  
-  // Split sections into pages - pack multiple sections on same page if space allows
-  // If a section's content is too long, it splits across pages WITHOUT "(Continued)" headers
+
+  const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  const normalizeChapterTitle = (chapterNumber: number, title: string) => {
+    const raw = (title || '').trim();
+    if (!raw) return `Chapter ${chapterNumber}`;
+
+    let normalized = raw
+      .replace(/^chapter\s*\d+\s*[:.)-]?\s*/i, '')
+      .replace(/^chapter\s*[:.)-]?\s*/i, '')
+      .trim();
+
+    const chapterNumberRegex = new RegExp(`^${escapeRegExp(String(chapterNumber))}\\s*[:.)-]?\\s*`, 'i');
+    normalized = normalized.replace(chapterNumberRegex, '').trim();
+
+    return normalized || raw;
+  };
+
+  const normalizeSectionHeading = (sectionNumber: string, heading: string) => {
+    const raw = (heading || '').trim();
+    if (!raw) return '';
+
+    const sectionRegex = new RegExp(`^${escapeRegExp(sectionNumber)}\\s*[:.)-]?\\s*`, 'i');
+    return raw.replace(sectionRegex, '').trim();
+  };
+
+  // Split sections into fixed A4 pages with smart text + image packing.
+  // - Uses char-based budgeting for text
+  // - Places images on the same page when space is available
+  // - Never repeats section heading on continuation fragments
   const splitSectionsIntoPages = (sections: ChapterSection[]): ChapterSection[][] => {
-    const MAX_CHARS_PER_PAGE = 1500;
-    const HEADING_COST = 250;
-    
+    const MAX_UNITS_PER_PAGE = 1700;
+    const HEADING_UNITS = 220;
+    const IMAGE_UNITS = 520;
+    const MIN_TEXT_CHUNK = 220;
+    const MAX_IMAGES_PER_PAGE = 2;
+
     const pages: ChapterSection[][] = [];
     let currentPage: ChapterSection[] = [];
     let currentPageUsed = 0;
-
-    // Find natural break points in content
-    const findNaturalBreakPoint = (content: string, maxLength: number): number => {
-      if (content.length <= maxLength) return content.length;
-      
-      const paragraphBreak = content.lastIndexOf('\n\n', maxLength);
-      if (paragraphBreak > maxLength * 0.5) return paragraphBreak;
-      
-      const lineBreak = content.lastIndexOf('\n', maxLength);
-      if (lineBreak > maxLength * 0.4) return lineBreak;
-      
-      const sentenceEnd = content.lastIndexOf('. ', maxLength);
-      if (sentenceEnd > maxLength * 0.4) return sentenceEnd + 1;
-      
-      return maxLength;
-    };
-
-    const splitLongContent = (content: string, maxLength: number): string[] => {
-      const chunks: string[] = [];
-      let remaining = content;
-      while (remaining.length > maxLength) {
-        const breakPoint = findNaturalBreakPoint(remaining, maxLength);
-        chunks.push(remaining.slice(0, breakPoint).trim());
-        remaining = remaining.slice(breakPoint).trim();
-      }
-      if (remaining) chunks.push(remaining);
-      return chunks;
-    };
+    let currentPageImageCount = 0;
 
     const flushPage = () => {
       if (currentPage.length > 0) {
         pages.push(currentPage);
         currentPage = [];
         currentPageUsed = 0;
+        currentPageImageCount = 0;
       }
     };
 
-    // Helper: push dedicated image pages (max 2 images per page, space-evenly)
-    const pushImagePages = (section: ChapterSection, images: NonNullable<ChapterSection['images']>) => {
-      flushPage();
-      for (let i = 0; i < images.length; i += 2) {
-        const pageImages = images.slice(i, i + 2);
-        pages.push([{
-          ...section,
-          id: `${section.id}-img-${i}`,
-          heading: '',
-          content: '',
-          images: pageImages,
-        }]);
+    const findNaturalBreakPoint = (content: string, maxLength: number): number => {
+      if (content.length <= maxLength) return content.length;
+
+      const paragraphBreak = content.lastIndexOf('\n\n', maxLength);
+      if (paragraphBreak > maxLength * 0.55) return paragraphBreak;
+
+      const lineBreak = content.lastIndexOf('\n', maxLength);
+      if (lineBreak > maxLength * 0.45) return lineBreak;
+
+      const sentenceEnd = content.lastIndexOf('. ', maxLength);
+      if (sentenceEnd > maxLength * 0.35) return sentenceEnd + 1;
+
+      return maxLength;
+    };
+
+    const takeContentChunk = (content: string, maxLength: number): { chunk: string; rest: string } => {
+      if (content.length <= maxLength) {
+        return { chunk: content.trim(), rest: '' };
       }
+
+      const breakPoint = findNaturalBreakPoint(content, maxLength);
+      return {
+        chunk: content.slice(0, breakPoint).trim(),
+        rest: content.slice(breakPoint).trim(),
+      };
     };
 
     sections.forEach((section) => {
-      const cleanContent = (section.content || '').trim();
-      const hasImages = section.images && section.images.length > 0;
-      const textLength = cleanContent.length;
-      const sectionCost = HEADING_COST + textLength;
+      let remainingContent = (section.content || '').trim();
+      let remainingImages = [...(section.images || [])];
 
-      // Case 1: Images only, no text
-      if (hasImages && textLength === 0) {
-        pushImagePages(section, section.images!);
-        return;
-      }
+      if (!remainingContent && remainingImages.length === 0) return;
 
-      // Case 2: Text content
-      const availableOnCurrentPage = MAX_CHARS_PER_PAGE - currentPageUsed;
+      const cleanedHeading = normalizeSectionHeading(section.number, section.heading);
+      const displayHeading = cleanedHeading ? `${section.number} ${cleanedHeading}` : section.number;
 
-      if (sectionCost <= availableOnCurrentPage) {
-        // Fits on current page alongside existing content
+      let sectionHeadingPending = true;
+      let fragmentIndex = 0;
+
+      while (remainingContent.length > 0 || remainingImages.length > 0) {
+        if (currentPageUsed >= MAX_UNITS_PER_PAGE - 80 && currentPage.length > 0) {
+          flushPage();
+          continue;
+        }
+
+        const canUseHeading = sectionHeadingPending;
+        const headingCost = canUseHeading ? HEADING_UNITS : 0;
+
+        // Step 1: fit text chunk first
+        let chunkText = '';
+        if (remainingContent.length > 0) {
+          const availableForText = MAX_UNITS_PER_PAGE - currentPageUsed - headingCost;
+
+          if (availableForText < MIN_TEXT_CHUNK && currentPage.length > 0) {
+            flushPage();
+            continue;
+          }
+
+          const safeTextLimit = Math.max(MIN_TEXT_CHUNK, availableForText);
+          const { chunk, rest } = takeContentChunk(remainingContent, safeTextLimit);
+          chunkText = chunk;
+          remainingContent = rest;
+        }
+
+        // Step 2: fit images in remaining space on the same page (max 2 images per page)
+        let imagesToPlaceCount = 0;
+        const availableImageSlots = MAX_IMAGES_PER_PAGE - currentPageImageCount;
+        const projectedTextUnits = currentPageUsed + headingCost + chunkText.length;
+
+        while (
+          remainingImages.length > imagesToPlaceCount &&
+          imagesToPlaceCount < availableImageSlots &&
+          projectedTextUnits + (imagesToPlaceCount + 1) * IMAGE_UNITS <= MAX_UNITS_PER_PAGE
+        ) {
+          imagesToPlaceCount += 1;
+        }
+
+        // If nothing can be placed, move to next page.
+        if (!chunkText && imagesToPlaceCount === 0 && currentPage.length > 0) {
+          flushPage();
+          continue;
+        }
+
+        // Failsafe: if page is empty and only images remain, force one image.
+        if (!chunkText && imagesToPlaceCount === 0 && remainingImages.length > 0 && currentPage.length === 0) {
+          imagesToPlaceCount = 1;
+        }
+
+        const fragmentImages = remainingImages.slice(0, imagesToPlaceCount);
+        remainingImages = remainingImages.slice(imagesToPlaceCount);
+
         currentPage.push({
           ...section,
-          heading: `${section.number} ${section.heading}`,
-          content: cleanContent,
-          images: [],
+          id: fragmentIndex === 0 ? section.id : `${section.id}-part-${fragmentIndex + 1}`,
+          heading: canUseHeading ? displayHeading : '',
+          content: chunkText,
+          images: fragmentImages,
         });
-        currentPageUsed += sectionCost;
-      } else if (sectionCost <= MAX_CHARS_PER_PAGE) {
-        // Doesn't fit on current page but fits on a fresh page
-        flushPage();
-        currentPage.push({
-          ...section,
-          heading: `${section.number} ${section.heading}`,
-          content: cleanContent,
-          images: [],
-        });
-        currentPageUsed = sectionCost;
-      } else {
-        // Content too long - split across pages
-        flushPage();
-        const availableForContent = MAX_CHARS_PER_PAGE - HEADING_COST;
-        const chunks = splitLongContent(cleanContent, availableForContent);
-        chunks.forEach((chunk, idx) => {
-          if (idx > 0) flushPage();
-          currentPage.push({
-            ...section,
-            id: idx === 0 ? section.id : `${section.id}-part-${idx + 1}`,
-            heading: idx === 0 ? `${section.number} ${section.heading}` : '',
-            content: chunk,
-            images: [],
-          });
-          currentPageUsed = HEADING_COST + chunk.length;
-        });
-      }
 
-      // Images go on separate dedicated pages after text
-      if (hasImages) {
-        pushImagePages(section, section.images!);
+        currentPageUsed += headingCost + chunkText.length + fragmentImages.length * IMAGE_UNITS;
+        currentPageImageCount += fragmentImages.length;
+
+        sectionHeadingPending = false;
+        fragmentIndex += 1;
       }
     });
 
@@ -284,16 +322,17 @@ const ReportPreview = () => {
       
       // Add chapter title
       entries.push({
-        title: `Chapter ${chapter.number} ${chapter.title}`,
+        title: `Chapter ${chapter.number} ${normalizeChapterTitle(chapter.number, chapter.title)}`,
         pageNumber: currentPage.toString(),
         isChapter: true,
       });
       
       // Add section entries
       let sectionPage = currentPage + 1;
-      chapter.sections.forEach((section, sectionIdx) => {
+      chapter.sections.forEach((section) => {
+        const normalizedSection = normalizeSectionHeading(section.number, section.heading);
         entries.push({
-          title: `${chapter.number}.${sectionIdx + 1} ${section.heading}`,
+          title: normalizedSection ? `${section.number} ${normalizedSection}` : section.number,
           pageNumber: sectionPage.toString(),
           isSection: true,
         });
@@ -419,7 +458,7 @@ const ReportPreview = () => {
                     <div className="transform scale-[0.5] origin-top -mt-[400px]">
                       <PDFChapterTitle 
                         chapterNumber={chapter.number}
-                        chapterTitle={chapter.title}
+                        chapterTitle={normalizeChapterTitle(chapter.number, chapter.title)}
                         data={activeData} 
                         pageNumber={titlePageNum.toString()} 
                       />
@@ -481,7 +520,7 @@ const ReportPreview = () => {
                   <div key={`hidden-${chapter.id}`}>
                     <PDFChapterTitle 
                       chapterNumber={chapter.number}
-                      chapterTitle={chapter.title}
+                      chapterTitle={normalizeChapterTitle(chapter.number, chapter.title)}
                       data={activeData} 
                       pageNumber={titlePageNum.toString()} 
                     />

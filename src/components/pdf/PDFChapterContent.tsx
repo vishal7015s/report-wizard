@@ -141,6 +141,47 @@ const PDFChapterContent = ({ sections, data, pageNumber }: PDFChapterContentProp
                   }}
                 />
               )}
+
+              {/* Section Images (placed on same page if pagination allows) */}
+              {section.images && section.images.length > 0 && (
+                <div style={{ marginTop: section.content ? '4mm' : '0' }}>
+                  {section.images.map((image, imgIndex) => (
+                    <div key={image.id} style={{ textAlign: 'center', marginBottom: '5mm' }}>
+                      <div style={{
+                        display: 'block',
+                        margin: '0 auto',
+                        width: 'fit-content',
+                        maxWidth: '85%',
+                        border: '1px solid #d0d0d0',
+                        padding: '10px',
+                        backgroundColor: '#fafafa',
+                      }}>
+                        <img
+                          src={image.url}
+                          alt={image.caption || `Figure ${section.number || '1'}.${imgIndex + 1}`}
+                          style={{
+                            maxWidth: '140mm',
+                            maxHeight: section.content ? '70mm' : '100mm',
+                            display: 'block',
+                            margin: '0 auto',
+                            width: 'auto',
+                            height: 'auto',
+                            objectFit: 'contain',
+                          }}
+                        />
+                      </div>
+                      <p style={{
+                        fontSize: '12px',
+                        marginTop: '3mm',
+                        color: '#000000',
+                        fontWeight: 'bold',
+                      }}>
+                        Figure {section.number || '1'}.{imgIndex + 1}: {image.caption || 'Diagram'}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
         </div>
