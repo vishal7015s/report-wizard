@@ -66,7 +66,7 @@ const PDFChapterContent = ({ sections, data, pageNumber }: PDFChapterContentProp
                 textAlign: 'justify'
               }}
               dangerouslySetInnerHTML={{
-                __html: formatContent(section.content || 'Content not provided.')
+                __html: section.content ? formatContent(section.content) : ''
               }}
             />
 
