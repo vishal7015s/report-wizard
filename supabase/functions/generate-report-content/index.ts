@@ -419,9 +419,10 @@ Generate Chapter ${ch.number}: ${ch.title}
 Requirements:
 - Write each section 180-260 words.
 - Use formal academic tone.
-- CRITICAL FORMATTING COMMAND: NEVER write a section as one single huge block of text. You MUST break every section into at least 2 or 3 distinct, short paragraphs by explicitly inserting the literal HTML tags <br><br> between them.
-- CRITICAL FORMATTING COMMAND: For the very first section (e.g. 1.1 Introduction), ensure it contains at least 3 distinct paragraphs separated by <br><br>, and include a bulleted list (using "• ") to visually fill the first page.
-- Liberally use bullet points (starting with "• ") when listing features, objectives, or key points.
+- CRITICAL: NEVER write a section as one huge paragraph. Break EVERY section into 2-3 SHORT paragraphs separated by \\n\\n (double newline).
+- CRITICAL: Each section MUST include at least one bulleted list using "• " prefix. List key features, objectives, components, advantages, etc.
+- Structure each section as: opening paragraph (3-4 sentences) \\n\\n bullet list (4-8 items) \\n\\n closing paragraph (2-3 sentences).
+- Use \\n for line breaks between bullet points within the list.
 - Keep JSON valid exactly as requested.
 
 Use EXACTLY these sections:
