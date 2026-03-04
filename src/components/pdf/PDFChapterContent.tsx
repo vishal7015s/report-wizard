@@ -72,22 +72,20 @@ const PDFChapterContent = ({ sections, data, pageNumber }: PDFChapterContentProp
             </h2>
           )}
           {sections.flatMap(s => s.images || []).map((image, imgIndex) => (
-            <div key={image.id} style={{ textAlign: 'center', flexShrink: 0 }}>
+            <div key={image.id} style={{ textAlign: 'center', flexShrink: 0, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
               <div style={{
-                display: 'block',
-                margin: '0 auto',
-                width: 'fit-content',
-                maxWidth: '85%',
+                display: 'inline-block',
+                maxWidth: '75%',
                 border: '1px solid #d0d0d0',
-                padding: '12px',
+                padding: '10px',
                 backgroundColor: '#fafafa',
               }}>
                 <img
                   src={image.url}
                   alt={image.caption || `Figure ${imgIndex + 1}`}
                   style={{
-                    maxWidth: '140mm',
-                    maxHeight: '100mm',
+                    maxWidth: '120mm',
+                    maxHeight: '90mm',
                     display: 'block',
                     margin: '0 auto',
                     width: 'auto',
@@ -160,12 +158,10 @@ const PDFChapterContent = ({ sections, data, pageNumber }: PDFChapterContentProp
               {section.images && section.images.length > 0 && (
                 <div style={{ marginTop: section.content ? '4mm' : '0' }}>
                   {section.images.map((image, imgIndex) => (
-                    <div key={image.id} style={{ textAlign: 'center', marginBottom: '5mm' }}>
+                    <div key={image.id} style={{ textAlign: 'center', marginBottom: '5mm', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                       <div style={{
-                        display: 'block',
-                        margin: '0 auto',
-                        width: 'fit-content',
-                        maxWidth: '85%',
+                        display: 'inline-block',
+                        maxWidth: '75%',
                         border: '1px solid #d0d0d0',
                         padding: '10px',
                         backgroundColor: '#fafafa',
@@ -174,8 +170,8 @@ const PDFChapterContent = ({ sections, data, pageNumber }: PDFChapterContentProp
                           src={image.url}
                           alt={image.caption || `Figure ${section.number || '1'}.${imgIndex + 1}`}
                           style={{
-                            maxWidth: '140mm',
-                            maxHeight: section.content ? '70mm' : '100mm',
+                            maxWidth: '120mm',
+                            maxHeight: section.content ? '65mm' : '90mm',
                             display: 'block',
                             margin: '0 auto',
                             width: 'auto',
