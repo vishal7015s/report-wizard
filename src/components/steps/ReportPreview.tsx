@@ -142,14 +142,15 @@ const ReportPreview = () => {
   // Generate Roman numerals for preliminary pages
   const romanNumerals = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
   
-  // Split sections into pages - each section starts on a new page
+  // Split sections into pages - pack multiple sections on same page if space allows
   // If a section's content is too long, it splits across pages WITHOUT "(Continued)" headers
   const splitSectionsIntoPages = (sections: ChapterSection[]): ChapterSection[][] => {
     const MAX_CHARS_PER_PAGE = 1500;
     const HEADING_COST = 250;
-    const IMAGE_COST = 1800;
     
     const pages: ChapterSection[][] = [];
+    let currentPage: ChapterSection[] = [];
+    let currentPageUsed = 0;
 
     // Find natural break points in content
     const findNaturalBreakPoint = (content: string, maxLength: number): number => {
@@ -179,62 +180,88 @@ const ReportPreview = () => {
       return chunks;
     };
 
+    const flushPage = () => {
+      if (currentPage.length > 0) {
+        pages.push(currentPage);
+        currentPage = [];
+        currentPageUsed = 0;
+      }
+    };
+
+    // Helper: push dedicated image pages (max 2 images per page, space-evenly)
+    const pushImagePages = (section: ChapterSection, images: NonNullable<ChapterSection['images']>) => {
+      flushPage();
+      for (let i = 0; i < images.length; i += 2) {
+        const pageImages = images.slice(i, i + 2);
+        pages.push([{
+          ...section,
+          id: `${section.id}-img-${i}`,
+          heading: '',
+          content: '',
+          images: pageImages,
+        }]);
+      }
+    };
+
     sections.forEach((section) => {
       const cleanContent = (section.content || '').trim();
       const hasImages = section.images && section.images.length > 0;
       const textLength = cleanContent.length;
-
-      // Helper: push dedicated image pages (max 2 images per page, space-evenly)
-      const pushImagePages = (images: NonNullable<ChapterSection['images']>) => {
-        for (let i = 0; i < images.length; i += 2) {
-          const pageImages = images.slice(i, i + 2);
-          pages.push([{
-            ...section,
-            id: `${section.id}-img-${i}`,
-            heading: `${section.number} ${section.heading} - Figures`,
-            content: '',
-            images: pageImages,
-          }]);
-        }
-      };
+      const sectionCost = HEADING_COST + textLength;
 
       // Case 1: Images only, no text
       if (hasImages && textLength === 0) {
-        pushImagePages(section.images!);
+        pushImagePages(section, section.images!);
         return;
       }
 
-      // Case 2: Text content (with or without images)
-      const availableForContent = MAX_CHARS_PER_PAGE - HEADING_COST - 200;
-      
-      if (textLength > availableForContent) {
-        // Split into multiple pages - first page gets heading, rest get content only (no "Continued")
-        const chunks = splitLongContent(cleanContent, availableForContent);
-        chunks.forEach((chunk, idx) => {
-          pages.push([{
-            ...section,
-            id: idx === 0 ? section.id : `${section.id}-part-${idx + 1}`,
-            heading: idx === 0 ? `${section.number} ${section.heading}` : '', // No heading on continuation pages
-            content: chunk,
-            images: [],
-          }]);
-        });
-      } else {
-        // Fits on one page
-        pages.push([{
+      // Case 2: Text content
+      const availableOnCurrentPage = MAX_CHARS_PER_PAGE - currentPageUsed;
+
+      if (sectionCost <= availableOnCurrentPage) {
+        // Fits on current page alongside existing content
+        currentPage.push({
           ...section,
           heading: `${section.number} ${section.heading}`,
           content: cleanContent,
           images: [],
-        }]);
+        });
+        currentPageUsed += sectionCost;
+      } else if (sectionCost <= MAX_CHARS_PER_PAGE) {
+        // Doesn't fit on current page but fits on a fresh page
+        flushPage();
+        currentPage.push({
+          ...section,
+          heading: `${section.number} ${section.heading}`,
+          content: cleanContent,
+          images: [],
+        });
+        currentPageUsed = sectionCost;
+      } else {
+        // Content too long - split across pages
+        flushPage();
+        const availableForContent = MAX_CHARS_PER_PAGE - HEADING_COST;
+        const chunks = splitLongContent(cleanContent, availableForContent);
+        chunks.forEach((chunk, idx) => {
+          if (idx > 0) flushPage();
+          currentPage.push({
+            ...section,
+            id: idx === 0 ? section.id : `${section.id}-part-${idx + 1}`,
+            heading: idx === 0 ? `${section.number} ${section.heading}` : '',
+            content: chunk,
+            images: [],
+          });
+          currentPageUsed = HEADING_COST + chunk.length;
+        });
       }
 
       // Images go on separate dedicated pages after text
       if (hasImages) {
-        pushImagePages(section.images!);
+        pushImagePages(section, section.images!);
       }
     });
 
+    flushPage();
     return pages.length ? pages : [[]];
   };
 
