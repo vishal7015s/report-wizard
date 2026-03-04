@@ -172,99 +172,69 @@ const ReportPreview = () => {
   // - Places images on the same page when space is available
   // - Never repeats section heading on continuation fragments
   const splitSectionsIntoPages = (sections: ChapterSection[]): ChapterSection[][] => {
-    const MAX_PAGE_UNITS = 2500;
-    const PAGE_SAFETY_BUFFER = 100; // less conservative so page fills better
-    const USABLE_PAGE_UNITS = MAX_PAGE_UNITS - PAGE_SAFETY_BUFFER;
-    const IMAGE_UNITS = 700;
-    const HEADING_UNITS = 100;
-    const MIN_TEXT_CHUNK_UNITS = 160;
-    const TEXT_THRESHOLD_FOR_IMAGE = 1700;
+    // Content area: 297mm - 18mm top - 18mm bottom = 261mm usable.
+    // At 14px * 1.8 line-height ≈ 7.56mm/line, ~34 lines, ~75 chars/line ≈ 2550 raw chars.
+    // Use 2400 as safe max (accounts for heading margins, bullet indents, paragraph gaps).
+    const PAGE_BUDGET = 2400;
+    const IMAGE_COST = 650;
+    const HEADING_COST = 80;
+    const MIN_CHUNK = 150;
+    const IMAGE_TEXT_LIMIT = 1750; // max text-chars before images go to next page
 
     const pages: ChapterSection[][] = [];
     let currentPage: ChapterSection[] = [];
     let usedBudget = 0;
-    let currentPageTextUnits = 0;
+    let pageTextChars = 0;
 
-    const flushPage = () => {
+    const flush = () => {
       if (currentPage.length > 0) {
         pages.push(currentPage);
         currentPage = [];
         usedBudget = 0;
-        currentPageTextUnits = 0;
+        pageTextChars = 0;
       }
     };
 
-    const remainingBudget = () => USABLE_PAGE_UNITS - usedBudget;
+    const remaining = () => PAGE_BUDGET - usedBudget;
 
-    const estimateTextUnits = (value: string) => {
-      const text = value.replace(/\r/g, '');
-      const chars = text.length;
-      const lineBreaks = (text.match(/\n/g) || []).length;
-      const paragraphBreaks = (text.match(/\n\s*\n/g) || []).length;
-      const bulletLines = (text.match(/(?:^|\n)\s*[•\-\*○]\s+/g) || []).length;
-      const numberedLines = (text.match(/(?:^|\n)\s*\(?\[?\d+\]?\)?[.):]\s+/g) || []).length;
-
-      return (
-        chars +
-        lineBreaks * 12 +
-        paragraphBreaks * 35 +
-        bulletLines * 75 +
-        numberedLines * 55
-      );
+    // Simple: just use char count + small penalty for line breaks/bullets
+    const textCost = (text: string) => {
+      const bullets = (text.match(/(?:^|\n)\s*[•\-\*○]\s/g) || []).length;
+      const numbered = (text.match(/(?:^|\n)\s*\d+[.)]\s/g) || []).length;
+      return text.length + bullets * 40 + numbered * 30;
     };
 
-    const findBreakPoint = (content: string, maxLength: number): number => {
-      if (content.length <= maxLength) return content.length;
-
-      const paragraphBreak = content.lastIndexOf('\n\n', maxLength);
-      if (paragraphBreak > maxLength * 0.55) return paragraphBreak;
-
-      const lineBreak = content.lastIndexOf('\n', maxLength);
-      if (lineBreak > maxLength * 0.45) return lineBreak;
-
-      const sentenceEnd = content.lastIndexOf('. ', maxLength);
-      if (sentenceEnd > maxLength * 0.35) return sentenceEnd + 1;
-
-      return maxLength;
+    const findBreakPoint = (content: string, maxLen: number): number => {
+      if (content.length <= maxLen) return content.length;
+      const para = content.lastIndexOf('\n\n', maxLen);
+      if (para > maxLen * 0.5) return para;
+      const line = content.lastIndexOf('\n', maxLen);
+      if (line > maxLen * 0.4) return line;
+      const sent = content.lastIndexOf('. ', maxLen);
+      if (sent > maxLen * 0.3) return sent + 1;
+      return maxLen;
     };
 
-    const takeChunkByUnits = (content: string, maxUnits: number) => {
-      if (!content.trim()) {
-        return { chunk: '', rest: '', units: 0 };
+    const takeChunk = (content: string, maxCost: number) => {
+      if (!content.trim()) return { chunk: '', rest: '', cost: 0 };
+      const cost = textCost(content);
+      if (cost <= maxCost) return { chunk: content.trim(), rest: '', cost };
+
+      // Approximate char length from cost budget
+      let tryLen = Math.min(content.length, Math.floor(maxCost * 0.95));
+      let bp = findBreakPoint(content, tryLen);
+      let chunk = content.slice(0, bp).trim();
+      let c = textCost(chunk);
+
+      // Shrink if over budget
+      while (c > maxCost && tryLen > 80) {
+        tryLen = Math.floor(tryLen * 0.88);
+        bp = findBreakPoint(content, tryLen);
+        chunk = content.slice(0, bp).trim();
+        c = textCost(chunk);
       }
 
-      if (estimateTextUnits(content) <= maxUnits) {
-        const trimmed = content.trim();
-        return { chunk: trimmed, rest: '', units: estimateTextUnits(trimmed) };
-      }
-
-      let candidateLength = Math.max(100, Math.min(content.length, Math.floor(maxUnits * 0.97)));
-      let breakPoint = findBreakPoint(content, candidateLength);
-      let chunk = content.slice(0, breakPoint).trim();
-      let units = estimateTextUnits(chunk);
-
-      while (chunk && units > maxUnits && candidateLength > 100) {
-        candidateLength = Math.max(100, Math.floor(candidateLength * 0.9));
-        breakPoint = findBreakPoint(content, candidateLength);
-        chunk = content.slice(0, breakPoint).trim();
-        units = estimateTextUnits(chunk);
-      }
-
-      if (!chunk) {
-        const fallbackPoint = Math.min(content.length, 100);
-        const fallbackChunk = content.slice(0, fallbackPoint).trim();
-        return {
-          chunk: fallbackChunk,
-          rest: content.slice(fallbackPoint).trim(),
-          units: estimateTextUnits(fallbackChunk),
-        };
-      }
-
-      return {
-        chunk,
-        rest: content.slice(breakPoint).trim(),
-        units,
-      };
+      return { chunk, rest: content.slice(bp).trim(), cost: c };
     };
 
     const shownHeadings = new Set<string>();
@@ -272,51 +242,38 @@ const ReportPreview = () => {
     sections.forEach((section) => {
       let text = (section.content || '').trim();
       let images = [...(section.images || [])];
-
       if (!text && images.length === 0) return;
 
       const cleanedHeading = normalizeSectionHeading(section.number, section.heading);
       const displayHeading = cleanedHeading ? `${section.number} ${cleanedHeading}` : section.number;
-      const isFirstFragment = !shownHeadings.has(section.id);
-
       let fragmentIdx = 0;
 
       while (text.length > 0) {
-        const showHeading = isFirstFragment && fragmentIdx === 0 && !shownHeadings.has(section.id);
-        const headingCost = showHeading ? HEADING_UNITS : 0;
-        const availableUnits = remainingBudget() - headingCost;
+        const showHeading = fragmentIdx === 0 && !shownHeadings.has(section.id);
+        const hCost = showHeading ? HEADING_COST : 0;
+        const avail = remaining() - hCost;
 
-        if (availableUnits < MIN_TEXT_CHUNK_UNITS && currentPage.length > 0) {
-          flushPage();
+        if (avail < MIN_CHUNK && currentPage.length > 0) {
+          flush();
           continue;
         }
 
-        const chunkBudget = Math.max(MIN_TEXT_CHUNK_UNITS, availableUnits);
-        const { chunk, rest, units: chunkUnits } = takeChunkByUnits(text, chunkBudget);
-
-        if (!chunk && currentPage.length > 0) {
-          flushPage();
-          continue;
-        }
-
+        const { chunk, rest, cost } = takeChunk(text, Math.max(MIN_CHUNK, avail));
+        if (!chunk && currentPage.length > 0) { flush(); continue; }
         text = rest;
 
-        const budgetAfterText = usedBudget + headingCost + chunkUnits;
-        const totalTextAfter = currentPageTextUnits + chunkUnits;
+        // Try to fit images if page still has room
+        const afterText = usedBudget + hCost + cost;
+        const textOnPage = pageTextChars + cost;
         let imgCount = 0;
-
-        if (totalTextAfter <= TEXT_THRESHOLD_FOR_IMAGE) {
-          while (
-            imgCount < images.length &&
-            budgetAfterText + (imgCount + 1) * IMAGE_UNITS <= USABLE_PAGE_UNITS
-          ) {
+        if (textOnPage <= IMAGE_TEXT_LIMIT) {
+          while (imgCount < images.length && afterText + (imgCount + 1) * IMAGE_COST <= PAGE_BUDGET) {
             imgCount++;
           }
         }
 
-        const placedImages = images.slice(0, imgCount);
+        const placedImgs = images.slice(0, imgCount);
         images = images.slice(imgCount);
-
         if (showHeading) shownHeadings.add(section.id);
 
         currentPage.push({
@@ -324,43 +281,31 @@ const ReportPreview = () => {
           id: fragmentIdx === 0 ? section.id : `${section.id}-f${fragmentIdx}`,
           heading: showHeading ? displayHeading : '',
           content: chunk,
-          images: placedImages,
+          images: placedImgs,
         });
 
-        usedBudget += headingCost + chunkUnits + placedImages.length * IMAGE_UNITS;
-        currentPageTextUnits += chunkUnits;
+        usedBudget += hCost + cost + placedImgs.length * IMAGE_COST;
+        pageTextChars += cost;
         fragmentIdx++;
 
-        if (remainingBudget() < 110) {
-          flushPage();
-        }
+        if (remaining() < MIN_CHUNK) flush();
       }
 
+      // Remaining images
       while (images.length > 0) {
-        if (currentPageTextUnits > TEXT_THRESHOLD_FOR_IMAGE && currentPage.length > 0) {
-          flushPage();
-          continue;
-        }
+        if (pageTextChars > IMAGE_TEXT_LIMIT && currentPage.length > 0) { flush(); continue; }
 
         let imgCount = 0;
-        while (
-          imgCount < images.length &&
-          usedBudget + (imgCount + 1) * IMAGE_UNITS <= USABLE_PAGE_UNITS
-        ) {
+        while (imgCount < images.length && usedBudget + (imgCount + 1) * IMAGE_COST <= PAGE_BUDGET) {
           imgCount++;
         }
-
-        if (imgCount === 0 && currentPage.length > 0) {
-          flushPage();
-          continue;
-        }
-
+        if (imgCount === 0 && currentPage.length > 0) { flush(); continue; }
         if (imgCount === 0) imgCount = 1;
 
-        const showHeading = isFirstFragment && fragmentIdx === 0 && !shownHeadings.has(section.id);
+        const showHeading = fragmentIdx === 0 && !shownHeadings.has(section.id);
         if (showHeading) shownHeadings.add(section.id);
 
-        const placedImages = images.slice(0, imgCount);
+        const placedImgs = images.slice(0, imgCount);
         images = images.slice(imgCount);
 
         currentPage.push({
@@ -368,19 +313,16 @@ const ReportPreview = () => {
           id: fragmentIdx === 0 ? section.id : `${section.id}-f${fragmentIdx}`,
           heading: showHeading ? displayHeading : '',
           content: '',
-          images: placedImages,
+          images: placedImgs,
         });
 
-        usedBudget += placedImages.length * IMAGE_UNITS;
+        usedBudget += placedImgs.length * IMAGE_COST;
         fragmentIdx++;
-
-        if (remainingBudget() < IMAGE_UNITS) {
-          flushPage();
-        }
+        if (remaining() < IMAGE_COST) flush();
       }
     });
 
-    flushPage();
+    flush();
     return pages.length ? pages : [[]];
   };
 

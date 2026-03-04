@@ -108,8 +108,17 @@ const PDFChapterContent = ({ sections, data, pageNumber }: PDFChapterContentProp
           ))}
         </div>
       ) : (
-        /* Text content page */
-        <div style={{ paddingTop: '5mm', paddingLeft: '10mm', paddingRight: '10mm', paddingBottom: '10mm', fontSize: '14px', fontFamily: 'Times New Roman, serif', maxHeight: 'calc(297mm - 48mm)', overflow: 'hidden' }}>
+        /* Text content page — positioned absolutely inside the border box */
+        <div style={{
+          position: 'absolute',
+          top: '18mm',
+          left: '18mm',
+          right: '18mm',
+          bottom: '18mm',
+          fontSize: '14px',
+          fontFamily: 'Times New Roman, serif',
+          overflow: 'hidden',
+        }}>
           {sections.map((section) => (
             <div key={section.id} style={{ marginBottom: '6mm' }}>
               {/* Section Heading - only show if not empty (continuation pages have empty heading) */}
