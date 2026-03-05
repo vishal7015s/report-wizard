@@ -29,20 +29,31 @@ export const generatePDF = async (
 
   const replacements: { originalImg: HTMLImageElement, canvasReplica: HTMLCanvasElement, originalDisplay: string }[] = [];
 
+  const hiResScale = 3;
+
   for (const img of images) {
     try {
       if (img.naturalWidth === 0 || img.naturalHeight === 0) continue;
 
       const canvas = document.createElement('canvas');
       const rect = img.getBoundingClientRect();
-      canvas.width = rect.width || img.naturalWidth;
-      canvas.height = rect.height || img.naturalHeight;
+      const displayW = rect.width || img.naturalWidth;
+      const displayH = rect.height || img.naturalHeight;
 
+      // Use natural image dimensions or scaled display size, whichever is larger
+      canvas.width = Math.max(img.naturalWidth, displayW * hiResScale);
+      canvas.height = Math.max(img.naturalHeight, displayH * hiResScale);
+
+      // Keep the canvas visually the same size as the original image
       canvas.style.cssText = img.style.cssText;
-      canvas.className = img.className; 
+      canvas.style.width = `${displayW}px`;
+      canvas.style.height = `${displayH}px`;
+      canvas.className = img.className;
 
       const ctx = canvas.getContext('2d');
       if (ctx) {
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
         const originalDisplay = img.style.display || '';
