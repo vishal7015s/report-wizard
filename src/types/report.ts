@@ -58,14 +58,14 @@ export interface ReportData {
 }
 
 export const defaultProjectDetails: ProjectDetails = {
-  projectType: 'Major Project-I',
+  projectType: 'Major Project-II',
   branch: 'Information Technology',
   projectTitle: '',
   guideName: '',
   guideDesignation: 'Asst. Prof',
   department: 'Information Technology',
   students: [{ id: '1', name: '', enrollmentNumber: '' }],
-  session: '2024-2025',
+  session: '2026-2027',
   hodName: '',
   hodDepartment: 'IT Department',
   principalName: '',
@@ -150,7 +150,6 @@ export const projectTypes = [
 ];
 
 export const sessions = [
-  '2024-2025',
   '2025-2026',
   '2026-2027',
   '2027-2028',
