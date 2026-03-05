@@ -71,17 +71,16 @@ export const generatePDF = async (
     const page = pages[i] as HTMLElement;
     
     const canvas = await html2canvas(page, {
-      scale: 3,
+      scale: 2,
       useCORS: true,
       allowTaint: true,
       backgroundColor: '#ffffff',
       width: page.offsetWidth,
       height: page.offsetHeight,
-      logging: false,
-      imageTimeout: 15000,
+      logging: false
     });
 
-    const imgData = canvas.toDataURL('image/png');
+    const imgData = canvas.toDataURL('image/jpeg', 0.95);
     
     const pdfWidth = 210;
     const pdfHeight = 297;
@@ -90,7 +89,7 @@ export const generatePDF = async (
       pdf.addPage();
     }
 
-    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+    pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
   }
 
   pagesContainer.style.cssText = originalStyle;

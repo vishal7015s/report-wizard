@@ -26,7 +26,6 @@ import {
   Check
 } from 'lucide-react';
 import AIGeneratingOverlay from '@/components/AIGeneratingOverlay';
-import DiagramGeneratingOverlay from '@/components/DiagramGeneratingOverlay';
 
 const ContentEditor = () => {
   const {
@@ -422,9 +421,6 @@ const ContentEditor = () => {
                                 {opt.label}
                               </Button>
                             ))}
-                            {diagramOptions.map(opt => opt.type).some(type => isGeneratingDiagram === `${chapter.id}-${section.id}-${type}`) && (
-                              <DiagramGeneratingOverlay diagramType={isGeneratingDiagram?.split('-').slice(-2).join('-') || 'diagram'} />
-                            )}
                           </div>
                           {!isPaid && (
                             <p className="text-xs text-muted-foreground mt-2">

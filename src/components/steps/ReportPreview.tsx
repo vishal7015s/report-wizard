@@ -2,8 +2,6 @@ import { useRef, useState, useMemo, useCallback } from 'react';
 import { useReportStore } from '@/store/reportStore';
 import { Button } from '@/components/ui/button';
 import { Download, CreditCard, Eye, CheckCircle, Loader2, FileText, FileDown, Lock } from 'lucide-react';
-import PDFDownloadOverlay from '@/components/PDFDownloadOverlay';
-import AIGeneratingOverlay from '@/components/AIGeneratingOverlay';
 import { toast } from 'sonner';
 import { generatePDF } from '@/lib/pdfGenerator';
 import { generateDOCX } from '@/lib/docxGenerator';
@@ -419,8 +417,6 @@ const ReportPreview = () => {
 
   return (
     <div className="animate-fade-in lg:h-[calc(100vh-140px)] lg:flex lg:flex-col lg:overflow-hidden">
-      {isGenerating && downloadType === 'pdf' && <PDFDownloadOverlay />}
-      {isGeneratingFull && <AIGeneratingOverlay />}
       <div className="mb-4 flex-shrink-0">
         <h2 className="text-2xl font-bold text-foreground mb-1">Preview Your Report</h2>
         <p className="text-muted-foreground">
