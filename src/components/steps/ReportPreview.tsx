@@ -651,24 +651,6 @@ const ReportPreview = () => {
                       )}
                     </Button>
                     
-                    <Button 
-                      className="w-full gap-2 bg-secondary hover:bg-secondary/80 text-secondary-foreground" 
-                      size="lg"
-                      onClick={handleDownloadDOCX}
-                      disabled={isGenerating}
-                    >
-                      {isGenerating && downloadType === 'docx' ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          Generating Word...
-                        </>
-                      ) : (
-                        <>
-                          <FileText className="w-4 h-4" />
-                          Download Word (Google Docs)
-                        </>
-                      )}
-                    </Button>
                   </div>
                 ) : isGeneratingFull ? (
                   <div className="space-y-3">
@@ -729,24 +711,6 @@ const ReportPreview = () => {
                     )}
                   </Button>
                   
-                  <Button 
-                    className="w-full gap-2 bg-secondary hover:bg-secondary/80 text-secondary-foreground" 
-                    size="lg"
-                    onClick={handleDownloadDOCX}
-                    disabled={isGenerating}
-                  >
-                    {isGenerating && downloadType === 'docx' ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        Generating Word...
-                      </>
-                    ) : (
-                      <>
-                        <FileText className="w-4 h-4" />
-                        Download Word (Google Docs)
-                      </>
-                    )}
-                  </Button>
                 </div>
               )}
 
