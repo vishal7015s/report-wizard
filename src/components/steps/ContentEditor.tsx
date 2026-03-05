@@ -25,6 +25,7 @@ import {
   ChevronUp,
   Check
 } from 'lucide-react';
+import AIGeneratingOverlay from '@/components/AIGeneratingOverlay';
 
 const ContentEditor = () => {
   const {
@@ -227,6 +228,8 @@ const ContentEditor = () => {
         accept="image/*"
         className="hidden"
       />
+
+      {isGenerating && <AIGeneratingOverlay />}
 
       <div className="mb-8">
         <h2 className="text-2xl font-bold text-foreground mb-1">Add Content</h2>
