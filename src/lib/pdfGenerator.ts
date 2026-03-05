@@ -47,7 +47,7 @@ export const generatePDF = async (
     const page = pages[i] as HTMLElement;
     
     const canvas = await html2canvas(page, {
-      scale: 4,
+      scale: 6,
       useCORS: true,
       allowTaint: true,
       backgroundColor: '#ffffff',
