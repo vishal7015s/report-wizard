@@ -166,7 +166,8 @@ const ContentEditor = () => {
       return;
     }
 
-    const section = reportData.chapters.find(c => c.id === chapterId)?.sections.find(s => s.id === sectionId);
+    const chaptersToSearch = contentMode === 'ai' ? aiReportContent.chapters : reportData.chapters;
+    const section = chaptersToSearch.find(c => c.id === chapterId)?.sections.find(s => s.id === sectionId);
     if (!section) return;
 
     setIsGeneratingDiagram(`${chapterId}-${sectionId}-${diagramType}`);
@@ -189,11 +190,17 @@ const ContentEditor = () => {
         throw new Error(data.error);
       }
 
-      addImageToSection(chapterId, sectionId, {
+      const image = {
         id: `ai-diagram-${Date.now()}`,
         url: data.imageUrl,
         caption: data.caption
-      });
+      };
+      
+      if (contentMode === 'ai') {
+        addImageToAiSection(chapterId, sectionId, image);
+      } else {
+        addImageToSection(chapterId, sectionId, image);
+      }
 
       toast.success(`Diagram generated! (${totalAIDiagrams + 1}/${MAX_AI_DIAGRAMS} used)`);
 

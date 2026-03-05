@@ -370,6 +370,16 @@ const ReportPreview = () => {
     return entries;
   }, [activeData.chapters]);
 
+  // Split TOC entries into pages (max ~20 entries per page)
+  const tocPages = useMemo(() => {
+    const MAX_ENTRIES_PER_PAGE = 20;
+    const pages: typeof tocEntries[] = [];
+    for (let i = 0; i < tocEntries.length; i += MAX_ENTRIES_PER_PAGE) {
+      pages.push(tocEntries.slice(i, i + MAX_ENTRIES_PER_PAGE));
+    }
+    return pages.length ? pages : [[]];
+  }, [tocEntries]);
+
   // Generate figure entries for List of Figures
   const figureEntries = useMemo(() => {
     const figures: { figureNumber: string; title: string; pageNumber: string }[] = [];
@@ -460,15 +470,18 @@ const ReportPreview = () => {
               </div>
 
               {/* Table of Contents */}
-              <div className="transform scale-[0.5] origin-top -mt-[400px]">
-                <PDFTableOfContents 
-                  entries={tocEntries}
-                  projectDetails={{
-                    projectTitle: activeData.projectDetails.projectTitle,
-                    department: activeData.projectDetails.department,
-                  }}
-                />
-              </div>
+              {tocPages.map((pageEntries, tocIdx) => (
+                <div key={`toc-${tocIdx}`} className="transform scale-[0.5] origin-top -mt-[400px]">
+                  <PDFTableOfContents 
+                    entries={pageEntries}
+                    projectDetails={{
+                      projectTitle: activeData.projectDetails.projectTitle,
+                      department: activeData.projectDetails.department,
+                    }}
+                    isContinued={tocIdx > 0}
+                  />
+                </div>
+              ))}
 
               {/* Chapter Pages */}
               {activeData.chapters.map((chapter) => {
@@ -526,13 +539,17 @@ const ReportPreview = () => {
                 department: activeData.projectDetails.department,
               }}
             />
-            <PDFTableOfContents 
-              entries={tocEntries}
-              projectDetails={{
-                projectTitle: activeData.projectDetails.projectTitle,
-                department: activeData.projectDetails.department,
-              }}
-            />
+            {tocPages.map((pageEntries, tocIdx) => (
+              <PDFTableOfContents
+                key={`hidden-toc-${tocIdx}`}
+                entries={pageEntries}
+                projectDetails={{
+                  projectTitle: activeData.projectDetails.projectTitle,
+                  department: activeData.projectDetails.department,
+                }}
+                isContinued={tocIdx > 0}
+              />
+            ))}
             {(() => {
               let hiddenPageCounter = 1;
               return activeData.chapters.map((chapter) => {
