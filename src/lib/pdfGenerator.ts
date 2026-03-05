@@ -27,45 +27,10 @@ export const generatePDF = async (
     )
   );
 
-  const replacements: { originalImg: HTMLImageElement, canvasReplica: HTMLCanvasElement, originalDisplay: string }[] = [];
-
-  const hiResScale = 3;
-
-  for (const img of images) {
-    try {
-      if (img.naturalWidth === 0 || img.naturalHeight === 0) continue;
-
-      const canvas = document.createElement('canvas');
-      const rect = img.getBoundingClientRect();
-      const displayW = rect.width || img.naturalWidth;
-      const displayH = rect.height || img.naturalHeight;
-
-      // Use natural image dimensions or scaled display size, whichever is larger
-      canvas.width = Math.max(img.naturalWidth, displayW * hiResScale);
-      canvas.height = Math.max(img.naturalHeight, displayH * hiResScale);
-
-      // Keep the canvas visually the same size as the original image
-      canvas.style.cssText = img.style.cssText;
-      canvas.style.width = `${displayW}px`;
-      canvas.style.height = `${displayH}px`;
-      canvas.className = img.className;
-
-      const ctx = canvas.getContext('2d');
-      if (ctx) {
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-        const originalDisplay = img.style.display || '';
-        img.parentNode?.insertBefore(canvas, img);
-        img.style.display = 'none';
-
-        replacements.push({ originalImg: img, canvasReplica: canvas, originalDisplay });
-      }
-    } catch (err) {
-      console.warn('Canvas swap failed:', err);
-    }
-  }
+  // Set crossOrigin for all images to allow html2canvas to capture them
+  images.forEach(img => {
+    img.crossOrigin = 'anonymous';
+  });
 
   await new Promise(resolve => setTimeout(resolve, 300));
 
@@ -82,7 +47,7 @@ export const generatePDF = async (
     const page = pages[i] as HTMLElement;
     
     const canvas = await html2canvas(page, {
-      scale: 3,
+      scale: 4,
       useCORS: true,
       allowTaint: true,
       backgroundColor: '#ffffff',
@@ -105,13 +70,6 @@ export const generatePDF = async (
   }
 
   pagesContainer.style.cssText = originalStyle;
-
-  for (const { originalImg, canvasReplica, originalDisplay } of replacements) {
-    if (canvasReplica.parentNode) {
-      canvasReplica.parentNode.removeChild(canvasReplica);
-    }
-    originalImg.style.display = originalDisplay;
-  }
 
   pdf.save(filename);
 };
