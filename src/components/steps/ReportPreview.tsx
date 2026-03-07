@@ -428,10 +428,10 @@ const ReportPreview = () => {
       <div className="flex flex-col lg:grid lg:grid-cols-3 gap-3 lg:gap-8 flex-1 min-h-0 overflow-hidden">
         {/* Preview Area - 60% on mobile */}
         <div className="lg:col-span-2 min-h-0 order-2 lg:order-1 overflow-hidden" style={{ flex: '6 1 0%' }}>
-          <div className="bg-muted/50 p-2 sm:p-8 rounded-xl overflow-auto h-full">
+          <div className="bg-muted/50 p-2 sm:p-8 rounded-xl overflow-y-auto overflow-x-hidden h-full">
             <div className="flex flex-col items-center gap-4">
               {/* Preliminary Pages */}
-              <div className="transform scale-[0.5] origin-top" style={{ marginBottom: '-530px' }}>
+              <div className="transform origin-top scale-[0.44] lg:scale-[0.5] mb-[-620px] lg:mb-[-530px]">
                 <PDFCoverPage data={activeData} pageNumber="I" />
               </div>
               
