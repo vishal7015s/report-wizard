@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useReportStore } from '@/store/reportStore';
 import CollegeSelection from '@/components/steps/CollegeSelection';
 import UserDetailsForm from '@/components/steps/UserDetailsForm';
