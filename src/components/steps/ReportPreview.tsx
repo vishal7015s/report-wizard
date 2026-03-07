@@ -435,32 +435,32 @@ const ReportPreview = () => {
                 <PDFCoverPage data={activeData} pageNumber="I" />
               </div>
               
-              <div className="transform scale-[0.5] origin-top" style={{ marginBottom: '-530px' }}>
+              <div className="transform origin-top scale-[0.44] lg:scale-[0.5] mb-[-620px] lg:mb-[-530px]">
                 <PDFCoverPageWithSVCE data={activeData} pageNumber="II" />
               </div>
               
-              <div className="transform scale-[0.5] origin-top" style={{ marginBottom: '-530px' }}>
+              <div className="transform origin-top scale-[0.44] lg:scale-[0.5] mb-[-620px] lg:mb-[-530px]">
                 <PDFCertificate data={activeData} pageNumber="i" />
               </div>
               
-              <div className="transform scale-[0.5] origin-top" style={{ marginBottom: '-530px' }}>
+              <div className="transform origin-top scale-[0.44] lg:scale-[0.5] mb-[-620px] lg:mb-[-530px]">
                 <PDFDeclaration data={activeData} pageNumber="ii" />
               </div>
               
-              <div className="transform scale-[0.5] origin-top" style={{ marginBottom: '-530px' }}>
+              <div className="transform origin-top scale-[0.44] lg:scale-[0.5] mb-[-620px] lg:mb-[-530px]">
                 <PDFApproval data={activeData} pageNumber="iii" />
               </div>
               
-              <div className="transform scale-[0.5] origin-top" style={{ marginBottom: '-530px' }}>
+              <div className="transform origin-top scale-[0.44] lg:scale-[0.5] mb-[-620px] lg:mb-[-530px]">
                 <PDFAcknowledgement data={activeData} pageNumber="iv" />
               </div>
               
-              <div className="transform scale-[0.5] origin-top" style={{ marginBottom: '-530px' }}>
+              <div className="transform origin-top scale-[0.44] lg:scale-[0.5] mb-[-620px] lg:mb-[-530px]">
                 <PDFAbstract data={activeData} pageNumber="v" />
               </div>
 
               {/* List of Figures */}
-              <div className="transform scale-[0.5] origin-top" style={{ marginBottom: '-530px' }}>
+              <div className="transform origin-top scale-[0.44] lg:scale-[0.5] mb-[-620px] lg:mb-[-530px]">
                 <PDFListOfFigures 
                   figures={figureEntries}
                   projectDetails={{
@@ -472,7 +472,7 @@ const ReportPreview = () => {
 
               {/* Table of Contents */}
               {tocPages.map((pageEntries, tocIdx) => (
-                <div key={`toc-${tocIdx}`} className="transform scale-[0.5] origin-top" style={{ marginBottom: '-530px' }}>
+                <div key={`toc-${tocIdx}`} className="transform origin-top scale-[0.44] lg:scale-[0.5] mb-[-620px] lg:mb-[-530px]">
                   <PDFTableOfContents 
                     entries={pageEntries}
                     projectDetails={{
@@ -492,7 +492,7 @@ const ReportPreview = () => {
                 return (
                   <div key={chapter.id} className="flex flex-col items-center gap-4">
                     {/* Chapter Title Page */}
-                    <div className="transform scale-[0.5] origin-top" style={{ marginBottom: '-530px' }}>
+                    <div className="transform origin-top scale-[0.44] lg:scale-[0.5] mb-[-620px] lg:mb-[-530px]">
                       <PDFChapterTitle 
                         chapterNumber={chapter.number}
                         chapterTitle={normalizeChapterTitle(chapter.number, chapter.title)}
@@ -505,7 +505,7 @@ const ReportPreview = () => {
                     {sectionPages.map((sections, pageIdx) => {
                       const contentPageNum = pageCounter++;
                       return (
-                        <div key={`${chapter.id}-page-${pageIdx}`} className="transform scale-[0.5] origin-top" style={{ marginBottom: '-530px' }}>
+                        <div key={`${chapter.id}-page-${pageIdx}`} className="transform origin-top scale-[0.44] lg:scale-[0.5] mb-[-620px] lg:mb-[-530px]">
                           <PDFChapterContent 
                             sections={sections}
                             data={activeData} 
