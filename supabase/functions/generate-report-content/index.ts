@@ -46,7 +46,6 @@ const cleanModelText = (text: string) =>
     .replace(/```\n?/g, "")
     .trim();
 
-// Escapes ASCII control chars that can break JSON parsing when the model outputs them inside strings.
 const escapeControlChars = (str: string): string => {
   let result = "";
   let inString = false;
@@ -90,13 +89,11 @@ const escapeControlChars = (str: string): string => {
 const repairJSON = (jsonStr: string): string => {
   let repaired = jsonStr;
 
-  // Remove any trailing content after the last closing brace.
   const lastBrace = repaired.lastIndexOf("}");
   if (lastBrace !== -1 && lastBrace < repaired.length - 1) {
     repaired = repaired.substring(0, lastBrace + 1);
   }
 
-  // Close an unterminated string if the response was cut off.
   let inString = false;
   let escaped = false;
   let result = "";
@@ -126,16 +123,10 @@ const repairJSON = (jsonStr: string): string => {
   if (inString) result += '"';
   repaired = result;
 
-  // Fix missing commas between adjacent string tokens (common: "..."\n"nextKey": ...)
   repaired = repaired.replace(/"(\s*)(?=")/g, '",$1');
-
-  // Fix trailing commas before closing brackets.
   repaired = repaired.replace(/,(\s*[\]}])/g, "$1");
-
-  // Fix missing commas between object literals in arrays.
   repaired = repaired.replace(/}(\s*){/g, "},$1{");
 
-  // Close unbalanced braces/brackets.
   let openBraces = 0;
   let openBrackets = 0;
 
@@ -161,7 +152,6 @@ const repairJSON = (jsonStr: string): string => {
 const extractJsonObject = (text: string): string | null => {
   const cleaned = escapeControlChars(cleanModelText(text));
 
-  // Try to find a JSON array first [...]
   const firstBracket = cleaned.indexOf("[");
   const lastBracket = cleaned.lastIndexOf("]");
   if (firstBracket !== -1 && lastBracket !== -1 && lastBracket > firstBracket) {
@@ -171,14 +161,12 @@ const extractJsonObject = (text: string): string | null => {
     }
   }
 
-  // Then try JSON object {...}
   const first = cleaned.indexOf("{");
   const last = cleaned.lastIndexOf("}");
   if (first !== -1 && last !== -1 && last > first) {
     return cleaned.slice(first, last + 1);
   }
 
-  // Fallback: regex extraction.
   const m = cleaned.match(/[\[{][\s\S]*[\]}]/);
   return m?.[0] ?? null;
 };
@@ -189,14 +177,12 @@ const parseModelJson = <T,>(raw: string): T => {
     throw new Error("Failed to extract JSON from AI response");
   }
 
-  // 1) Direct parse
   try {
     return JSON.parse(candidate) as T;
   } catch {
     // continue
   }
 
-  // 2) Repair and parse
   const repaired = repairJSON(candidate);
   try {
     return JSON.parse(repaired) as T;
@@ -204,7 +190,6 @@ const parseModelJson = <T,>(raw: string): T => {
     // continue
   }
 
-  // 3) Progressive truncation to the last plausible boundary (handles hard truncation mid-output)
   let working = candidate;
   for (let i = 0; i < 40; i++) {
     const lastBoundary = Math.max(working.lastIndexOf("}"), working.lastIndexOf("]"));
@@ -238,31 +223,47 @@ serve(async (req) => {
       existingChapters = [],
     } = await req.json();
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    if (!GEMINI_API_KEY) {
+      throw new Error("GEMINI_API_KEY is not configured");
     }
 
     console.log("Generating report content for:", projectTitle, "mode:", mode);
 
-    const callLovableChat = async (
+    const callGemini = async (
       messages: Array<{ role: string; content: string }>,
-      maxTokens: number,
+      _maxTokens: number,
       temperature: number = 0.3,
     ) => {
-      const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
+      // Convert messages to Gemini format
+      const systemMessage = messages.find(m => m.role === "system");
+      const userMessages = messages.filter(m => m.role !== "system");
+
+      const contents = userMessages.map(m => ({
+        role: m.role === "assistant" ? "model" : "user",
+        parts: [{ text: m.content }],
+      }));
+
+      const body: Record<string, unknown> = {
+        contents,
+        generationConfig: {
           temperature,
-          max_tokens: maxTokens,
-          messages,
-        }),
-      });
+          maxOutputTokens: _maxTokens,
+        },
+      };
+
+      if (systemMessage) {
+        body.systemInstruction = { parts: [{ text: systemMessage.content }] };
+      }
+
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        },
+      );
 
       if (!res.ok) {
         const errorText = await res.text();
@@ -271,9 +272,8 @@ serve(async (req) => {
       }
 
       const data = await res.json();
-      const text = data.choices?.[0]?.message?.content || "";
-      const finishReason = data.choices?.[0]?.finish_reason;
-      console.log("Raw AI response length:", text.length, "finish_reason:", finishReason);
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      console.log("Raw AI response length:", text.length);
       return text;
     };
 
@@ -283,7 +283,7 @@ serve(async (req) => {
       } catch (firstError) {
         console.warn("Primary JSON parse failed. Attempting AI JSON repair...");
 
-        const repairedRaw = await callLovableChat(
+        const repairedRaw = await callGemini(
           [
             {
               role: "system",
@@ -304,7 +304,7 @@ serve(async (req) => {
     };
 
     const shortTitle = (projectTitle || "Project").replace(/system|application|platform|software/gi, "").trim() || "Project";
-    
+
     const fallbackBlueprints = (): ChapterBlueprint[] => [
       {
         number: 1,
@@ -387,15 +387,13 @@ Students: ${students?.map((s: { name: string }) => s.name).join(", ") || "Not sp
 Project Description:
 ${prompt}`;
 
-    // For "remaining" mode, skip abstract/ack generation - reuse existing
     let abstractAck: { abstract: string; acknowledgement: string };
 
     if (mode === "remaining") {
       abstractAck = { abstract: "", acknowledgement: "" };
       console.log("Skipping abstract/ack for remaining mode");
     } else {
-      // 1) Generate abstract + acknowledgement (small payload)
-      const abstractAckRaw = await callLovableChat(
+      const abstractAckRaw = await callGemini(
         [
           { role: "system", content: baseSystemPrompt },
           {
@@ -432,12 +430,10 @@ Respond ONLY with JSON:
       }
     }
 
-    // 2) Generate custom chapter blueprints based on the project description
-    // Generate a unique seed from the prompt to force variation across similar topics
     const promptHash = prompt ? prompt.split("").reduce((a: number, c: string) => ((a << 5) - a + c.charCodeAt(0)) | 0, 0) : Date.now();
     const variationSeed = Math.abs(promptHash % 1000);
 
-    const blueprintsRaw = await callLovableChat(
+    const blueprintsRaw = await callGemini(
       [
         { role: "system", content: `${baseSystemPrompt}
 
@@ -464,7 +460,6 @@ Ch4: "Order System Design", Ch5: "Payment Integration", Ch6: "Order Flow Testing
 
 BAD examples (TOO GENERIC - NEVER do this for Ch 4-6):
 "System Design" ❌, "Implementation" ❌, "Testing & Results" ❌
-These are too generic and will be same for every project.
 
 BAD examples (TOO LONG - NEVER do this):
 "Natural Language Understanding Pipeline for Medical Queries" ❌
@@ -509,24 +504,22 @@ Respond ONLY with JSON array:
       allBlueprints = fallbackBlueprints();
     }
 
-    // Post-process: inject project-specificity into generic chapter titles
     const genericWords = [
       "system design", "implementation", "testing", "results",
       "conclusion", "future scope", "development", "coding",
     ];
-    
+
     const projectKeyword = shortTitle.split(/\s+/).slice(0, 3).join(" ");
     console.log("Post-processing blueprints. Project keyword:", projectKeyword);
-    
+
     allBlueprints = allBlueprints.map((ch) => {
       const titleLower = ch.title.toLowerCase().trim();
-      // Check if the title is purely generic (contains only generic words, no project-specific terms)
       const projectWords = projectKeyword.toLowerCase().split(/\s+/);
       const hasProjectWord = projectWords.some(pw => pw.length > 2 && titleLower.includes(pw));
       const hasGenericWord = genericWords.some(g => titleLower.includes(g));
-      
+
       console.log(`Ch ${ch.number}: "${ch.title}" hasProject=${hasProjectWord} hasGeneric=${hasGenericWord}`);
-      
+
       if (!hasProjectWord && hasGenericWord && ch.number >= 4 && ch.number <= 6) {
         const newTitle = `${projectKeyword} ${ch.title}`;
         console.log(`Renamed: "${ch.title}" -> "${newTitle}"`);
@@ -535,7 +528,6 @@ Respond ONLY with JSON array:
       return ch;
     });
 
-    // Filter blueprints based on mode
     let blueprints: ChapterBlueprint[];
     if (mode === "preview") {
       blueprints = allBlueprints.filter((ch) => ch.number <= 3);
@@ -581,7 +573,7 @@ Respond ONLY with JSON:
   ]
 }`;
 
-      const raw = await callLovableChat(
+      const raw = await callGemini(
         [
           { role: "system", content: baseSystemPrompt },
           { role: "user", content: promptForChapter },
@@ -598,7 +590,6 @@ Respond ONLY with JSON:
           raw,
           `{"number":${ch.number},"title":"${ch.title}","sections":[{"number":"${ch.sections[0]?.number || `${ch.number}.1`}","heading":"string","content":"string"}]}`,
         );
-        // Force the blueprint title (which may have been project-specific renamed)
         parsed.title = ch.title;
         chapterResults.push(parsed);
       } catch (e) {
@@ -610,7 +601,7 @@ Respond ONLY with JSON:
         );
 
         try {
-          const retryRaw = await callLovableChat(
+          const retryRaw = await callGemini(
             [
               { role: "system", content: baseSystemPrompt },
               { role: "user", content: retryPrompt },
@@ -693,7 +684,7 @@ Respond ONLY with JSON:
         );
       }
 
-      if (error.status === 402) {
+      if (error.status === 402 || error.status === 403) {
         return new Response(
           JSON.stringify({
             error: "AI credits exhausted. Please add credits to continue.",
