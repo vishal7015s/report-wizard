@@ -598,6 +598,8 @@ Respond ONLY with JSON:
           raw,
           `{"number":${ch.number},"title":"${ch.title}","sections":[{"number":"${ch.sections[0]?.number || `${ch.number}.1`}","heading":"string","content":"string"}]}`,
         );
+        // Force the blueprint title (which may have been project-specific renamed)
+        parsed.title = ch.title;
         chapterResults.push(parsed);
       } catch (e) {
         console.warn(`Chapter ${ch.number} parse failed; retrying with shorter output...`, e);
