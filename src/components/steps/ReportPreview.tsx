@@ -583,7 +583,7 @@ const ReportPreview = () => {
         </div>
 
         {/* Sidebar */}
-        <div className="space-y-4 order-1 lg:order-2 flex-shrink-0">
+        <div className="space-y-3 order-1 lg:order-2 flex-shrink-0 max-h-[30vh] overflow-auto lg:max-h-none lg:overflow-visible">
           <div className="bg-card rounded-2xl p-6 shadow-lg border">
             <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
               <Download className="w-5 h-5" />
@@ -729,7 +729,7 @@ const ReportPreview = () => {
             </div>
           </div>
 
-          <div className="bg-muted/50 rounded-xl p-4 text-sm">
+          <div className="hidden lg:block bg-muted/50 rounded-xl p-4 text-sm">
             <h4 className="font-semibold mb-2 flex items-center gap-2 text-primary">
               <Eye className="w-4 h-4" />
               Preview Note
