@@ -80,14 +80,14 @@ const PDFTableOfContents: React.FC<PDFTableOfContentsProps> = ({ entries, projec
         </h1>
 
         {/* TOC Table */}
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', border: '1px solid #000' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', border: '1px solid #000' }}>
           <tbody>
             {entries.map((entry, index) => (
               <tr key={index}>
                 <td
                   style={{
                     border: '1px solid #000',
-                    padding: '6px 8px',
+                    padding: '4px 8px',
                     fontWeight: entry.isChapter ? 'bold' : 'normal',
                     textTransform: entry.isChapter ? 'uppercase' : 'none',
                   }}
@@ -98,7 +98,7 @@ const PDFTableOfContents: React.FC<PDFTableOfContentsProps> = ({ entries, projec
                   style={{
                     border: '1px solid #000',
                     textAlign: 'center',
-                    padding: '6px 8px',
+                    padding: '4px 8px',
                     width: '60px',
                     fontWeight: entry.isChapter ? 'bold' : 'normal',
                   }}
