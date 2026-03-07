@@ -509,6 +509,28 @@ Respond ONLY with JSON array:
       allBlueprints = fallbackBlueprints();
     }
 
+    // Post-process: inject project-specificity into generic chapter titles
+    const genericTitles = [
+      "system design", "implementation", "testing", "testing & results",
+      "testing and results", "conclusion", "conclusion & future scope",
+      "conclusion and future scope", "design", "development",
+    ];
+    
+    const projectKeyword = shortTitle.split(/\s+/).slice(0, 3).join(" ");
+    
+    allBlueprints = allBlueprints.map((ch) => {
+      const titleLower = ch.title.toLowerCase().trim();
+      const isGeneric = genericTitles.some(g => titleLower === g);
+      
+      if (isGeneric && ch.number >= 2 && ch.number <= 6) {
+        // Prepend project keyword to make it specific
+        const newTitle = `${projectKeyword} ${ch.title}`;
+        console.log(`Renamed generic chapter "${ch.title}" -> "${newTitle}"`);
+        return { ...ch, title: newTitle };
+      }
+      return ch;
+    });
+
     // Filter blueprints based on mode
     let blueprints: ChapterBlueprint[];
     if (mode === "preview") {
