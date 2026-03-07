@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useReportStore } from '@/store/reportStore';
 import CollegeSelection from '@/components/steps/CollegeSelection';
 import UserDetailsForm from '@/components/steps/UserDetailsForm';
@@ -18,6 +19,10 @@ const steps = [
 const CreateReportPage = () => {
   const navigate = useNavigate();
   const { currentStep, setCurrentStep } = useReportStore();
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  }, [currentStep]);
 
   const renderStep = () => {
     switch (currentStep) {
