@@ -160,6 +160,12 @@ const ContentEditor = () => {
   };
 
   const handleGenerateDiagram = async (chapterId: string, sectionId: string, diagramType: string) => {
+    // Block AI diagram generation without payment
+    if (!isPaid) {
+      toast.error('Please complete payment to use AI diagram generation.');
+      return;
+    }
+
     // Check if limit reached
     if (totalAIDiagrams >= MAX_AI_DIAGRAMS) {
       toast.error(`Maximum ${MAX_AI_DIAGRAMS} AI-generated diagrams allowed per report`);
