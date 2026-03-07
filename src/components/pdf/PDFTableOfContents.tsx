@@ -76,7 +76,7 @@ const PDFTableOfContents: React.FC<PDFTableOfContentsProps> = ({ entries, projec
             marginBottom: '15px',
           }}
         >
-          {isContinued ? 'Table of Content (Continued)' : 'Table of Content'}
+          Table of Content
         </h1>
 
         {/* TOC Table */}
