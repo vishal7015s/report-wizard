@@ -491,7 +491,7 @@ Respond ONLY with JSON array:
         },
       ],
       3500,
-      0.7,
+      0.85,
     );
 
     let allBlueprints: ChapterBlueprint[];
