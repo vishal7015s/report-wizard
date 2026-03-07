@@ -78,9 +78,16 @@ const ReportPreview = () => {
       setAiChapters(allChapters);
 
       toast.success('Full report generated! You can now download.');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Full generation error:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to generate full report');
+      const msg = error?.message || '';
+      if (msg.includes('credits') || msg.includes('402') || msg.includes('payment_required')) {
+        toast.error('⚠️ AI credits exhausted! Your Lovable account has insufficient AI tokens. Please top up your credits to continue generating reports.', { duration: 8000 });
+      } else if (msg.includes('429') || msg.includes('Rate limit')) {
+        toast.error('⏳ Too many requests! Please wait a moment and try again.', { duration: 5000 });
+      } else {
+        toast.error(msg || 'Failed to generate full report');
+      }
     } finally {
       setIsGeneratingFull(false);
     }
