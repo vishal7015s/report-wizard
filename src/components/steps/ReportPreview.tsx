@@ -586,12 +586,12 @@ const ReportPreview = () => {
         {/* Sidebar */}
         <div className="order-1 lg:order-2 flex-shrink-0 overflow-auto lg:overflow-visible" style={{ flex: '4 1 0%' }}>
           <div className="bg-card rounded-2xl p-4 lg:p-6 shadow-lg border h-full overflow-auto">
-            <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+            <h3 className="text-base lg:text-lg font-semibold text-foreground mb-3 lg:mb-4 flex items-center gap-2">
               <Download className="w-5 h-5" />
               Download Report
             </h3>
             
-            <div className="space-y-3 text-sm">
+            <div className="hidden lg:block space-y-3 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Project</span>
                 <span className="font-medium truncate max-w-[150px]" title={activeData.projectDetails.projectTitle}>
@@ -614,6 +614,11 @@ const ReportPreview = () => {
                 <span className="text-muted-foreground">Content Mode</span>
                 <span className="font-medium">{isAIGenerated ? 'AI Generated' : 'Manual'}</span>
               </div>
+            </div>
+
+            {/* Mobile compact summary */}
+            <div className="lg:hidden flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground mb-2">
+              <span>{activeData.projectDetails.projectTitle || 'Untitled'} • {activeData.chapters.length} chapters • {7 + activeData.chapters.length} pages</span>
             </div>
 
             <hr className="my-4" />
