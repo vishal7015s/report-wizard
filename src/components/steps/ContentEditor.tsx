@@ -213,6 +213,16 @@ const ContentEditor = () => {
   };
 
   const handleNext = () => {
+    if (contentMode === 'manual') {
+      if (!reportData.abstract.trim()) {
+        toast.error('Please fill in the Abstract before proceeding');
+        return;
+      }
+      if (!reportData.acknowledgement.trim()) {
+        toast.error('Please fill in the Acknowledgement before proceeding');
+        return;
+      }
+    }
     setCurrentStep(3);
   };
 
@@ -440,7 +450,7 @@ const ContentEditor = () => {
         <TabsContent value="manual" className="space-y-6">
           {/* Abstract */}
           <div className="bg-card rounded-xl border p-6 shadow-soft">
-            <Label className="text-base font-semibold text-foreground">Abstract</Label>
+            <Label className="text-base font-semibold text-foreground">Abstract <span className="text-destructive">*</span></Label>
             <p className="text-sm text-muted-foreground mt-1 mb-3">
               A brief summary of your project (150-300 words)
             </p>
@@ -458,7 +468,7 @@ const ContentEditor = () => {
 
           {/* Acknowledgement */}
           <div className="bg-card rounded-xl border p-6 shadow-soft">
-            <Label className="text-base font-semibold text-foreground">Acknowledgement</Label>
+            <Label className="text-base font-semibold text-foreground">Acknowledgement <span className="text-destructive">*</span></Label>
             <p className="text-sm text-muted-foreground mt-1 mb-3">
               Thank your guides, HOD, principal, and others
             </p>
@@ -607,49 +617,9 @@ const ContentEditor = () => {
                           <ImageIcon className="w-10 h-10 text-muted-foreground" />
                           <span className="text-sm text-foreground">Add a diagram</span>
 
-                          {/* Show AI diagram buttons only for AI-generated content */}
-                          {isAIGenerated && section.content.length > 0 && (
-                            <div className="w-full">
-                              <div className="flex items-center justify-between mb-2">
-                                <p className="text-xs text-muted-foreground">
-                                  Generate AI diagrams ({totalAIDiagrams}/{MAX_AI_DIAGRAMS})
-                                </p>
-                                <span className={`text-xs font-medium ${totalAIDiagrams >= MAX_AI_DIAGRAMS ? 'text-destructive' : 'text-green-600'}`}>
-                                  {MAX_AI_DIAGRAMS - totalAIDiagrams} left
-                                </span>
-                              </div>
-                              <div className="flex flex-wrap gap-2 justify-center">
-                                {diagramOptions.map(opt => (
-                                  <Button
-                                    key={opt.type}
-                                    variant="outline"
-                                    size="sm"
-                                    className="gap-1 text-xs"
-                                    onClick={() => handleGenerateDiagram(currentChapter.id, section.id, opt.type)}
-                                    disabled={isGeneratingDiagram === `${currentChapter.id}-${section.id}-${opt.type}` || totalAIDiagrams >= MAX_AI_DIAGRAMS}
-                                  >
-                                    {isGeneratingDiagram === `${currentChapter.id}-${section.id}-${opt.type}` ? (
-                                      <Loader2 className="w-3 h-3 animate-spin" />
-                                    ) : (
-                                      <Wand2 className="w-3 h-3" />
-                                    )}
-                                    {opt.label}
-                                  </Button>
-                                ))}
-                              </div>
-                              <div className="my-3 flex items-center gap-2">
-                                <div className="flex-1 h-px bg-border"></div>
-                                <span className="text-xs text-muted-foreground">or</span>
-                                <div className="flex-1 h-px bg-border"></div>
-                              </div>
-                            </div>
-                          )}
-
-                          {!isAIGenerated && (
-                            <p className="text-xs text-muted-foreground text-center">
-                              Upload your own diagrams or use AI Generate tab for auto-generated diagrams
-                            </p>
-                          )}
+                          <p className="text-xs text-muted-foreground text-center">
+                            Upload your own diagrams and figures
+                          </p>
 
                           <Button
                             variant="outline"
