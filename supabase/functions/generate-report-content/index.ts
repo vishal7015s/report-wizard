@@ -256,25 +256,41 @@ serve(async (req) => {
         body.systemInstruction = { parts: [{ text: systemMessage.content }] };
       }
 
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        },
-      );
+      const maxRetries = 4;
+      for (let attempt = 0; attempt < maxRetries; attempt++) {
+        const res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          },
+        );
 
-      if (!res.ok) {
-        const errorText = await res.text();
-        console.error("Text generation error:", res.status, errorText);
-        throw new AIHttpError(res.status, errorText);
+        if (res.status === 429) {
+          const retryAfter = res.headers.get("Retry-After");
+          const waitMs = retryAfter
+            ? parseInt(retryAfter, 10) * 1000
+            : Math.pow(2, attempt) * 2000 + Math.random() * 1000;
+          console.warn(`Rate limited (attempt ${attempt + 1}/${maxRetries}), waiting ${Math.round(waitMs)}ms...`);
+          await res.text(); // consume body
+          await new Promise((r) => setTimeout(r, waitMs));
+          continue;
+        }
+
+        if (!res.ok) {
+          const errorText = await res.text();
+          console.error("Text generation error:", res.status, errorText);
+          throw new AIHttpError(res.status, errorText);
+        }
+
+        const data = await res.json();
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+        console.log("Raw AI response length:", text.length);
+        return text;
       }
 
-      const data = await res.json();
-      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-      console.log("Raw AI response length:", text.length);
-      return text;
+      throw new AIHttpError(429, "Rate limit exceeded after multiple retries");
     };
 
     const parseWithRepair = async <T,>(raw: string, schemaHint: string): Promise<T> => {
