@@ -403,13 +403,13 @@ ${prompt}`;
             content: `${projectContext}
 
 Generate ONLY the Abstract and Acknowledgement.
-- Abstract: 200-260 words.
-- Acknowledgement: thank guide, HOD, Principal, department, and parents.
+- Abstract: 200-260 words total, split into 3-4 separate paragraphs. Use \\n\\n to separate each paragraph. Each paragraph should cover a different aspect (problem statement, methodology, results, conclusion).
+- Acknowledgement: thank guide, HOD, Principal, department, and parents. Split into multiple paragraphs using \\n\\n.
 
 Respond ONLY with JSON:
 {
-  "abstract": "...",
-  "acknowledgement": "..."
+  "abstract": "paragraph1\\n\\nparagraph2\\n\\nparagraph3\\n\\nparagraph4",
+  "acknowledgement": "paragraph1\\n\\nparagraph2\\n\\nparagraph3"
 }`,
           },
         ],
