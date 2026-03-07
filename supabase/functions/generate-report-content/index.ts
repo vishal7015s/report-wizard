@@ -256,7 +256,7 @@ serve(async (req) => {
         body.systemInstruction = { parts: [{ text: systemMessage.content }] };
       }
 
-      const maxRetries = 4;
+      const maxRetries = 5;
       for (let attempt = 0; attempt < maxRetries; attempt++) {
         const res = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
@@ -269,11 +269,18 @@ serve(async (req) => {
 
         if (res.status === 429) {
           const retryAfter = res.headers.get("Retry-After");
-          const waitMs = retryAfter
-            ? parseInt(retryAfter, 10) * 1000
-            : Math.pow(2, attempt) * 2000 + Math.random() * 1000;
+          let parsedDelay = retryAfter ? parseInt(retryAfter, 10) * 1000 : NaN;
+          if (Number.isNaN(parsedDelay) && retryAfter) {
+            const retryDate = new Date(retryAfter);
+            if (!isNaN(retryDate.getTime())) {
+              parsedDelay = retryDate.getTime() - Date.now();
+            }
+          }
+          const waitMs = parsedDelay > 0
+            ? parsedDelay
+            : Math.pow(2, attempt) * 5000 + Math.random() * 3000;
           console.warn(`Rate limited (attempt ${attempt + 1}/${maxRetries}), waiting ${Math.round(waitMs)}ms...`);
-          await res.text(); // consume body
+          await res.text();
           await new Promise((r) => setTimeout(r, waitMs));
           continue;
         }
