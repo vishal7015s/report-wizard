@@ -39,16 +39,16 @@ const UserDetailsForm = () => {
 
   return (
     <div className="max-w-2xl mx-auto animate-fade-in">
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold text-foreground mb-1">Project Details</h2>
-        <p className="text-muted-foreground text-sm">
-          Enter your project and student information • Takes less than 1 minute
+      <div className="mb-4 sm:mb-8">
+        <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-1">Project Details</h2>
+        <p className="text-muted-foreground text-xs sm:text-sm">
+          Enter your project and student information
         </p>
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         {/* Project Information */}
-        <div className="bg-card rounded-2xl border p-6">
+        <div className="bg-card rounded-xl sm:rounded-2xl border p-4 sm:p-6">
           <SectionHeader icon={BookOpen} title="Project Information" />
           <div className="space-y-4">
             <div className="grid sm:grid-cols-2 gap-4">
@@ -117,7 +117,7 @@ const UserDetailsForm = () => {
         </div>
 
         {/* Guide Information */}
-        <div className="bg-card rounded-2xl border p-6">
+        <div className="bg-card rounded-xl sm:rounded-2xl border p-4 sm:p-6">
           <SectionHeader icon={GraduationCap} title="Guide & HOD Details" />
           <div className="space-y-4">
             <div className="grid sm:grid-cols-2 gap-4">
@@ -163,7 +163,7 @@ const UserDetailsForm = () => {
         </div>
 
         {/* Students */}
-        <div className="bg-card rounded-2xl border p-6">
+        <div className="bg-card rounded-xl sm:rounded-2xl border p-4 sm:p-6">
           <div className="flex items-center justify-between mb-4">
             <SectionHeader icon={Users} title="Students" />
             <Button

@@ -44,7 +44,7 @@ const CreateReportPage = () => {
     <div className={isPreviewStep ? 'h-screen bg-background flex flex-col overflow-hidden' : 'min-h-screen bg-background'}>
       {/* Header */}
       <header className="border-b bg-card/80 backdrop-blur-xl sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-3">
+        <div className="container mx-auto px-3 sm:px-4 py-2 sm:py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Button
@@ -97,7 +97,7 @@ const CreateReportPage = () => {
       </header>
 
       {/* Main layout with sidebar */}
-      <div className={`container mx-auto px-4 ${isPreviewStep ? 'py-3 flex-1 min-h-0 overflow-hidden' : 'py-8'}`}>
+      <div className={`container mx-auto px-3 sm:px-4 ${isPreviewStep ? 'py-2 sm:py-3 flex-1 min-h-0 overflow-hidden' : 'py-4 sm:py-8'}`}>
         <div className={`flex gap-8 ${isPreviewStep ? 'h-full min-h-0 overflow-hidden' : ''}`}>
           {/* Sidebar step indicator */}
           <StepIndicator
