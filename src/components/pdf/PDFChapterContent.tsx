@@ -52,9 +52,12 @@ const PDFChapterContent = ({ sections, data, pageNumber }: PDFChapterContentProp
           bottom: '18mm',
           left: '18mm',
           right: '18mm',
+          paddingTop: '7mm',
+          paddingLeft: '10mm',
+          paddingRight: '10mm',
           display: 'flex',
           flexDirection: 'column',
-          justifyContent: 'space-evenly',
+          justifyContent: 'flex-start',
           alignItems: 'center',
         }}>
           {/* Section heading for image pages */}
