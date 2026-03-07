@@ -19,6 +19,7 @@ import PDFChapterTitle from '@/components/pdf/PDFChapterTitle';
 import PDFChapterContent from '@/components/pdf/PDFChapterContent';
 import { ChapterSection } from '@/types/report';
 import { useRazorpayPayment } from '@/hooks/useRazorpayPayment';
+import AIGeneratingOverlay from '@/components/AIGeneratingOverlay';
 
 const ReportPreview = () => {
   const { reportData, contentMode, aiPrompt, aiReportContent, setAiChapters, setChapters, setAbstract, setAcknowledgement } = useReportStore();
