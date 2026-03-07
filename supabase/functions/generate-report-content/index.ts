@@ -566,7 +566,13 @@ Respond ONLY with JSON array:
       sections: Array<{ number: string; heading: string; content: string }>;
     }> = [];
 
-    for (const ch of blueprints) {
+    for (let chIdx = 0; chIdx < blueprints.length; chIdx++) {
+      const ch = blueprints[chIdx];
+      // Add delay between chapters to avoid Gemini rate limits (15 RPM free tier)
+      if (chIdx > 0) {
+        console.log(`Waiting 5s before chapter ${ch.number} to avoid rate limits...`);
+        await new Promise((r) => setTimeout(r, 5000));
+      }
       console.log(`Generating chapter ${ch.number}: ${ch.title}`);
 
       const sectionList = ch.sections.map((s) => `- ${s.number} ${s.heading}`).join("\n");
