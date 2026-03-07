@@ -430,6 +430,8 @@ const ReportPreview = () => {
 
   return (
     <div className="animate-fade-in h-full flex flex-col overflow-hidden">
+      {isGeneratingFull && <AIGeneratingOverlay mode="completing" />}
+      {isGenerating && <AIGeneratingOverlay mode="downloading" />}
       {/* Title - hidden on mobile to save space */}
       <div className="mb-4 flex-shrink-0 hidden lg:block">
         <h2 className="text-2xl font-bold text-foreground mb-1">Preview Your Report</h2>
