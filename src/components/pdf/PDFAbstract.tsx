@@ -38,7 +38,7 @@ The results demonstrate that machine learning models can significantly enhance m
         </h1>
         
         {/* Content */}
-        <div className="text-justify leading-relaxed" style={{ fontSize: '14px', color: '#000000' }}>
+        <div className="text-justify leading-loose" style={{ fontSize: '15px', color: '#000000' }}>
           {(abstract || defaultAbstract).split('\n\n').map((para, index) => (
             <p key={index} className="mb-4">{para}</p>
           ))}
