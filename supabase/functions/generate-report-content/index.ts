@@ -515,7 +515,7 @@ Respond ONLY with JSON array:
     allBlueprints = allBlueprints.map((ch) => {
       const titleLower = ch.title.toLowerCase().trim();
       const projectWords = projectKeyword.toLowerCase().split(/\s+/);
-      const hasProjectWord = projectWords.some(pw => pw.length > 2 && titleLower.includes(pw));
+      const hasProjectWord = projectWords.some((pw: string) => pw.length > 2 && titleLower.includes(pw));
       const hasGenericWord = genericWords.some(g => titleLower.includes(g));
 
       console.log(`Ch ${ch.number}: "${ch.title}" hasProject=${hasProjectWord} hasGeneric=${hasGenericWord}`);
