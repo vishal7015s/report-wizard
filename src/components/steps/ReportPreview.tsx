@@ -417,17 +417,18 @@ const ReportPreview = () => {
 
   return (
     <div className="animate-fade-in h-full flex flex-col overflow-hidden">
-      <div className="mb-4 flex-shrink-0">
+      {/* Title - hidden on mobile to save space */}
+      <div className="mb-4 flex-shrink-0 hidden lg:block">
         <h2 className="text-2xl font-bold text-foreground mb-1">Preview Your Report</h2>
         <p className="text-muted-foreground">
           Review the formatted pages before downloading
         </p>
       </div>
 
-      <div className="flex flex-col lg:grid lg:grid-cols-3 gap-4 lg:gap-8 flex-1 min-h-0 overflow-hidden">
-        {/* Preview Area */}
-        <div className="lg:col-span-2 min-h-0 flex-1 order-2 lg:order-1 overflow-hidden">
-          <div className="bg-muted/50 p-4 sm:p-8 rounded-xl overflow-auto h-full">
+      <div className="flex flex-col lg:grid lg:grid-cols-3 gap-3 lg:gap-8 flex-1 min-h-0 overflow-hidden">
+        {/* Preview Area - 60% on mobile */}
+        <div className="lg:col-span-2 min-h-0 order-2 lg:order-1 overflow-hidden" style={{ flex: '6 1 0%' }}>
+          <div className="bg-muted/50 p-2 sm:p-8 rounded-xl overflow-auto h-full">
             <div className="flex flex-col items-center gap-4">
               {/* Preliminary Pages */}
               <div className="transform scale-[0.5] origin-top" style={{ marginBottom: '-530px' }}>
@@ -583,8 +584,8 @@ const ReportPreview = () => {
         </div>
 
         {/* Sidebar */}
-        <div className="space-y-3 order-1 lg:order-2 flex-shrink-0 max-h-[30vh] overflow-auto lg:max-h-none lg:overflow-visible">
-          <div className="bg-card rounded-2xl p-6 shadow-lg border">
+        <div className="order-1 lg:order-2 flex-shrink-0 overflow-auto lg:overflow-visible" style={{ flex: '4 1 0%' }}>
+          <div className="bg-card rounded-2xl p-4 lg:p-6 shadow-lg border h-full overflow-auto">
             <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
               <Download className="w-5 h-5" />
               Download Report
