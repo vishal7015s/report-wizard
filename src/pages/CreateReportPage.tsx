@@ -97,7 +97,7 @@ const CreateReportPage = () => {
       </header>
 
       {/* Main layout with sidebar */}
-      <div className={`container mx-auto px-4 ${isPreviewStep ? 'py-3 h-[calc(100vh-74px)] overflow-hidden' : 'py-8'}`}>
+      <div className={`container mx-auto px-4 ${isPreviewStep ? 'py-3 flex-1 min-h-0 overflow-hidden' : 'py-8'}`}>
         <div className={`flex gap-8 ${isPreviewStep ? 'h-full overflow-hidden' : ''}`}>
           {/* Sidebar step indicator */}
           <StepIndicator
