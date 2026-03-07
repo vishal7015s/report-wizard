@@ -19,6 +19,7 @@ import PDFChapterTitle from '@/components/pdf/PDFChapterTitle';
 import PDFChapterContent from '@/components/pdf/PDFChapterContent';
 import { ChapterSection } from '@/types/report';
 import { useRazorpayPayment } from '@/hooks/useRazorpayPayment';
+import AIGeneratingOverlay from '@/components/AIGeneratingOverlay';
 
 const ReportPreview = () => {
   const { reportData, contentMode, aiPrompt, aiReportContent, setAiChapters, setChapters, setAbstract, setAcknowledgement } = useReportStore();
@@ -429,6 +430,8 @@ const ReportPreview = () => {
 
   return (
     <div className="animate-fade-in h-full flex flex-col overflow-hidden">
+      {isGeneratingFull && <AIGeneratingOverlay mode="completing" />}
+      {isGenerating && <AIGeneratingOverlay mode="downloading" />}
       {/* Title - hidden on mobile to save space */}
       <div className="mb-4 flex-shrink-0 hidden lg:block">
         <h2 className="text-2xl font-bold text-foreground mb-1">Preview Your Report</h2>
