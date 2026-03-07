@@ -510,22 +510,26 @@ Respond ONLY with JSON array:
     }
 
     // Post-process: inject project-specificity into generic chapter titles
-    const genericTitles = [
-      "system design", "implementation", "testing", "testing & results",
-      "testing and results", "conclusion", "conclusion & future scope",
-      "conclusion and future scope", "design", "development",
+    const genericWords = [
+      "system design", "implementation", "testing", "results",
+      "conclusion", "future scope", "development", "coding",
     ];
     
     const projectKeyword = shortTitle.split(/\s+/).slice(0, 3).join(" ");
+    console.log("Post-processing blueprints. Project keyword:", projectKeyword);
     
     allBlueprints = allBlueprints.map((ch) => {
       const titleLower = ch.title.toLowerCase().trim();
-      const isGeneric = genericTitles.some(g => titleLower === g);
+      // Check if the title is purely generic (contains only generic words, no project-specific terms)
+      const projectWords = projectKeyword.toLowerCase().split(/\s+/);
+      const hasProjectWord = projectWords.some(pw => pw.length > 2 && titleLower.includes(pw));
+      const hasGenericWord = genericWords.some(g => titleLower.includes(g));
       
-      if (isGeneric && ch.number >= 2 && ch.number <= 6) {
-        // Prepend project keyword to make it specific
+      console.log(`Ch ${ch.number}: "${ch.title}" hasProject=${hasProjectWord} hasGeneric=${hasGenericWord}`);
+      
+      if (!hasProjectWord && hasGenericWord && ch.number >= 4 && ch.number <= 6) {
         const newTitle = `${projectKeyword} ${ch.title}`;
-        console.log(`Renamed generic chapter "${ch.title}" -> "${newTitle}"`);
+        console.log(`Renamed: "${ch.title}" -> "${newTitle}"`);
         return { ...ch, title: newTitle };
       }
       return ch;
