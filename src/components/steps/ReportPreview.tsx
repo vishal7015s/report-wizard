@@ -372,7 +372,7 @@ const ReportPreview = () => {
 
   // Split TOC entries into pages (max ~20 entries per page)
   const tocPages = useMemo(() => {
-    const MAX_ENTRIES_PER_PAGE = 31;
+    const MAX_ENTRIES_PER_PAGE = 33;
     const pages: typeof tocEntries[] = [];
     for (let i = 0; i < tocEntries.length; i += MAX_ENTRIES_PER_PAGE) {
       pages.push(tocEntries.slice(i, i + MAX_ENTRIES_PER_PAGE));
