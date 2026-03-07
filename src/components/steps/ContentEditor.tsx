@@ -367,34 +367,34 @@ const ContentEditor = () => {
                   if (!chapter) return null;
                   return (
                     <div className="space-y-2">
-                      <h4 className="font-semibold text-sm text-foreground bg-muted/40 px-3 py-2 rounded-lg">
-                        Chapter {chapter.number}: {chapter.title}
+                      <h4 className="font-semibold text-xs sm:text-sm text-foreground bg-muted/40 px-2 sm:px-3 py-2 rounded-lg truncate">
+                        Ch {chapter.number}: {chapter.title}
                       </h4>
                       {chapter.sections.map((section) => (
-                        <div key={section.id} className="p-4 border rounded-lg bg-muted/20 ml-2">
-                          <div className="flex items-center justify-between mb-3">
-                            <span className="font-medium text-sm text-foreground">
+                        <div key={section.id} className="p-2 sm:p-4 border rounded-lg bg-muted/20 ml-0 sm:ml-2">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 mb-3">
+                            <span className="font-medium text-xs sm:text-sm text-foreground leading-tight">
                               {section.number} {section.heading}
                             </span>
-                            <span className="text-xs text-muted-foreground">
+                            <span className="text-[10px] sm:text-xs text-muted-foreground shrink-0">
                               {section.images?.length || 0} image(s)
                             </span>
                           </div>
 
                           {/* Uploaded image thumbnails */}
                           {section.images && section.images.length > 0 && (
-                            <div className="grid grid-cols-3 gap-2 mb-3">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3">
                               {section.images.map((img) => (
                                 <div key={img.id} className="relative group">
                                   <img
                                     src={img.url}
                                     alt={img.caption}
-                                    className="w-full h-20 object-cover rounded border"
+                                    className="w-full h-16 sm:h-20 object-cover rounded border"
                                   />
                                   <Button
                                     variant="destructive"
                                     size="icon"
-                                    className="absolute top-1 right-1 w-5 h-5 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    className="absolute top-1 right-1 w-5 h-5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
                                     onClick={() => removeImageFromAiSection(chapter.id, section.id, img.id)}
                                   >
                                     <X className="w-3 h-3" />
@@ -405,16 +405,16 @@ const ContentEditor = () => {
                             </div>
                           )}
 
-                          <div className="flex flex-wrap gap-2">
+                          <div className="flex flex-wrap gap-1.5 sm:gap-2">
                             {/* Upload Image - always active */}
                             <Button
                               variant="outline"
                               size="sm"
-                              className="gap-1 text-xs"
+                              className="gap-1 text-[10px] sm:text-xs h-7 sm:h-8 px-2 sm:px-3"
                               onClick={() => triggerImageUpload(chapter.id, section.id)}
                             >
                               <Upload className="w-3 h-3" />
-                              Upload Image
+                              Upload
                             </Button>
 
                             {/* AI Diagram buttons - locked until payment */}
@@ -423,7 +423,7 @@ const ContentEditor = () => {
                                 key={opt.type}
                                 variant="outline"
                                 size="sm"
-                                className={`gap-1 text-xs ${!isPaid ? 'opacity-50' : ''}`}
+                                className={`gap-1 text-[10px] sm:text-xs h-7 sm:h-8 px-2 sm:px-3 ${!isPaid ? 'opacity-50' : ''}`}
                                 onClick={() => handleGenerateDiagram(chapter.id, section.id, opt.type)}
                                 disabled={!isPaid || isGeneratingDiagram === `${chapter.id}-${section.id}-${opt.type}` || totalAIDiagrams >= MAX_AI_DIAGRAMS}
                               >
@@ -439,8 +439,8 @@ const ContentEditor = () => {
                             ))}
                           </div>
                           {!isPaid && (
-                            <p className="text-xs text-muted-foreground mt-2">
-                              🔒 AI diagram generation unlocks after payment. You can upload your own images now.
+                            <p className="text-[10px] sm:text-xs text-muted-foreground mt-2">
+                              🔒 AI diagrams unlock after payment. Upload your own images now.
                             </p>
                           )}
                         </div>
