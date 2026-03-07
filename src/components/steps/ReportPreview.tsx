@@ -583,7 +583,7 @@ const ReportPreview = () => {
         </div>
 
         {/* Sidebar */}
-        <div className="space-y-6 order-1 lg:order-2">
+        <div className="space-y-6 order-1 lg:order-2 flex-shrink-0 lg:overflow-auto">
           <div className="bg-card rounded-2xl p-6 shadow-lg border">
             <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
               <Download className="w-5 h-5" />
