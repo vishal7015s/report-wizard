@@ -453,27 +453,29 @@ Generate a 7-chapter structure for this project report.
 CRITICAL RULES FOR TITLES:
 - Chapter and section titles must be SHORT (2-5 words). No long sentences.
 - Titles must sound like REAL Indian engineering college reports, not AI-generated.
-- Use practical, standard academic phrasing that actual students use.
+- EVERY chapter title (including Ch 4-7) MUST be SPECIFIC to "${projectTitle}". 
+- Do NOT use generic titles like "System Design", "Implementation", "Testing & Results". Instead use project-specific ones.
 
-GOOD examples of chapter titles:
-"Introduction", "Problem Statement & Objectives", "Technology Stack", "System Design", "Implementation", "Testing & Results", "Conclusion & Future Scope"
+GOOD examples for a "Library Management System":
+Ch4: "Library Module Design", Ch5: "Catalog Implementation", Ch6: "Search Testing", Ch7: "Conclusion & Scope"
 
-GOOD examples of section titles:
-"Background", "Problem Definition", "Objectives", "Scope of Project", "Frontend Development", "Backend Architecture", "Database Design", "Unit Testing", "Performance Analysis", "Future Enhancements"
+GOOD examples for a "Food Ordering App":
+Ch4: "Order System Design", Ch5: "Payment Integration", Ch6: "Order Flow Testing", Ch7: "Conclusion & Scope"
+
+BAD examples (TOO GENERIC - NEVER do this for Ch 4-6):
+"System Design" ❌, "Implementation" ❌, "Testing & Results" ❌
+These are too generic and will be same for every project.
 
 BAD examples (TOO LONG - NEVER do this):
 "Natural Language Understanding Pipeline for Medical Queries" ❌
-"Secure Payment Gateway Integration & Transaction Flow" ❌
-"Real-Time Availability Dashboard with WebSocket Communication" ❌
 
 Rules:
 - Exactly 7 chapters.
-- Chapter 1: Introduction (can add domain context, e.g. "Introduction to ${projectTitle}" but keep it short).
-- Chapter 7: Conclusion & Future Scope.
-- Chapters 2-6: Cover problem statement, tech stack, design, implementation, testing etc. relevant to the project.
-- Each chapter: 2 to 4 sections with short headings.
+- Chapter 1: Introduction (can add domain context, keep short).
+- Chapter 7: Must include "Conclusion" but can be project-specific.
+- Chapters 2-6: Cover literature, requirements, design, implementation, testing — ALL with project-specific naming.
+- Each chapter: 2 to 4 sections with short, project-specific headings.
 - Section numbering: 1.1, 1.2... 2.1, 2.2... etc.
-- Make chapter names SPECIFIC to this project but still SHORT.
 
 Respond ONLY with JSON array:
 [
