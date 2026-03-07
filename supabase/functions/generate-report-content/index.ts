@@ -303,10 +303,12 @@ serve(async (req) => {
       }
     };
 
+    const shortTitle = (projectTitle || "Project").replace(/system|application|platform|software/gi, "").trim() || "Project";
+    
     const fallbackBlueprints = (): ChapterBlueprint[] => [
       {
         number: 1,
-        title: "Introduction",
+        title: `Introduction to ${shortTitle}`,
         sections: [
           { number: "1.1", heading: "Project Overview" },
           { number: "1.2", heading: "Problem Statement" },
@@ -315,55 +317,55 @@ serve(async (req) => {
       },
       {
         number: 2,
-        title: "Existing System",
+        title: "Literature Survey",
         sections: [
-          { number: "2.1", heading: "Current Workflow" },
-          { number: "2.2", heading: "Limitations" },
-          { number: "2.3", heading: "Need of Solution" },
+          { number: "2.1", heading: "Existing Solutions" },
+          { number: "2.2", heading: "Related Technologies" },
+          { number: "2.3", heading: "Comparative Analysis" },
         ],
       },
       {
         number: 3,
-        title: "Proposed System",
+        title: `${shortTitle} Requirements`,
         sections: [
-          { number: "3.1", heading: "Solution Overview" },
-          { number: "3.2", heading: "Key Features" },
-          { number: "3.3", heading: "Advantages" },
+          { number: "3.1", heading: "Functional Requirements" },
+          { number: "3.2", heading: "Non-Functional Requirements" },
+          { number: "3.3", heading: "Feasibility Study" },
         ],
       },
       {
         number: 4,
-        title: "Technology Stack",
+        title: `${shortTitle} Design`,
         sections: [
-          { number: "4.1", heading: "Frontend Tools" },
-          { number: "4.2", heading: "Backend Tools" },
-          { number: "4.3", heading: "Database and APIs" },
+          { number: "4.1", heading: "Architecture Design" },
+          { number: "4.2", heading: "Module Design" },
+          { number: "4.3", heading: "Database Design" },
         ],
       },
       {
         number: 5,
-        title: "System Design",
+        title: `${shortTitle} Implementation`,
         sections: [
-          { number: "5.1", heading: "Architecture" },
-          { number: "5.2", heading: "Module Design" },
-          { number: "5.3", heading: "Data Flow" },
+          { number: "5.1", heading: "Development Environment" },
+          { number: "5.2", heading: "Core Modules" },
+          { number: "5.3", heading: "Integration" },
         ],
       },
       {
         number: 6,
-        title: "Implementation and Testing",
+        title: "Testing & Results",
         sections: [
-          { number: "6.1", heading: "Implementation Steps" },
+          { number: "6.1", heading: "Test Strategy" },
           { number: "6.2", heading: "Test Cases" },
-          { number: "6.3", heading: "Results" },
+          { number: "6.3", heading: "Results & Analysis" },
         ],
       },
       {
         number: 7,
-        title: "Conclusion and Future Scope",
+        title: "Conclusion & Future Scope",
         sections: [
           { number: "7.1", heading: "Conclusion" },
-          { number: "7.2", heading: "Future Scope" },
+          { number: "7.2", heading: "Future Enhancements" },
         ],
       },
     ];
