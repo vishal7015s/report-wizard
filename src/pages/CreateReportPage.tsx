@@ -19,6 +19,7 @@ const steps = [
 const CreateReportPage = () => {
   const navigate = useNavigate();
   const { currentStep, setCurrentStep } = useReportStore();
+  const isPreviewStep = currentStep === 3;
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
@@ -96,8 +97,8 @@ const CreateReportPage = () => {
       </header>
 
       {/* Main layout with sidebar */}
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex gap-8">
+      <div className={`container mx-auto px-4 ${isPreviewStep ? 'py-3 h-[calc(100vh-74px)] overflow-hidden' : 'py-8'}`}>
+        <div className={`flex gap-8 ${isPreviewStep ? 'h-full overflow-hidden' : ''}`}>
           {/* Sidebar step indicator */}
           <StepIndicator
             steps={steps}
@@ -106,7 +107,7 @@ const CreateReportPage = () => {
           />
 
           {/* Content */}
-          <main className="flex-1 min-w-0">{renderStep()}</main>
+          <main className={`flex-1 min-w-0 ${isPreviewStep ? 'h-full overflow-hidden' : ''}`}>{renderStep()}</main>
         </div>
       </div>
     </div>

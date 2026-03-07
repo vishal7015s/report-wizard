@@ -416,7 +416,7 @@ const ReportPreview = () => {
   let pageCounter = 1;
 
   return (
-    <div className="animate-fade-in h-[calc(100vh-120px)] flex flex-col overflow-hidden">
+    <div className="animate-fade-in h-full flex flex-col overflow-hidden">
       <div className="mb-4 flex-shrink-0">
         <h2 className="text-2xl font-bold text-foreground mb-1">Preview Your Report</h2>
         <p className="text-muted-foreground">
@@ -583,7 +583,7 @@ const ReportPreview = () => {
         </div>
 
         {/* Sidebar */}
-        <div className="space-y-4 order-1 lg:order-2 flex-shrink-0 overflow-auto max-h-[35vh] lg:max-h-none">
+        <div className="space-y-4 order-1 lg:order-2 flex-shrink-0">
           <div className="bg-card rounded-2xl p-6 shadow-lg border">
             <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
               <Download className="w-5 h-5" />
