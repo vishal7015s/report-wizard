@@ -53,9 +53,14 @@ const PDFApproval = ({ data, pageNumber }: PDFPageProps) => {
               "{projectDetails.projectTitle || 'Project Title'}"
             </span>{' '}
             submitted by{' '}
-            <span className="font-bold" style={{ color: '#c41e3a' }}>
-              {firstStudent?.name || 'Student Name'} [{firstStudent?.enrollmentNumber || 'Enrollment No.'}]
-            </span>{' '}
+            {projectDetails.students.map((student, index) => (
+              <span key={student.id}>
+                <span className="font-bold" style={{ color: '#c41e3a' }}>
+                  {student.name || 'Student Name'} [{student.enrollmentNumber || 'Enrollment No.'}]
+                </span>
+                {index < projectDetails.students.length - 1 ? ', ' : ' '}
+              </span>
+            ))}
             is recommended as fulfillment for the award of the{' '}
             <span className="font-bold">Bachelor of Technology in {projectDetails.department}</span>{' '}
             degree by{' '}

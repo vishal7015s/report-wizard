@@ -57,9 +57,11 @@ const PDFDeclaration = ({ data, pageNumber }: PDFPageProps) => {
         
         {/* Student Signature */}
         <div className="text-right mt-16" style={{ fontSize: '15px', color: '#000000' }}>
-          <p className="font-bold">
-            {firstStudent?.name || 'Student Name'}[{firstStudent?.enrollmentNumber || 'Enrollment No.'}]
-          </p>
+          {projectDetails.students.map((student) => (
+            <p key={student.id} className="font-bold">
+              {student.name || 'Student Name'} [{student.enrollmentNumber || 'Enrollment No.'}]
+            </p>
+          ))}
         </div>
         
         {/* Guide & HOD Signatures */}
