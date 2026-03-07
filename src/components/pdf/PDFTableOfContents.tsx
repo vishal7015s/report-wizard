@@ -61,10 +61,10 @@ const PDFTableOfContents: React.FC<PDFTableOfContentsProps> = ({ entries, projec
       <div
         className="absolute"
         style={{
-          top: '25mm',
-          left: '25mm',
-          right: '25mm',
-          bottom: '20mm',
+          top: '20mm',
+          left: '20mm',
+          right: '20mm',
+          bottom: '18mm',
         }}
       >
         {/* Title */}
@@ -73,7 +73,7 @@ const PDFTableOfContents: React.FC<PDFTableOfContentsProps> = ({ entries, projec
             fontSize: '18px',
             fontWeight: 'bold',
             textAlign: 'center',
-            marginBottom: '15px',
+            marginBottom: '10px',
           }}
         >
           Table of Content
