@@ -696,7 +696,7 @@ Respond ONLY with JSON:
       if (error.status === 402) {
         return new Response(
           JSON.stringify({
-            error: "AI credits exhausted. Please add credits to continue.",
+            error: "AI credits exhausted! Your account has insufficient AI tokens. Please top up your Lovable credits to continue generating reports.",
           }),
           {
             status: 402,
