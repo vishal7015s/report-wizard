@@ -52,10 +52,12 @@ const PDFChapterContent = ({ sections, data, pageNumber }: PDFChapterContentProp
           bottom: '18mm',
           left: '18mm',
           right: '18mm',
+          paddingTop: '4mm',
           display: 'flex',
           flexDirection: 'column',
-          justifyContent: 'space-evenly',
+          justifyContent: 'flex-start',
           alignItems: 'center',
+          gap: '6mm',
         }}>
           {/* Section heading for image pages */}
           {sections[0]?.heading && (
@@ -67,6 +69,8 @@ const PDFChapterContent = ({ sections, data, pageNumber }: PDFChapterContentProp
               textAlign: 'left',
               width: '100%',
               flexShrink: 0,
+              margin: 0,
+              marginBottom: '2mm',
             }}>
               {sections[0].heading}
             </h2>
