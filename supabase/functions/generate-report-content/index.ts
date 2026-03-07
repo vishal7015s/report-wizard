@@ -627,6 +627,7 @@ Respond ONLY with JSON:
             `{"number":${ch.number},"title":"${ch.title}","sections":[{"number":"${ch.sections[0]?.number || `${ch.number}.1`}","heading":"string","content":"string"}]}`,
           );
 
+          parsedRetry.title = ch.title;
           chapterResults.push(parsedRetry);
         } catch (retryError) {
           console.warn(`Chapter ${ch.number} retry also failed. Using deterministic fallback chapter content.`, retryError);
