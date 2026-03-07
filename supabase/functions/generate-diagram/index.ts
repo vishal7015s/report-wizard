@@ -21,33 +21,14 @@ serve(async (req) => {
     console.log("Generating diagram:", diagramType);
 
     const diagramPrompts: Record<string, string> = {
-      "er-diagram": `Create a professional Entity Relationship (ER) diagram for: ${projectContext}. 
-        Show entities as rectangles, attributes as ovals, relationships as diamonds. 
-        Use clear lines connecting entities. Include primary keys marked with underlines.
-        Professional technical diagram style, clean white background, black lines and text.`,
-      
-      "flowchart": `Create a professional flowchart diagram for: ${projectContext}. 
-        Use standard flowchart symbols: oval for start/end, rectangle for process, diamond for decision.
-        Show clear flow arrows. Professional technical diagram style, clean white background.`,
-      
-      "architecture": `Create a professional system architecture diagram for: ${projectContext}. 
-        Show components, modules, databases, APIs, and their connections.
-        Use boxes for components, cylinders for databases, arrows for data flow.
-        Professional technical diagram style, clean white background.`,
-      
-      "dfd": `Create a professional Data Flow Diagram (DFD) for: ${projectContext}. 
-        Show processes as circles, external entities as rectangles, data stores as open-ended rectangles.
-        Use arrows to show data flow between components.
-        Professional technical diagram style, clean white background.`,
-      
-      "use-case": `Create a professional Use Case Diagram for: ${projectContext}. 
-        Show actors as stick figures, use cases as ovals inside a system boundary rectangle.
-        Use lines to connect actors to their use cases.
-        Professional technical diagram style, clean white background.`,
+      "er-diagram": `ER diagram for "${projectContext}". Entities as rectangles, attributes as ovals, relationships as diamonds. Underline primary keys. Black on white, clean technical style.`,
+      "flowchart": `Flowchart for "${projectContext}". Oval=start/end, rectangle=process, diamond=decision. Clear arrows. Black on white.`,
+      "architecture": `System architecture diagram for "${projectContext}". Boxes=components, cylinders=databases, arrows=data flow. Black on white.`,
+      "dfd": `Data Flow Diagram for "${projectContext}". Circles=processes, rectangles=entities, open rectangles=data stores. Arrows for flow. Black on white.`,
+      "use-case": `Use Case Diagram for "${projectContext}". Stick figures=actors, ovals=use cases inside system boundary. Black on white.`,
     };
 
-    const prompt = diagramPrompts[diagramType] || 
-      `Create a professional technical diagram for: ${projectContext}. Professional style, clean white background.`;
+    const prompt = diagramPrompts[diagramType] || `Technical diagram for "${projectContext}". Clean black on white.`;
 
     console.log("Calling Lovable AI for image generation...");
 
