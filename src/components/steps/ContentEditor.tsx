@@ -151,9 +151,16 @@ const ContentEditor = () => {
 
       toast.success('Preview content generated! Pay to unlock full report with all 7 chapters.');
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Generation error:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to generate content');
+      const msg = error?.message || '';
+      if (msg.includes('credits') || msg.includes('402') || msg.includes('payment_required')) {
+        toast.error('⚠️ AI credits exhausted! Your Lovable account has insufficient AI tokens. Please top up your credits to continue generating reports.', { duration: 8000 });
+      } else if (msg.includes('429') || msg.includes('Rate limit')) {
+        toast.error('⏳ Too many requests! Please wait a moment and try again.', { duration: 5000 });
+      } else {
+        toast.error(msg || 'Failed to generate content');
+      }
     } finally {
       setIsGenerating(false);
     }
