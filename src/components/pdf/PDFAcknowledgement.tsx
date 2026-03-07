@@ -49,9 +49,11 @@ I would like to acknowledge all my friends & family members for the moral suppor
         
         {/* Student Signature */}
         <div className="text-right mt-20" style={{ fontSize: '15px', color: '#000000' }}>
-          <p className="font-bold">
-            {firstStudent?.name || 'Student Name'} [{firstStudent?.enrollmentNumber || 'Enrollment No.'}]
-          </p>
+          {projectDetails.students.map((student) => (
+            <p key={student.id} className="font-bold">
+              {student.name || 'Student Name'} [{student.enrollmentNumber || 'Enrollment No.'}]
+            </p>
+          ))}
         </div>
         
         {/* Page Number */}

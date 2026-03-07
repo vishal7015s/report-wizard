@@ -49,10 +49,15 @@ const PDFCertificate = ({ data, pageNumber }: PDFPageProps) => {
         <div className="text-justify leading-loose" style={{ fontSize: '15px', color: '#000000' }}>
           <p className="mb-4">
             This is certify that{' '}
-            <span className="font-bold" style={{ color: '#c41e3a' }}>
-              {firstStudent?.name || 'Student Name'} [{firstStudent?.enrollmentNumber || 'Enrollment No.'}]
-            </span>{' '}
-            has completed his project work, titled{' '}
+            {projectDetails.students.map((student, index) => (
+              <span key={student.id}>
+                <span className="font-bold" style={{ color: '#c41e3a' }}>
+                  {student.name || 'Student Name'} [{student.enrollmentNumber || 'Enrollment No.'}]
+                </span>
+                {index < projectDetails.students.length - 1 ? ', ' : ' '}
+              </span>
+            ))}
+            has completed the project work, titled{' '}
             <span className="font-bold" style={{ color: '#c41e3a' }}>
               "{projectDetails.projectTitle || 'Project Title'}"
             </span>{' '}
