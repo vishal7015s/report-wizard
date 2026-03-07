@@ -96,6 +96,12 @@ const ReportPreview = () => {
   const handleDownloadPDF = async () => {
     if (!pdfContainerRef.current) return;
 
+    // Block AI downloads without payment
+    if (isAIGenerated && !isPaid) {
+      toast.error('Please complete payment before downloading AI-generated report.');
+      return;
+    }
+
     setIsGenerating(true);
     setDownloadType('pdf');
     toast.info('Generating PDF... Please wait');
@@ -116,6 +122,12 @@ const ReportPreview = () => {
   };
 
   const handleDownloadDOCX = async () => {
+    // Block AI downloads without payment
+    if (isAIGenerated && !isPaid) {
+      toast.error('Please complete payment before downloading AI-generated report.');
+      return;
+    }
+
     setIsGenerating(true);
     setDownloadType('docx');
     toast.info('Generating Word document... Please wait');
