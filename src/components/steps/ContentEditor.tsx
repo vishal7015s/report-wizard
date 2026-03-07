@@ -273,8 +273,8 @@ const ContentEditor = () => {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="ai" className="space-y-6">
-          <div className="bg-card rounded-xl border p-6 shadow-soft">
+        <TabsContent value="ai" className="space-y-4 sm:space-y-6">
+          <div className="bg-card rounded-xl border p-4 sm:p-6 shadow-soft">
             <div className="space-y-4">
               <div>
                 <Label className="text-base font-semibold text-foreground">Describe Your Project</Label>
@@ -283,8 +283,8 @@ const ContentEditor = () => {
                 </p>
               </div>
               <Textarea
-                placeholder="Example: My project is about predicting multiple diseases using machine learning. The system uses patient health parameters like blood pressure, glucose levels, cholesterol, BMI, and age to predict the likelihood of heart disease and diabetes. We implemented Logistic Regression, SVM, Random Forest, and KNN algorithms. The frontend is built with React and backend uses Python Flask with MySQL database..."
-                className="min-h-[200px] font-serif"
+                placeholder="Example: My project is about predicting multiple diseases using machine learning..."
+                className="min-h-[150px] sm:min-h-[200px] font-serif text-sm sm:text-base"
                 value={aiPromptText}
                 onChange={(e) => setAiPromptText(e.target.value)}
                 disabled={isGenerating}
@@ -337,8 +337,8 @@ const ContentEditor = () => {
 
           {/* AI Diagram Generation - Only shown after content is generated */}
           {aiReportContent.chapters.some(c => c.sections.some(s => s.content.length > 0)) && (
-            <div className="bg-card rounded-xl border p-6 shadow-soft">
-              <div className="space-y-4">
+            <div className="bg-card rounded-xl border p-4 sm:p-6 shadow-soft">
+              <div className="space-y-3 sm:space-y-4">
                 <div>
                   <Label className="text-base font-semibold text-foreground">Add Diagrams / Images</Label>
                   <p className="text-sm text-muted-foreground mt-1">
