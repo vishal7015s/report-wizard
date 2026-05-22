@@ -20,6 +20,7 @@ import {
 } from 'docx';
 import { saveAs } from 'file-saver';
 import { ReportData } from '@/types/report';
+import { getDefaultAcknowledgement } from './utils';
 
 const FONT_NAME = 'Times New Roman';
 const DARK_BLUE = '1e3a5f';
@@ -615,7 +616,6 @@ const createCoverPageWithSVCE = async (data: ReportData): Promise<Table> => {
 const createCertificatePage = async (data: ReportData): Promise<Table> => {
   const svceImageData = await imageToBase64(getSVCELogoPath());
   const content: (Paragraph | Table)[] = [];
-  const firstStudent = data.projectDetails.students[0];
   
   // College Header
   content.push(
@@ -686,14 +686,36 @@ const createCertificatePage = async (data: ReportData): Promise<Table> => {
   );
   
   // Certificate content
+  const certificateStudentRuns: TextRun[] = [];
+  data.projectDetails.students.forEach((student, index) => {
+    certificateStudentRuns.push(
+      new TextRun({
+        text: `${student.name || 'Student Name'} [${student.enrollmentNumber || 'Enrollment No.'}]`,
+        bold: true,
+        size: 24,
+        font: FONT_NAME,
+        color: RED_COLOR,
+      })
+    );
+    if (index < data.projectDetails.students.length - 1) {
+      certificateStudentRuns.push(
+        new TextRun({
+          text: ', ',
+          size: 24,
+          font: FONT_NAME,
+        })
+      );
+    }
+  });
+
   content.push(
     new Paragraph({
       alignment: AlignmentType.JUSTIFIED,
       spacing: { after: 200, line: 360 },
       children: [
         new TextRun({ text: 'This is to certify that ', size: 24, font: FONT_NAME }),
-        new TextRun({ text: `${firstStudent?.name} [${firstStudent?.enrollmentNumber}]`, bold: true, size: 24, font: FONT_NAME, color: RED_COLOR }),
-        new TextRun({ text: ' has completed his project work, titled ', size: 24, font: FONT_NAME }),
+        ...certificateStudentRuns,
+        new TextRun({ text: ' has completed the project work, titled ', size: 24, font: FONT_NAME }),
         new TextRun({ text: `"${data.projectDetails.projectTitle}"`, bold: true, size: 24, font: FONT_NAME, color: RED_COLOR }),
         new TextRun({ text: ' as per the syllabus and has submitted a satisfactory report on this project as a fulfillment towards the degree of', size: 24, font: FONT_NAME }),
       ],
@@ -760,7 +782,6 @@ const createCertificatePage = async (data: ReportData): Promise<Table> => {
 // ============ DECLARATION PAGE ============
 const createDeclarationPage = (data: ReportData): Table => {
   const content: (Paragraph | Table)[] = [];
-  const firstStudent = data.projectDetails.students[0];
   
   // College Header
   content.push(
@@ -828,14 +849,27 @@ const createDeclarationPage = (data: ReportData): Table => {
     })
   );
   
-  // Student signature
+  // Student signatures
+  const declarationStudentRuns: TextRun[] = [];
+  data.projectDetails.students.forEach((student, index) => {
+    declarationStudentRuns.push(
+      new TextRun({
+        text: `${student.name || 'Student Name'} [${student.enrollmentNumber || 'Enrollment No.'}]`,
+        bold: true,
+        size: 24,
+        font: FONT_NAME,
+      })
+    );
+    if (index < data.projectDetails.students.length - 1) {
+      declarationStudentRuns.push(new TextRun({ break: 1 }));
+    }
+  });
+
   content.push(
     new Paragraph({
       alignment: AlignmentType.RIGHT,
       spacing: { before: 400 },
-      children: [
-        new TextRun({ text: `${firstStudent?.name} [${firstStudent?.enrollmentNumber}]`, bold: true, size: 24, font: FONT_NAME }),
-      ],
+      children: declarationStudentRuns,
     })
   );
   
@@ -860,7 +894,6 @@ const createDeclarationPage = (data: ReportData): Table => {
 const createApprovalPage = async (data: ReportData): Promise<Table> => {
   const svceImageData = await imageToBase64(getSVCELogoPath());
   const content: (Paragraph | Table)[] = [];
-  const firstStudent = data.projectDetails.students[0];
   
   // College Header
   content.push(
@@ -931,6 +964,28 @@ const createApprovalPage = async (data: ReportData): Promise<Table> => {
   );
   
   // Content
+  const approvalStudentRuns: TextRun[] = [];
+  data.projectDetails.students.forEach((student, index) => {
+    approvalStudentRuns.push(
+      new TextRun({
+        text: `${student.name || 'Student Name'} [${student.enrollmentNumber || 'Enrollment No.'}]`,
+        bold: true,
+        size: 24,
+        font: FONT_NAME,
+        color: RED_COLOR,
+      })
+    );
+    if (index < data.projectDetails.students.length - 1) {
+      approvalStudentRuns.push(
+        new TextRun({
+          text: ', ',
+          size: 24,
+          font: FONT_NAME,
+        })
+      );
+    }
+  });
+
   content.push(
     new Paragraph({
       alignment: AlignmentType.JUSTIFIED,
@@ -939,7 +994,7 @@ const createApprovalPage = async (data: ReportData): Promise<Table> => {
         new TextRun({ text: 'The project entitled ', size: 24, font: FONT_NAME }),
         new TextRun({ text: `"${data.projectDetails.projectTitle}"`, bold: true, size: 24, font: FONT_NAME, color: RED_COLOR }),
         new TextRun({ text: ' submitted by ', size: 24, font: FONT_NAME }),
-        new TextRun({ text: `${firstStudent?.name} [${firstStudent?.enrollmentNumber}]`, bold: true, size: 24, font: FONT_NAME, color: RED_COLOR }),
+        ...approvalStudentRuns,
         new TextRun({ text: ' is recommended as fulfillment for the award of the ', size: 24, font: FONT_NAME }),
         new TextRun({ text: `Bachelor of Technology in ${data.projectDetails.department}`, bold: true, size: 24, font: FONT_NAME }),
         new TextRun({ text: ' degree by ', size: 24, font: FONT_NAME }),
@@ -966,6 +1021,18 @@ const createApprovalPage = async (data: ReportData): Promise<Table> => {
 };
 
 // ============ ACKNOWLEDGEMENT PAGE ============
+const parseTextRuns = (text: string, fontName: string, fontSize: number): TextRun[] => {
+  const parts = text.split('**');
+  return parts.map((part, index) => {
+    return new TextRun({
+      text: part,
+      bold: index % 2 === 1,
+      size: fontSize,
+      font: fontName,
+    });
+  });
+};
+
 const createAcknowledgementPage = (data: ReportData): Table => {
   const content: (Paragraph | Table)[] = [];
   
@@ -986,7 +1053,7 @@ const createAcknowledgementPage = (data: ReportData): Table => {
     })
   );
   
-  const ackText = data.acknowledgement || 'We would like to express our sincere gratitude to all those who have contributed to the successful completion of this project.';
+  const ackText = data.acknowledgement || getDefaultAcknowledgement(data.projectDetails);
   const ackParagraphs = ackText.split('\n\n').filter(p => p.trim());
   
   ackParagraphs.forEach((para) => {
@@ -994,16 +1061,34 @@ const createAcknowledgementPage = (data: ReportData): Table => {
       new Paragraph({
         alignment: AlignmentType.JUSTIFIED,
         spacing: { after: 200, line: 360 },
-        children: [
-          new TextRun({
-            text: para.trim(),
-            size: 24,
-            font: FONT_NAME,
-          }),
-        ],
+        children: parseTextRuns(para.trim(), FONT_NAME, 24),
       })
     );
   });
+
+  // Student signatures for Acknowledgement Page
+  const ackStudentRuns: TextRun[] = [];
+  data.projectDetails.students.forEach((student, index) => {
+    ackStudentRuns.push(
+      new TextRun({
+        text: `${student.name || 'Student Name'} [${student.enrollmentNumber || 'Enrollment No.'}]`,
+        bold: true,
+        size: 24,
+        font: FONT_NAME,
+      })
+    );
+    if (index < data.projectDetails.students.length - 1) {
+      ackStudentRuns.push(new TextRun({ break: 1 }));
+    }
+  });
+
+  content.push(
+    new Paragraph({
+      alignment: AlignmentType.RIGHT,
+      spacing: { before: 400 },
+      children: ackStudentRuns,
+    })
+  );
   
   return wrapInBorderedTable(content);
 };

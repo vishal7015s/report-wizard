@@ -395,27 +395,68 @@ Students: ${students?.map((s: { name: string }) => s.name).join(", ") || "Not sp
 Project Description:
 ${prompt}`;
 
-    let abstractAck: { abstract: string; acknowledgement: string };
+    const promptHash = prompt ? prompt.split("").reduce((a: number, c: string) => ((a << 5) - a + c.charCodeAt(0)) | 0, 0) : Date.now();
+    const variationSeed = Math.abs(promptHash % 1000);
 
-    if (mode === "remaining") {
-      abstractAck = { abstract: "", acknowledgement: "" };
-      console.log("Skipping abstract/ack for remaining mode");
-    } else {
-      const abstractAckRaw = await callGemini(
+    // ── Run abstract/ack AND blueprints IN PARALLEL to save time ──
+    const abstractAckPromise = (async () => {
+      if (mode === "remaining") {
+        console.log("Skipping abstract/ack for remaining mode");
+        return { abstract: "", acknowledgement: "" };
+      }
+
+      const getDepartmentName = (bName: string) => {
+        const b = (bName || "").toLowerCase();
+        if (b.includes("information technology") || b.includes("it")) {
+          return "Information technology and Engineering";
+        }
+        if (b.includes("computer science") || b.includes("cs")) {
+          return "Computer Science and Engineering";
+        }
+        if (b.includes("electronics")) {
+          return "Electronics and Communication Engineering";
+        }
+        if (b.includes("electrical")) {
+          return "Electrical Engineering";
+        }
+        if (b.includes("mechanical")) {
+          return "Mechanical Engineering";
+        }
+        if (b.includes("civil")) {
+          return "Civil Engineering";
+        }
+        return bName || "Engineering";
+      };
+
+      const deptName = getDepartmentName(branch);
+      const formattedGuide = guideName ? `**${guideName}**` : "**Project Guide**";
+      const programmaticAcknowledgement = `I am thankful to the technical university Rajiv Gandhi Proudyogiki Vishwavidyalaya, Bhopal for giving me opportunity to convert my theoretical knowledge into the practical skills through this project.
+
+I am thankful to my college SVCE for giving me every resource to complete this project. The project work has been made successful by the group member some effort of the college and faculties.
+
+I express my sincere thanks and gratitude to Principal, **Dr. Neha Khandelwal**, Swami Vivekanand College of Engineering, Indore (M.P.), for providing all the necessary facilities and encouraging environment to bring out the best of my endeavors.
+
+I would like to express gratitude to **Mr. Chandershekhar Kothari**, HOD ${deptName} Department under whose valuable guidance, for encouraging me regularly and explaining each and every concept, I was able to execute my project smoothly.
+
+I give thanks to ${formattedGuide}, ${deptName} department, Swami Vivekanand College of Engineering, Indore (M.P.), for making me confident about the research platform and helping me a lot in research work implementation.
+
+I give special thanks to Project Coordinator **Ms. Suchita Rathore**, ${deptName} department for their willingness to help me in finding solutions to any problems I had with my work.
+
+I would like to acknowledge all my friends & family members for the moral support they extended to me in the completion of this dissertation.`;
+
+      const abstractRaw = await callGemini(
         [
           { role: "system", content: baseSystemPrompt },
           {
             role: "user",
             content: `${projectContext}
 
-Generate ONLY the Abstract and Acknowledgement.
+Generate ONLY the Abstract.
 - Abstract: 120-160 words total, split into 2-3 short paragraphs. Use \\n\\n to separate each paragraph. Keep it concise - cover problem statement, approach, and outcome briefly.
-- Acknowledgement: thank guide, HOD, Principal, department, and parents. Split into multiple paragraphs using \\n\\n.
 
 Respond ONLY with JSON:
 {
-  "abstract": "paragraph1\\n\\nparagraph2\\n\\nparagraph3\\n\\nparagraph4",
-  "acknowledgement": "paragraph1\\n\\nparagraph2\\n\\nparagraph3"
+  "abstract": "paragraph1\\n\\nparagraph2\\n\\nparagraph3"
 }`,
           },
         ],
@@ -423,23 +464,23 @@ Respond ONLY with JSON:
       );
 
       try {
-        abstractAck = await parseWithRepair<{ abstract: string; acknowledgement: string }>(
-          abstractAckRaw,
-          `{"abstract":"string","acknowledgement":"string"}`,
+        const parsed = await parseWithRepair<{ abstract: string }>(
+          abstractRaw,
+          `{"abstract":"string"}`,
         );
+        return {
+          abstract: parsed.abstract,
+          acknowledgement: programmaticAcknowledgement,
+        };
       } catch (e) {
-        console.warn("Abstract/Acknowledgement parse failed, using fallback text.", e);
-        abstractAck = {
+        console.warn("Abstract parse failed, using fallback text.", e);
+        return {
           abstract:
             "This project report presents the problem definition, proposed solution, design approach, implementation details, testing outcomes, and future scope in a structured academic format. The work focuses on practical feasibility, reliability, and performance while following standard engineering documentation practices.",
-          acknowledgement:
-            "We sincerely express our gratitude to our project guide, Head of Department, Principal, faculty members, and parents for their constant guidance, encouragement, and support throughout the completion of this project.",
+          acknowledgement: programmaticAcknowledgement,
         };
       }
-    }
-
-    const promptHash = prompt ? prompt.split("").reduce((a: number, c: string) => ((a << 5) - a + c.charCodeAt(0)) | 0, 0) : Date.now();
-    const variationSeed = Math.abs(promptHash % 1000);
+    })();
 
     const existingContext = (mode === "remaining" && Array.isArray(existingChapters) && existingChapters.length > 0)
       ? `\n\nIMPORTANT — The user has already seen these EXACT Chapter 1-3 titles in the preview. You MUST keep them BIT-FOR-BIT identical in your output, and ONLY invent Chapters 4-7 that thematically continue from them:\n${existingChapters
@@ -447,7 +488,7 @@ Respond ONLY with JSON:
           .join("\n")}\n`
       : "";
 
-    const blueprintsRaw = await callGemini(
+    const blueprintsPromise = callGemini(
       [
         { role: "system", content: `${baseSystemPrompt}
 
@@ -485,6 +526,10 @@ Respond ONLY with JSON array:
       0.9,
     );
 
+    // Wait for BOTH to finish in parallel
+    const [abstractAck, blueprintsRaw] = await Promise.all([abstractAckPromise, blueprintsPromise]);
+    console.log("Abstract/ack and blueprints generated in parallel.");
+
     let allBlueprints: ChapterBlueprint[];
     try {
       allBlueprints = await parseWithRepair<ChapterBlueprint[]>(
@@ -517,8 +562,6 @@ Respond ONLY with JSON array:
       if (merged.length > 0) allBlueprints = merged;
     }
 
-
-
     let blueprints: ChapterBlueprint[];
     if (mode === "preview") {
       blueprints = allBlueprints.filter((ch) => ch.number <= 3);
@@ -528,15 +571,12 @@ Respond ONLY with JSON array:
       blueprints = allBlueprints;
     }
 
-    const chapterResults: Array<{
-      number: number;
-      title: string;
-      sections: Array<{ number: string; heading: string; content: string }>;
-    }> = [];
 
-    for (let chIdx = 0; chIdx < blueprints.length; chIdx++) {
-      const ch = blueprints[chIdx];
-      console.log(`Generating chapter ${ch.number}: ${ch.title}`);
+    // ── Generate ALL chapters IN PARALLEL to avoid timeout ──
+    console.log(`Generating ${blueprints.length} chapters in parallel...`);
+
+    const generateOneChapter = async (ch: ChapterBlueprint) => {
+      console.log(`Starting chapter ${ch.number}: ${ch.title}`);
 
       const sectionList = ch.sections.map((s) => `- ${s.number} ${s.heading}`).join("\n");
 
@@ -583,7 +623,8 @@ Respond ONLY with JSON:
           `{"number":${ch.number},"title":"${ch.title}","sections":[{"number":"${ch.sections[0]?.number || `${ch.number}.1`}","heading":"string","content":"string"}]}`,
         );
         parsed.title = ch.title;
-        chapterResults.push(parsed);
+        console.log(`Chapter ${ch.number} generated successfully.`);
+        return parsed;
       } catch (e) {
         console.warn(`Chapter ${ch.number} parse failed; retrying with shorter output...`, e);
 
@@ -611,11 +652,12 @@ Respond ONLY with JSON:
           );
 
           parsedRetry.title = ch.title;
-          chapterResults.push(parsedRetry);
+          console.log(`Chapter ${ch.number} generated on retry.`);
+          return parsedRetry;
         } catch (retryError) {
-          console.warn(`Chapter ${ch.number} retry also failed. Using deterministic fallback chapter content.`, retryError);
+          console.warn(`Chapter ${ch.number} retry also failed. Using deterministic fallback.`, retryError);
 
-          chapterResults.push({
+          return {
             number: ch.number,
             title: ch.title,
             sections: ch.sections.map((s) => ({
@@ -629,10 +671,15 @@ Respond ONLY with JSON:
                 `• Testing observations and key outcomes\n\n` +
                 `Overall, the section highlights practical execution details and academic justification for the proposed work.`,
             })),
-          });
+          };
         }
       }
-    }
+    };
+
+    const chapterResults = await Promise.all(blueprints.map(generateOneChapter));
+    // Sort by chapter number to maintain order
+    chapterResults.sort((a, b) => a.number - b.number);
+    console.log(`All ${chapterResults.length} chapters generated in parallel.`);
 
     const idBase = `ai-${Date.now()}`;
 

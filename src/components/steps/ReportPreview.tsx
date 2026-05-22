@@ -1,4 +1,4 @@
-import { useRef, useState, useMemo, useCallback } from 'react';
+import { useRef, useState, useMemo, useCallback, useEffect } from 'react';
 import { useReportStore } from '@/store/reportStore';
 import { Button } from '@/components/ui/button';
 import { Download, CreditCard, Eye, CheckCircle, Loader2, FileText, FileDown, Lock } from 'lucide-react';
@@ -38,6 +38,7 @@ const ReportPreview = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [downloadType, setDownloadType] = useState<'pdf' | 'docx' | null>(null);
   const [isGeneratingFull, setIsGeneratingFull] = useState(false);
+  const [autoGenerateAttempted, setAutoGenerateAttempted] = useState(false);
 
   const { 
     isProcessing,
@@ -90,6 +91,29 @@ const ReportPreview = () => {
       setIsGeneratingFull(false);
     }
   }, [aiPrompt, reportData, aiReportContent, setAiChapters]);
+
+  // Automatically trigger remaining chapters generation if payment is verified but only preview chapters exist (e.g. after page refresh)
+  useEffect(() => {
+    if (
+      isAIGenerated &&
+      isPaid &&
+      activeData.chapters.length <= 3 &&
+      !isGeneratingFull &&
+      !autoGenerateAttempted &&
+      aiPrompt
+    ) {
+      setAutoGenerateAttempted(true);
+      generateRemainingChapters();
+    }
+  }, [
+    isAIGenerated,
+    isPaid,
+    activeData.chapters.length,
+    isGeneratingFull,
+    autoGenerateAttempted,
+    aiPrompt,
+    generateRemainingChapters,
+  ]);
 
   const handlePaymentAndGenerate = async () => {
     const success = await initiatePayment(50);
@@ -676,7 +700,24 @@ const ReportPreview = () => {
                         </>
                       )}
                     </Button>
-                    
+                    <Button 
+                      className="w-full gap-2 bg-secondary hover:bg-secondary/80 border border-input mt-2 text-foreground" 
+                      size="lg"
+                      onClick={handleDownloadDOCX}
+                      disabled={isGenerating}
+                    >
+                      {isGenerating && downloadType === 'docx' ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Generating DOCX...
+                        </>
+                      ) : (
+                        <>
+                          <FileText className="w-4 h-4 text-primary" />
+                          Download Word (DOCX)
+                        </>
+                      )}
+                    </Button>
                   </div>
                 ) : isGeneratingFull ? (
                   <div className="space-y-3">
@@ -736,7 +777,24 @@ const ReportPreview = () => {
                       </>
                     )}
                   </Button>
-                  
+                  <Button 
+                    className="w-full gap-2 bg-secondary hover:bg-secondary/80 border border-input text-foreground" 
+                    size="lg"
+                    onClick={handleDownloadDOCX}
+                    disabled={isGenerating}
+                  >
+                    {isGenerating && downloadType === 'docx' ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Generating DOCX...
+                      </>
+                    ) : (
+                      <>
+                        <FileText className="w-4 h-4 text-primary" />
+                        Download Word (DOCX)
+                      </>
+                    )}
+                  </Button>
                 </div>
               )}
 
