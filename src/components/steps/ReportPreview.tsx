@@ -65,7 +65,12 @@ const ReportPreview = () => {
           students: reportData.projectDetails.students,
           branch: reportData.projectDetails.branch,
           projectType: reportData.projectDetails.projectType,
-          mode: 'remaining'
+          mode: 'remaining',
+          existingChapters: aiReportContent.chapters.map((c) => ({
+            number: c.number,
+            title: c.title,
+            sections: c.sections.map((s) => ({ number: s.number, heading: s.heading })),
+          })),
         }
       });
 
