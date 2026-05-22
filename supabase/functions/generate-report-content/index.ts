@@ -441,60 +441,48 @@ Respond ONLY with JSON:
     const promptHash = prompt ? prompt.split("").reduce((a: number, c: string) => ((a << 5) - a + c.charCodeAt(0)) | 0, 0) : Date.now();
     const variationSeed = Math.abs(promptHash % 1000);
 
+    const existingContext = (mode === "remaining" && Array.isArray(existingChapters) && existingChapters.length > 0)
+      ? `\n\nIMPORTANT — The user has already seen these EXACT Chapter 1-3 titles in the preview. You MUST keep them BIT-FOR-BIT identical in your output, and ONLY invent Chapters 4-7 that thematically continue from them:\n${existingChapters
+          .map((c: ChapterBlueprint) => `Ch ${c.number}: ${c.title}\n${c.sections.map((s) => `  ${s.number} ${s.heading}`).join("\n")}`)
+          .join("\n")}\n`
+      : "";
+
     const blueprintsRaw = await callGemini(
       [
         { role: "system", content: `${baseSystemPrompt}
 
-You generate realistic Indian engineering college project report chapter structures. Titles must be SHORT (2-5 words max), practical, and similar to what real students write in actual submitted reports.` },
+You generate UNIQUE, project-specific Indian engineering college report chapter structures. NEVER reuse the same titles across different projects — every title MUST reflect the actual domain, technology, and goal described in the user's prompt.` },
         {
           role: "user",
           content: `${projectContext}
 
-Variation Seed: ${variationSeed}
+Variation Seed: ${variationSeed}${existingContext}
 
-Generate a 7-chapter structure for this project report. 
+Generate a 7-chapter structure for THIS specific project. The chapter and section titles must be derived from the user's prompt — NOT from a template.
 
-CRITICAL RULES FOR TITLES:
-- Chapter and section titles must be SHORT (2-5 words). No long sentences.
-- Titles must sound like REAL Indian engineering college reports, not AI-generated.
-- EVERY chapter title (including Ch 4-7) MUST be SPECIFIC to "${projectTitle}". 
-- Do NOT use generic titles like "System Design", "Implementation", "Testing & Results". Instead use project-specific ones.
+HARD RULES:
+- Output EXACTLY 7 chapters.
+- Every chapter title MUST be 2-5 words and MUST contain a noun, module, or concept that is unique to "${projectTitle}" or the prompt content. Generic words alone ("System Design", "Implementation", "Testing & Results", "Conclusion & Future Scope", "Literature Survey") are FORBIDDEN as standalone titles.
+- Do NOT simply prepend the project name to a generic word (e.g. "${shortTitle} Design" or "${shortTitle} Implementation" are BANNED — they look fake). Instead use the actual module/feature name from the prompt (e.g. "Booking Engine Design", "Recommendation Model", "Catalog Search API").
+- Chapter 1 must introduce the specific domain (not a generic "Introduction").
+- Chapter 2 must reference the specific tech/related-work area from the prompt (not just "Literature Survey").
+- Chapter 7 must include the word "Conclusion" but should still hint at this project's scope.
+- Each chapter: 2 to 4 short, project-specific section headings. Section numbering: 1.1, 1.2... etc.
 
-GOOD examples for a "Library Management System":
-Ch4: "Library Module Design", Ch5: "Catalog Implementation", Ch6: "Search Testing", Ch7: "Conclusion & Scope"
+Project-specific GOOD examples for a "Food Ordering App":
+Ch1 "Food Delivery Landscape", Ch2 "Existing Ordering Apps", Ch3 "App Requirements", Ch4 "Order Flow Design", Ch5 "Payment Integration", Ch6 "Cart & Checkout Testing", Ch7 "Conclusion & Roadmap"
 
-GOOD examples for a "Food Ordering App":
-Ch4: "Order System Design", Ch5: "Payment Integration", Ch6: "Order Flow Testing", Ch7: "Conclusion & Scope"
-
-BAD examples (TOO GENERIC - NEVER do this for Ch 4-6):
-"System Design" ❌, "Implementation" ❌, "Testing & Results" ❌
-
-BAD examples (TOO LONG - NEVER do this):
-"Natural Language Understanding Pipeline for Medical Queries" ❌
-
-Rules:
-- Exactly 7 chapters.
-- Chapter 1: Introduction (can add domain context, keep short).
-- Chapter 7: Must include "Conclusion" but can be project-specific.
-- Chapters 2-6: Cover literature, requirements, design, implementation, testing — ALL with project-specific naming.
-- Each chapter: 2 to 4 sections with short, project-specific headings.
-- Section numbering: 1.1, 1.2... 2.1, 2.2... etc.
+BANNED outputs (do NOT generate these):
+"System Design", "Implementation", "Testing & Results", "Conclusion & Future Scope", "Literature Survey", "${shortTitle} Design", "${shortTitle} Implementation", "${shortTitle} Testing"
 
 Respond ONLY with JSON array:
 [
-  {
-    "number": 1,
-    "title": "INTRODUCTION",
-    "sections": [
-      { "number": "1.1", "heading": "Background" },
-      { "number": "1.2", "heading": "Problem Statement" }
-    ]
-  }
+  { "number": 1, "title": "...", "sections": [{ "number": "1.1", "heading": "..." }] }
 ]`,
         },
       ],
       3500,
-      0.85,
+      0.9,
     );
 
     let allBlueprints: ChapterBlueprint[];
@@ -512,29 +500,24 @@ Respond ONLY with JSON array:
       allBlueprints = fallbackBlueprints();
     }
 
-    const genericWords = [
-      "system design", "implementation", "testing", "results",
-      "conclusion", "future scope", "development", "coding",
-    ];
-
-    const projectKeyword = shortTitle.split(/\s+/).slice(0, 3).join(" ");
-    console.log("Post-processing blueprints. Project keyword:", projectKeyword);
-
-    allBlueprints = allBlueprints.map((ch) => {
-      const titleLower = ch.title.toLowerCase().trim();
-      const projectWords = projectKeyword.toLowerCase().split(/\s+/);
-      const hasProjectWord = projectWords.some((pw: string) => pw.length > 2 && titleLower.includes(pw));
-      const hasGenericWord = genericWords.some(g => titleLower.includes(g));
-
-      console.log(`Ch ${ch.number}: "${ch.title}" hasProject=${hasProjectWord} hasGeneric=${hasGenericWord}`);
-
-      if (!hasProjectWord && hasGenericWord && ch.number >= 4 && ch.number <= 6) {
-        const newTitle = `${projectKeyword} ${ch.title}`;
-        console.log(`Renamed: "${ch.title}" -> "${newTitle}"`);
-        return { ...ch, title: newTitle };
+    // In "remaining" mode, force Ch1-3 to match what the user already saw in preview
+    if (mode === "remaining" && Array.isArray(existingChapters) && existingChapters.length > 0) {
+      const merged: ChapterBlueprint[] = [];
+      for (let n = 1; n <= 7; n++) {
+        const fromExisting = existingChapters.find((c: ChapterBlueprint) => c.number === n);
+        const fromAI = allBlueprints.find((c) => c.number === n);
+        if (n <= 3 && fromExisting) {
+          merged.push(fromExisting);
+        } else if (fromAI) {
+          merged.push(fromAI);
+        } else if (fromExisting) {
+          merged.push(fromExisting);
+        }
       }
-      return ch;
-    });
+      if (merged.length > 0) allBlueprints = merged;
+    }
+
+
 
     let blueprints: ChapterBlueprint[];
     if (mode === "preview") {
