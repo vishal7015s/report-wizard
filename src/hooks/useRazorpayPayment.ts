@@ -65,8 +65,8 @@ export const useRazorpayPayment = () => {
           description: 'AI-Generated Project Report Download',
           order_id: data.order_id,
           handler: async (response: any) => {
+            console.log('[Razorpay] handler fired:', response);
             try {
-              // Verify payment on server
               const { data: verifyData, error: verifyError } = await supabase.functions.invoke('verify-razorpay-payment', {
                 body: {
                   razorpay_order_id: response.razorpay_order_id,
@@ -74,18 +74,20 @@ export const useRazorpayPayment = () => {
                   razorpay_signature: response.razorpay_signature,
                 },
               });
+              console.log('[Razorpay] verify result:', { verifyData, verifyError });
 
               if (verifyError || !verifyData?.verified) {
-                toast.error('Payment verification failed. Please contact support.');
+                console.error('[Razorpay] verification failed', verifyError, verifyData);
+                toast.error(`Payment verification failed: ${verifyError?.message || verifyData?.error || 'Unknown error'}`);
                 resolve(false);
               } else {
                 markPaymentComplete();
                 toast.success('Payment successful! You can now download your report.');
                 resolve(true);
               }
-            } catch (err) {
-              console.error('Verification error:', err);
-              toast.error('Payment verification failed.');
+            } catch (err: any) {
+              console.error('[Razorpay] handler exception:', err);
+              toast.error(`Payment verification failed: ${err?.message || 'Unknown error'}`);
               resolve(false);
             }
             setIsProcessing(false);
