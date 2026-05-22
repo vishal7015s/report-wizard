@@ -708,6 +708,10 @@ const createCertificatePage = async (data: ReportData): Promise<Table> => {
     }
   });
 
+  const isPlural = data.projectDetails.students.length > 1;
+  const verbText1 = isPlural ? ' have completed the project work, titled ' : ' has completed the project work, titled ';
+  const verbText2 = isPlural ? ' as per the syllabus and have submitted a satisfactory report on this project as a fulfillment towards the degree of' : ' as per the syllabus and has submitted a satisfactory report on this project as a fulfillment towards the degree of';
+
   content.push(
     new Paragraph({
       alignment: AlignmentType.JUSTIFIED,
@@ -715,9 +719,9 @@ const createCertificatePage = async (data: ReportData): Promise<Table> => {
       children: [
         new TextRun({ text: 'This is to certify that ', size: 24, font: FONT_NAME }),
         ...certificateStudentRuns,
-        new TextRun({ text: ' has completed the project work, titled ', size: 24, font: FONT_NAME }),
+        new TextRun({ text: verbText1, size: 24, font: FONT_NAME }),
         new TextRun({ text: `"${data.projectDetails.projectTitle}"`, bold: true, size: 24, font: FONT_NAME, color: RED_COLOR }),
-        new TextRun({ text: ' as per the syllabus and has submitted a satisfactory report on this project as a fulfillment towards the degree of', size: 24, font: FONT_NAME }),
+        new TextRun({ text: verbText2, size: 24, font: FONT_NAME }),
       ],
     })
   );
@@ -835,16 +839,23 @@ const createDeclarationPage = (data: ReportData): Table => {
   );
   
   // Declaration content
+  const isPlural = data.projectDetails.students.length > 1;
+  const declText1 = isPlural ? 'We hereby declare that the work, which is being presented in the project, entitled ' : 'I hereby declare that the work, which is being presented in the project, entitled ';
+  const declText2 = isPlural 
+    ? ` in partial fulfillment of the requirement for the award of degree of Bachelor of Technology in ${data.projectDetails.department} and Engineering submitted in the department of ${data.projectDetails.department} and Engineering, Swami Vivekanand College of Engineering Indore, is an authentic record of our own work carried under the guidance of ` 
+    : ` in partial fulfillment of the requirement for the award of degree of Bachelor of Technology in ${data.projectDetails.department} and Engineering submitted in the department of ${data.projectDetails.department} and Engineering, Swami Vivekanand College of Engineering Indore, is an authentic record of my own work carried under the guidance of `;
+  const declText3 = isPlural ? '. We have not submitted the matter embodied in this report for the award of any other degree.' : '. I have not submitted the matter embodied in this report for the award of any other degree.';
+
   content.push(
     new Paragraph({
       alignment: AlignmentType.JUSTIFIED,
       spacing: { after: 300, line: 360 },
       children: [
-        new TextRun({ text: 'I hereby declare that the work, which is being presented in the project, entitled ', size: 24, font: FONT_NAME }),
+        new TextRun({ text: declText1, size: 24, font: FONT_NAME }),
         new TextRun({ text: `"${data.projectDetails.projectTitle}"`, bold: true, size: 24, font: FONT_NAME, color: RED_COLOR }),
-        new TextRun({ text: ` in partial fulfillment of the requirement for the award of degree of Bachelor of Technology in ${data.projectDetails.department} and Engineering submitted in the department of ${data.projectDetails.department} and Engineering, Swami Vivekanand College of Engineering Indore, is an authentic record of my own work carried under the guidance of `, size: 24, font: FONT_NAME }),
+        new TextRun({ text: declText2, size: 24, font: FONT_NAME }),
         new TextRun({ text: data.projectDetails.guideName, bold: true, size: 24, font: FONT_NAME }),
-        new TextRun({ text: '. I have not submitted the matter embodied in this report for the award of any other degree.', size: 24, font: FONT_NAME }),
+        new TextRun({ text: declText3, size: 24, font: FONT_NAME }),
       ],
     })
   );

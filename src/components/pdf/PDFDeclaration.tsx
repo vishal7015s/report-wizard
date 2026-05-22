@@ -7,7 +7,33 @@ interface PDFPageProps {
 
 const PDFDeclaration = ({ data, pageNumber }: PDFPageProps) => {
   const { projectDetails } = data;
-  const firstStudent = projectDetails.students[0];
+  const isPlural = projectDetails.students.length > 1;
+
+  const declarationText = isPlural ? (
+    <p>
+      We hereby declare that the work, which is being presented in the project, entitled{' '}
+      <span className="font-bold" style={{ color: '#c41e3a' }}>
+        "{projectDetails.projectTitle || 'Project Title'}"
+      </span>{' '}
+      in partial fulfillment of the requirement for the award of degree of Bachelor of Technology in {projectDetails.department} and Engineering submitted in the department of {projectDetails.department} and Engineering, Swami Vivekanand College of Engineering Indore, is an authentic record of our own work carried under the guidance of{' '}
+      <span className="font-bold">
+        {projectDetails.guideName || 'Guide Name'}.
+      </span>{' '}
+      We have not submitted the matter embodied in this report forward of any other degree.
+    </p>
+  ) : (
+    <p>
+      I hereby declare that the work, which is being presented in the project, entitled{' '}
+      <span className="font-bold" style={{ color: '#c41e3a' }}>
+        "{projectDetails.projectTitle || 'Project Title'}"
+      </span>{' '}
+      in partial fulfillment of the requirement for the award of degree of Bachelor of Technology in {projectDetails.department} and Engineering submitted in the department of {projectDetails.department} and Engineering, Swami Vivekanand College of Engineering Indore, is an authentic record of my own work carried under the guidance of{' '}
+      <span className="font-bold">
+        {projectDetails.guideName || 'Guide Name'}.
+      </span>{' '}
+      I have not submitted the matter embodied in this report forward of any other degree.
+    </p>
+  );
 
   return (
     <div className="pdf-page" style={{ width: '210mm', height: '297mm', maxHeight: '297mm', position: 'relative', backgroundColor: '#ffffff', fontFamily: 'Times New Roman, serif', overflow: 'hidden' }}>
@@ -42,17 +68,7 @@ const PDFDeclaration = ({ data, pageNumber }: PDFPageProps) => {
         
         {/* Declaration Content */}
         <div className="text-justify leading-loose" style={{ fontSize: '15px', color: '#000000' }}>
-          <p>
-            I hereby declare that the work, which is being presented in the project, entitled{' '}
-            <span className="font-bold" style={{ color: '#c41e3a' }}>
-              "{projectDetails.projectTitle || 'Project Title'}"
-            </span>{' '}
-            in partial fulfillment of the requirement for the award of degree of Bachelor of Technology in {projectDetails.department} and Engineering submitted in the department of {projectDetails.department} and Engineering, Swami Vivekanand College of Engineering Indore, is an authentic record of my own work carried under the guidance of{' '}
-            <span className="font-bold">
-              {projectDetails.guideName || 'Guide Name'}.
-            </span>{' '}
-            I have not submitted the matter embodied in this report forward of any other degree.
-          </p>
+          {declarationText}
         </div>
         
         {/* Student Signature */}

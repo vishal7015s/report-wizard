@@ -8,7 +8,9 @@ interface PDFPageProps {
 
 const PDFCertificate = ({ data, pageNumber }: PDFPageProps) => {
   const { projectDetails } = data;
-  const firstStudent = projectDetails.students[0];
+  const isPlural = projectDetails.students.length > 1;
+  const completionVerb = isPlural ? 'have completed' : 'has completed';
+  const submissionVerb = isPlural ? 'have submitted' : 'has submitted';
 
   return (
     <div className="pdf-page" style={{ width: '210mm', height: '297mm', maxHeight: '297mm', position: 'relative', backgroundColor: '#ffffff', fontFamily: 'Times New Roman, serif', overflow: 'hidden' }}>
@@ -48,7 +50,7 @@ const PDFCertificate = ({ data, pageNumber }: PDFPageProps) => {
         {/* Certificate Content */}
         <div className="text-justify leading-loose" style={{ fontSize: '15px', color: '#000000' }}>
           <p className="mb-4">
-            This is certify that{' '}
+            This is to certify that{' '}
             {projectDetails.students.map((student, index) => (
               <span key={student.id}>
                 <span className="font-bold" style={{ color: '#c41e3a' }}>
@@ -57,11 +59,11 @@ const PDFCertificate = ({ data, pageNumber }: PDFPageProps) => {
                 {index < projectDetails.students.length - 1 ? ', ' : ' '}
               </span>
             ))}
-            has completed the project work, titled{' '}
+            {` ${completionVerb} the project work, titled `}
             <span className="font-bold" style={{ color: '#c41e3a' }}>
               "{projectDetails.projectTitle || 'Project Title'}"
             </span>{' '}
-            As per the syllabus and has submitted a satisfactory report on this project as a fulfillment towards the degree of
+            {`As per the syllabus and ${submissionVerb} a satisfactory report on this project as a fulfillment towards the degree of`}
           </p>
 
           <p className="text-center font-bold my-6" style={{ color: '#000000' }}>

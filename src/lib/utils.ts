@@ -32,7 +32,24 @@ export const getDepartmentName = (branch: string): string => {
 export const getDefaultAcknowledgement = (projectDetails: ProjectDetails): string => {
   const deptName = getDepartmentName(projectDetails.branch);
   const formattedGuide = projectDetails.guideName ? `**${projectDetails.guideName}**` : '**Project Guide**';
-  
+  const isPlural = projectDetails.students && projectDetails.students.length > 1;
+
+  if (isPlural) {
+    return `We are thankful to the technical university Rajiv Gandhi Proudyogiki Vishwavidyalaya, Bhopal for giving us opportunity to convert our theoretical knowledge into the practical skills through this project.
+
+We are thankful to our college SVCE for giving us every resource to complete this project. The project work has been made successful by the group member some effort of the college and faculties.
+
+We express our sincere thanks and gratitude to Principal, **Dr. Neha Khandelwal**, Swami Vivekanand College of Engineering, Indore (M.P.), for providing all the necessary facilities and encouraging environment to bring out the best of our endeavors.
+
+We would like to express gratitude to **Mr. Chandershekhar Kothari**, HOD ${deptName} Department under whose valuable guidance, for encouraging us regularly and explaining each and every concept, we were able to execute our project smoothly.
+
+We give thanks to ${formattedGuide}, ${deptName} department, Swami Vivekanand College of Engineering, Indore (M.P.), for making us confident about the research platform and helping us a lot in research work implementation.
+
+We give special thanks to Project Coordinator **Ms. Suchita Rathore**, ${deptName} department for their willingness to help us in finding solutions to any problems we had with our work.
+
+We would like to acknowledge all our friends & family members for the moral support they extended to us in the completion of this dissertation.`;
+  }
+
   return `I am thankful to the technical university Rajiv Gandhi Proudyogiki Vishwavidyalaya, Bhopal for giving me opportunity to convert my theoretical knowledge into the practical skills through this project.
 
 I am thankful to my college SVCE for giving me every resource to complete this project. The project work has been made successful by the group member some effort of the college and faculties.
