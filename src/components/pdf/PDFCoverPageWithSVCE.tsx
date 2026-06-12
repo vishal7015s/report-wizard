@@ -37,7 +37,7 @@ const PDFCoverPageWithSVCE = ({ data, pageNumber }: PDFPageProps) => {
 
         {/* Degree Name */}
         <p className="text-lg font-bold mt-1" style={{ color: '#c41e3a' }}>
-          BACHELOR OF TECHNOLOGY IN INFORMATION TECHNOLOGY
+          BACHELOR OF TECHNOLOGY IN {(projectDetails.department || 'Information Technology').toUpperCase()}
         </p>
 
         {/* Project Title */}

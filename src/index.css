@@ -110,7 +110,8 @@
   /* PDF Preview styling - uses Times New Roman for academic look */
   .pdf-page {
     font-family: 'Times New Roman', Times, serif;
-    background: white;
+    background: white !important;
+    color: #000000;
     width: 210mm;
     height: 297mm;
     max-height: 297mm;
@@ -118,6 +119,29 @@
     position: relative;
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
     overflow: hidden;
+  }
+
+  .pdf-page table,
+  .pdf-page tr,
+  .pdf-page td,
+  .pdf-page th,
+  .pdf-page h1,
+  .pdf-page h2,
+  .pdf-page h3,
+  .pdf-page h4,
+  .pdf-page h5,
+  .pdf-page h6,
+  .pdf-page p,
+  .pdf-page span {
+    color: #000000;
+  }
+
+  .pdf-page .pdf-heading-red {
+    color: hsl(var(--pdf-heading-red)) !important;
+  }
+
+  .pdf-page .pdf-text-blue {
+    color: hsl(var(--pdf-text-blue)) !important;
   }
 
   .pdf-heading-red {

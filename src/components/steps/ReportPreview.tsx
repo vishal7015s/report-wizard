@@ -700,24 +700,6 @@ const ReportPreview = () => {
                         </>
                       )}
                     </Button>
-                    <Button 
-                      className="w-full gap-2 bg-secondary hover:bg-secondary/80 border border-input mt-2 text-foreground" 
-                      size="lg"
-                      onClick={handleDownloadDOCX}
-                      disabled={isGenerating}
-                    >
-                      {isGenerating && downloadType === 'docx' ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          Generating DOCX...
-                        </>
-                      ) : (
-                        <>
-                          <FileText className="w-4 h-4 text-primary" />
-                          Download Word (DOCX)
-                        </>
-                      )}
-                    </Button>
                   </div>
                 ) : isGeneratingFull ? (
                   <div className="space-y-3">
@@ -774,24 +756,6 @@ const ReportPreview = () => {
                       <>
                         <FileDown className="w-4 h-4" />
                         Download PDF
-                      </>
-                    )}
-                  </Button>
-                  <Button 
-                    className="w-full gap-2 bg-secondary hover:bg-secondary/80 border border-input text-foreground" 
-                    size="lg"
-                    onClick={handleDownloadDOCX}
-                    disabled={isGenerating}
-                  >
-                    {isGenerating && downloadType === 'docx' ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        Generating DOCX...
-                      </>
-                    ) : (
-                      <>
-                        <FileText className="w-4 h-4 text-primary" />
-                        Download Word (DOCX)
                       </>
                     )}
                   </Button>
