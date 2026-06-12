@@ -150,6 +150,7 @@ const ContentEditor = () => {
       setAiPrompt(aiPromptText); // Save prompt for full generation after payment
 
       toast.success('Preview content generated! Pay to unlock full report with all 7 chapters.');
+      setCurrentStep(3);
 
     } catch (error) {
       console.error('Generation error:', error);

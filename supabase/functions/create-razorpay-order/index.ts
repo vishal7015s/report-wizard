@@ -33,6 +33,7 @@ serve(async (req) => {
         amount: amountInPaise,
         currency: 'INR',
         receipt: `report_${Date.now()}`,
+        payment_capture: 1,
         notes: {
           description: description || 'AI Report Download',
         },

@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useReportStore } from '@/store/reportStore';
 
 declare global {
   interface Window {
@@ -26,14 +27,27 @@ export const useRazorpayPayment = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentComplete, setPaymentComplete] = useState(false);
 
-  const checkPaymentStatus = useCallback(() => {
-    return sessionStorage.getItem('razorpay_payment_verified') === 'true';
+  const getProjectKey = useCallback(() => {
+    const title = useReportStore.getState().reportData.projectDetails.projectTitle || '';
+    return title ? `razorpay_payment_verified_${title.replace(/\s+/g, '_').toLowerCase()}` : '';
   }, []);
 
+  const checkPaymentStatus = useCallback(() => {
+    const projectKey = getProjectKey();
+    return sessionStorage.getItem('razorpay_payment_verified') === 'true' ||
+           localStorage.getItem('razorpay_payment_verified') === 'true' ||
+           (projectKey ? localStorage.getItem(projectKey) === 'true' : false);
+  }, [getProjectKey]);
+
   const markPaymentComplete = useCallback(() => {
+    const projectKey = getProjectKey();
     sessionStorage.setItem('razorpay_payment_verified', 'true');
+    localStorage.setItem('razorpay_payment_verified', 'true');
+    if (projectKey) {
+      localStorage.setItem(projectKey, 'true');
+    }
     setPaymentComplete(true);
-  }, []);
+  }, [getProjectKey]);
 
   const initiatePayment = useCallback(async (amount: number = 50): Promise<boolean> => {
     setIsProcessing(true);
